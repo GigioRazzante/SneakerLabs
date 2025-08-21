@@ -1,12 +1,116 @@
-# React + Vite
+Projeto Tênis Personalizável – SneakLab
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**SneakLab** é uma plataforma de personalização de tênis que permite aos usuários escolher estilo, material, cor, solado, detalhes e até o "tamanho estrutural" do seu tênis — tudo isso com uma visualização gerada por **IA generativa**, que cria uma imagem realista do modelo personalizado em tempo real.
 
-Currently, two official plugins are available:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-## Expanding the ESLint configuration
+----
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🚀 Funcionalidades
+
+Personalização por:
+Estilo: Casual, Corrida, Skate
+Material: Couro, Camurça, Tecido
+Solado: Borracha, EVA, Air
+Cor: Branco, Preto, Azul, Vermelho, Verde, Amarelo
+Detalhes: Cadarço normal, colorido ou sem cadarço
+Tamanho estrutural: Simples (1 andar), Dupla (2 andares), Tripla (3 andares)
+Preço dinâmico com base nas escolhas
+Geração de visual do tênis via **IA generativa**
+Interface amigável para o usuário
+
+---
+
+## 🧠 Uso de IA Generativa
+
+A IA é utilizada para gerar uma imagem realista do tênis personalizado com base nas seleções feitas pelo usuário.
+
+Modelo usado: Stable Diffusion com ajustes via ControlNet
+Integração: API externa (ex: Replicate ou Hugging Face)
+Geração baseada em prompts dinâmicos construídos conforme os atributos selecionados
+
+---
+
+## 💵 Variações e Preços
+
+### 1. Estilo (preço base)
+**Casual** – R$ 200
+Para uso diário e combinações simples
+**Corrida** – R$ 350
+Design leve e pensado para performance
+**Skate** – R$ 300
+Mais resistente e com reforço para manobras
+
+---
+
+### 2. Material (acréscimo)
+**Couro** – + R$ 100
+Durável, elegante e com ótimo acabamento
+**Camurça** – + R$ 120
+Toque aveludado e visual moderno
+**Tecido** – + R$ 90
+Leve, respirável e confortável
+
+---
+
+### 3. Solado (acréscimo)
+**Borracha** – + R$ 40
+Clássico, com boa aderência
+**EVA** – + R$ 60
+Mais leve e com maior amortecimento
+**Air** – + R$ 90
+Tecnologia de amortecimento com bolha de ar
+
+---
+
+### 4. Cor (acréscimo)
+
+**Branco** – + R$ 20
+Limpo, versátil e minimalista
+**Preto** – + R$ 30
+Sofisticado e fácil de combinar
+**Azul** – + R$ 25
+Estilo com um toque de personalidade
+**Vermelho** – + R$ 28
+Chamativo e cheio de atitude
+**Verde** – + R$ 23
+Fresco e moderno
+**Amarelo** – + R$ 30
+Vibrante e ousado
+
+---
+
+### 5. Detalhes (cadarço – acréscimo)
+**Cadarço normal** – + R$ 20
+Visual tradicional e prático
+**Cadarço colorido** – + R$ 30
+Mais ousado, com contraste visual
+**Sem cadarço** – + R$ 35
+Design limpo com fácil calce
+
+---
+
+
+
+<img width="911" height="571" alt="unnamed" src="https://github.com/user-attachments/assets/46273a62-d4ee-4581-b185-f55970cfc04b" />
+
+
+
+
+
+
+<img width="951" height="592" alt="unnamed" src="https://github.com/user-attachments/assets/cbbab69a-0942-43a0-ae12-0d246ad6d217" />
+
+
+
+
+
+
+<img width="956" height="603" alt="unnamed" src="https://github.com/user-attachments/assets/203aad0b-623a-4997-a26e-9e8c0393da1c" />
+
+
+## 📄 Licença
+
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+
+
