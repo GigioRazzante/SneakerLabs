@@ -92,21 +92,17 @@ Design limpo com fácil calce
 
 
 
-<img width="911" height="571" alt="unnamed" src="https://github.com/user-attachments/assets/46273a62-d4ee-4581-b185-f55970cfc04b" />
+<img width="512" height="321" alt="unnamed" src="https://github.com/user-attachments/assets/c728c672-3d3c-4d06-8ea2-5561ff2adfac" />
+
+
+
+<img width="951" height="592" alt="unnamed" src="https://github.com/user-attachments/assets/dff6773b-838d-4549-89ca-49bd1180f9fc" />
 
 
 
 
 
-
-<img width="951" height="592" alt="unnamed" src="https://github.com/user-attachments/assets/cbbab69a-0942-43a0-ae12-0d246ad6d217" />
-
-
-
-
-
-
-<img width="956" height="603" alt="unnamed" src="https://github.com/user-attachments/assets/203aad0b-623a-4997-a26e-9e8c0393da1c" />
+<img width="956" height="603" alt="unnamed" src="https://github.com/user-attachments/assets/2ed9018d-c36a-40aa-8013-fe13f3a4f740" />
 
 
 ## 📄 Licença
