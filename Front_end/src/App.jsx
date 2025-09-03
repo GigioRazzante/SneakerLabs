@@ -1,16 +1,10 @@
-import { useState } from 'react'
-
 import './App.css'
+import PaginaCriarSneaker from './pages/PaginaCriarSneaker'
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
     <>
-      <div>
-        
-      </div>
-      
+      <PaginaCriarSneaker />
     </>
   )
 }
