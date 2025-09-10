@@ -1,16 +1,102 @@
+// src/pages/PaginaCriarSneaker.jsx
 import React, { useState } from 'react';
-import bgImage from '../assets/sneakers-bg.png'; // ajuste o caminho conforme sua pasta
+import MenuSelecao from '../components/MenuSelecao';
+import ResumoPedido from '../components/ResumoPedido';
+
+const passos = [
+  {
+    titulo: "Passo 1 de 5: Escolha o seu estilo.",
+    opcoes: [
+      { id: 1, nome: "Casual", preco: "R$ 200", acrescimo: 200 },
+      { id: 2, nome: "Corrida", preco: "R$ 350", acrescimo: 350 },
+      { id: 3, nome: "Skate", preco: "R$ 300", acrescimo: 300 }
+    ],
+  },
+  {
+    titulo: "Passo 2 de 5: Escolha o material.",
+    opcoes: [
+      { id: 1, nome: "Couro", preco: "+ R$ 100", acrescimo: 100 },
+      { id: 2, nome: "Camurça", preco: "+ R$ 120", acrescimo: 120 },
+      { id: 3, nome: "Tecido", preco: "+ R$ 90", acrescimo: 90 }
+    ],
+  },
+  {
+    titulo: "Passo 3 de 5: Escolha o solado.",
+    opcoes: [
+      { id: 1, nome: "Borracha", preco: "+ R$ 40", acrescimo: 40 },
+      { id: 2, nome: "EVA", preco: "+ R$ 60", acrescimo: 60 },
+      { id: 3, nome: "Air", preco: "+ R$ 90", acrescimo: 90 }
+    ],
+  },
+  {
+    titulo: "Passo 4 de 5: Escolha a cor.",
+    opcoes: [
+      { id: 1, nome: "Branco", preco: "+ R$ 20", acrescimo: 20 },
+      { id: 2, nome: "Preto", preco: "+ R$ 30", acrescimo: 30 },
+      { id: 3, nome: "Azul", preco: "+ R$ 25", acrescimo: 25 },
+      { id: 4, nome: "Vermelho", preco: "+ R$ 28", acrescimo: 28 },
+      { id: 5, nome: "Verde", preco: "+ R$ 23", acrescimo: 23 },
+      { id: 6, nome: "Amarelo", preco: "+ R$ 30", acrescimo: 30 }
+    ],
+  },
+  {
+    titulo: "Passo 5 de 5: Adicione detalhes.",
+    opcoes: [
+      { id: 1, nome: "Cadarço normal", preco: "+ R$ 20", acrescimo: 20 },
+      { id: 2, nome: "Cadarço colorido", preco: "+ R$ 30", acrescimo: 30 },
+      { id: 3, nome: "Sem cadarço", preco: "+ R$ 35", acrescimo: 35 }
+    ],
+  },
+];
 
 const PaginaCriarSneaker = () => {
-  const [selectedCard, setSelectedCard] = useState(null);
-  const [showSnackbar, setShowSnackbar] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [currentStep, setCurrentStep] = useState(0);
+  const [selections, setSelections] = useState({});
 
-  const handleSelectCard = (cardId) => {
-    setSelectedCard(cardId);
-    setSnackbarMessage(`Opção ${cardId} selecionada!`);
-    setShowSnackbar(true);
-    setTimeout(() => setShowSnackbar(false), 3000);
+  const handleSelectOption = (stepId, optionId, acrescimo) => {
+    setSelections({
+      ...selections,
+      [stepId]: { id: optionId, acrescimo }
+    });
+  };
+
+  const handleNextStep = () => {
+    const selected = selections[currentStep];
+    if (selected) {
+        if (currentStep < passos.length - 1) {
+            setCurrentStep(currentStep + 1);
+        } else {
+            setCurrentStep(passos.length);
+        }
+    } else {
+        alert("Por favor, selecione uma opção para continuar.");
+    }
+  };
+
+  const handleFinalize = () => {
+      alert("Pedido enviado com sucesso!");
+      console.log("Pedido Finalizado:", selections);
+  };
+
+  const renderCurrentStep = () => {
+      if (currentStep < passos.length) {
+          return (
+              <MenuSelecao
+                  passo={passos[currentStep]}
+                  onSelect={(optionId, acrescimo) => handleSelectOption(currentStep, optionId, acrescimo)}
+                  selectedOption={selections[currentStep]}
+                  onNext={handleNextStep}
+              />
+          );
+      } else {
+          return (
+              <ResumoPedido
+                  selections={selections}
+                  passos={passos}
+                  onFinalize={handleFinalize}
+              />
+          );
+      }
   };
 
   return (
@@ -18,58 +104,42 @@ const PaginaCriarSneaker = () => {
       <style>
         {`
           body, html, #root {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden; /* remove scroll horizontal e vertical */
-}
-
-.main-container {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0; /* remove padding que pode gerar overflow */
-}
-
-.main-container::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: url(/Front_end/src/assets/sneakers-bg.png);
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  opacity: 0.2;
-  z-index: 0;
-}
-
-          .content {
-            position: relative;
-            z-index: 1;
+            margin: 0;
+            padding: 0;
             width: 100%;
+            height: 100%;
           }
-
-          .header {
+          .main-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            overflow-y: auto;
+          }
+          .main-container::before {
+            content: "";
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
-            z-index: 10;
-            background-color: white;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+            height: 100%;
+            background-image: url(../assets/sneakers-bg.png);
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            opacity: 0.2;
+            z-index: 0;
           }
-
+          .content {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+          }
           .card-container {
             background-color: white;
             border-radius: 1rem;
@@ -77,10 +147,9 @@ const PaginaCriarSneaker = () => {
             width: 100%;
             max-width: 60rem;
             margin: 6rem auto 0 auto;
-            padding: 1.5rem; /* 2rem lateral removido */
+            padding: 1.5rem;
             position: relative;
           }
-
           .card-header-bar {
             position: absolute;
             top: 0;
@@ -91,30 +160,25 @@ const PaginaCriarSneaker = () => {
             border-top-left-radius: 1rem;
             border-top-right-radius: 1rem;
           }
-
           .title-section {
             text-align: center;
             margin-top: 1.5rem;
           }
-
           .title {
             font-size: 1.875rem;
             font-weight: bold;
             color: #FF9D00;
           }
-          
           .subtitle {
             color: #333;
             margin-top: 0.5rem;
           }
-
           .selection-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
             gap: 1rem;
             margin-top: 2rem;
           }
-
           .card-option {
             background-color: white;
             padding: 2rem;
@@ -125,28 +189,28 @@ const PaginaCriarSneaker = () => {
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             border: 2px solid #FF9D00;
           }
-
           .card-option:hover {
             border-color: #00BFFF;
           }
-
           .card-option.selected {
             border-width: 3px;
             border-color: #00BFFF;
           }
-
           .card-number {
             font-size: 2rem;
             font-weight: bold;
             color: #4B5563;
           }
-
+          .card-price {
+            font-size: 1rem;
+            color: #777;
+            margin-top: 0.5rem;
+          }
           .next-button-container {
             display: flex;
             justify-content: center;
             margin-top: 2rem;
           }
-
           .next-button {
             width: 100%;
             background-color: #22C55E;
@@ -157,79 +221,68 @@ const PaginaCriarSneaker = () => {
             border: none;
             transition: background-color 0.3s;
           }
-          
           .next-button:hover {
             background-color: #1A9C4B;
           }
-
+          .next-button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+          }
           @media (min-width: 768px) {
             .next-button {
               width: 33.3333%;
             }
           }
-
-          .snackbar {
-            position: fixed;
-            top: 1rem;
-            right: 1rem;
-            background-color: #10B981;
-            color: white;
-            padding: 0.75rem;
+          .summary-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 2rem;
+          }
+          .summary-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background-color: #f9f9f9;
             border-radius: 0.5rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            z-index: 50;
+            border-left: 5px solid #FF9D00;
+          }
+          .summary-label {
+            font-weight: bold;
+            color: #333;
+          }
+          .summary-value {
+            color: #666;
+          }
+          .summary-total {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background-color: #e6f7ff;
+            border-radius: 0.5rem;
+            border: 1px solid #b3e0ff;
+          }
+          .total-label {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #007bff;
+            margin: 0;
+          }
+          .total-value {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #007bff;
           }
         `}
       </style>
-
       <div id="root">
         <div className="main-container">
           <div className="content">
-            <div className="header">
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <span style={{ color: 'black', fontSize: '1.5rem', fontWeight: 'bold' }}>Sneak</span>
-                <span style={{ color: '#FF9D00', fontSize: '1.5rem', fontWeight: 'bold' }}>Lab</span>
-              </div>
-            </div>
-            
-            <div className="card-container">
-              <div className="card-header-bar"></div>
-
-              <div className="title-section">
-                <h1 className="title">Criar meu Sneaker</h1>
-                <p className="subtitle">Passo 1 de 5: Escolha o seu estilo.</p>
-              </div>
-
-              <div className="selection-grid">
-                <div
-                  onClick={() => handleSelectCard(1)}
-                  className={`card-option ${selectedCard === 1 ? 'selected' : ''}`}
-                >
-                  <span className="card-number">1</span>
-                </div>
-                <div
-                  onClick={() => handleSelectCard(2)}
-                  className={`card-option ${selectedCard === 2 ? 'selected' : ''}`}
-                >
-                  <span className="card-number">2</span>
-                </div>
-                <div
-                  onClick={() => handleSelectCard(3)}
-                  className={`card-option ${selectedCard === 3 ? 'selected' : ''}`}
-                >
-                  <span className="card-number">3</span>
-                </div>
-              </div>
-
-              <div className="next-button-container">
-                <button className="next-button">Próximo</button>
-              </div>
-            </div>
+            {renderCurrentStep()}
           </div>
-
-          {showSnackbar && (
-            <div className="snackbar">{snackbarMessage}</div>
-          )}
         </div>
       </div>
     </>
