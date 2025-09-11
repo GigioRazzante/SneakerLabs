@@ -4,11 +4,33 @@ import React from 'react';
 const ResumoPedido = ({ selections, passos, onFinalize }) => {
   const calcularPrecoTotal = () => {
     let precoTotal = 0;
-    for (const passo in selections) {
-      precoTotal += selections[passo].acrescimo;
-    }
+    // Itera sobre os passos para somar os acréscimos das opções selecionadas
+    passos.forEach((passo, stepIndex) => {
+      const selectedOption = selections[stepIndex];
+      if (selectedOption) {
+        // Acessa o acrescimo da opção selecionada
+        precoTotal += selectedOption.acrescimo;
+      }
+    });
     return precoTotal.toFixed(2);
   };
+
+  // Reestrutura o resumo para exibir os detalhes
+  const resumoDetalhado = [];
+  passos.forEach((passo, stepIndex) => {
+    const selectedOptionData = selections[stepIndex];
+    if (selectedOptionData) {
+      const optionDetails = passo.opcoes.find(opt => opt.id === selectedOptionData.id);
+      if (optionDetails) {
+        resumoDetalhado.push({
+          categoria: passo.titulo.split(':')[1].trim(), // Pega apenas a parte depois do "Passo X de Y:"
+          nome: optionDetails.nome,
+          preco: optionDetails.preco,
+        });
+      }
+    }
+  });
+
 
   return (
     <div className="card-container">
@@ -20,18 +42,12 @@ const ResumoPedido = ({ selections, passos, onFinalize }) => {
       </div>
 
       <div className="summary-list">
-        {Object.keys(selections).map(stepIndex => {
-          const passoInfo = passos[stepIndex];
-          const selectedOption = passoInfo.opcoes.find(
-            (opcao) => opcao.id === selections[stepIndex].id
-          );
-          return (
-            <div key={stepIndex} className="summary-item">
-              <span className="summary-label">{passoInfo.titulo.split(':')[1].trim()}</span>
-              <span className="summary-value">{selectedOption.nome} ({selectedOption.preco})</span>
-            </div>
-          );
-        })}
+        {resumoDetalhado.map((item, index) => (
+          <div key={index} className="summary-item">
+            <span className="summary-label">{item.categoria}:</span>
+            <span className="summary-value">{item.nome} ({item.preco})</span>
+          </div>
+        ))}
       </div>
 
       <div className="summary-total">
@@ -40,7 +56,10 @@ const ResumoPedido = ({ selections, passos, onFinalize }) => {
       </div>
 
       <div className="next-button-container">
-        <button className="next-button" onClick={onFinalize}>
+        <button
+          className="next-button"
+          onClick={onFinalize} // Chama a função assíncrona do PaginaCriarSneaker
+        >
           Enviar Pedido
         </button>
       </div>

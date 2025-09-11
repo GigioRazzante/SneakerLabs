@@ -3,6 +3,9 @@ import React, { useState } from 'react';
 import MenuSelecao from '../components/MenuSelecao';
 import ResumoPedido from '../components/ResumoPedido';
 
+// REMOVIDO: Import de imagens (ex: tenisCasualBg)
+// REMOVIDO: Objeto optionBackgrounds
+
 const passos = [
   {
     titulo: "Passo 1 de 5: Escolha o seu estilo.",
@@ -73,9 +76,43 @@ const PaginaCriarSneaker = () => {
     }
   };
 
-  const handleFinalize = () => {
-      alert("Pedido enviado com sucesso!");
-      console.log("Pedido Finalizado:", selections);
+  const handleFinalize = async () => {
+    const orderDetails = {};
+    passos.forEach((passo, index) => {
+      const selectedOptionId = selections[index]?.id;
+      if (selectedOptionId !== undefined) {
+        const selected = passo.opcoes.find(opt => opt.id === selectedOptionId);
+        if (selected) {
+          orderDetails[passo.titulo.split(':')[0].trim()] = selected.nome;
+        }
+      }
+    });
+
+    console.log("Detalhes do pedido a serem enviados:", orderDetails);
+
+    try {
+      const response = await fetch('http://localhost:3001/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderDetails),
+      });
+
+      if (response.ok) {
+        alert("Pedido enviado para produção com sucesso!");
+        console.log("Resposta do backend:", await response.json());
+        setCurrentStep(0);
+        setSelections({});
+      } else {
+        const errorData = await response.json();
+        alert(`Erro ao finalizar pedido: ${errorData.message || response.statusText}`);
+        console.error("Erro do backend:", errorData);
+      }
+    } catch (error) {
+      alert("Erro de conexão ao finalizar pedido. Verifique se o backend está rodando.");
+      console.error("Erro na requisição:", error);
+    }
   };
 
   const renderCurrentStep = () => {
@@ -86,6 +123,7 @@ const PaginaCriarSneaker = () => {
                   onSelect={(optionId, acrescimo) => handleSelectOption(currentStep, optionId, acrescimo)}
                   selectedOption={selections[currentStep]}
                   onNext={handleNextStep}
+                  // REMOVIDO: optionBackgrounds prop
               />
           );
       } else {
@@ -179,6 +217,7 @@ const PaginaCriarSneaker = () => {
             gap: 1rem;
             margin-top: 2rem;
           }
+          /* Estilos para card-option (restaurados para o padrão sem imagem de fundo) */
           .card-option {
             background-color: white;
             padding: 2rem;
@@ -188,6 +227,9 @@ const PaginaCriarSneaker = () => {
             cursor: pointer;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             border: 2px solid #FF9D00;
+            position: relative; /* Mantido caso precise para algo futuro, mas sem imagem não é crítico */
+            overflow: hidden; /* Mantido caso precise para algo futuro */
+            color: inherit; /* Volta para a cor padrão do texto */
           }
           .card-option:hover {
             border-color: #00BFFF;
@@ -199,13 +241,15 @@ const PaginaCriarSneaker = () => {
           .card-number {
             font-size: 2rem;
             font-weight: bold;
-            color: #4B5563;
+            color: #4B5563; /* Cor padrão do texto */
           }
           .card-price {
             font-size: 1rem;
-            color: #777;
+            color: #777; /* Cor padrão do texto */
             margin-top: 0.5rem;
           }
+          /* REMOVIDO: .card-option::before e .card-overlay */
+
           .next-button-container {
             display: flex;
             justify-content: center;

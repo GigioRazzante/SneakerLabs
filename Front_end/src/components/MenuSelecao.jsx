@@ -1,7 +1,8 @@
 // src/components/MenuSelecao.jsx
 import React from 'react';
+// REMOVIDO: import './MenuSelecao.css'; (este arquivo não é mais necessário sem as imagens de fundo e overlay)
 
-const MenuSelecao = ({ passo, onSelect, selectedOption, onNext }) => {
+const MenuSelecao = ({ passo, onSelect, selectedOption, onNext /* REMOVIDO: optionBackgrounds */ }) => {
   return (
     <div className="card-container">
       <div className="card-header-bar"></div>
@@ -12,16 +13,22 @@ const MenuSelecao = ({ passo, onSelect, selectedOption, onNext }) => {
       </div>
 
       <div className="selection-grid">
-        {passo.opcoes.map((opcao, index) => (
-          <div
-            key={index}
-            onClick={() => onSelect(opcao.id, opcao.acrescimo)}
-            className={`card-option ${selectedOption?.id === opcao.id ? 'selected' : ''}`}
-          >
-            <span className="card-number">{opcao.nome}</span>
-            <p className="card-price">{opcao.preco}</p>
-          </div>
-        ))}
+        {passo.opcoes.map((opcao, index) => {
+          // REMOVIDO: Lógica para background de imagem e overlay
+          
+          return (
+            <div
+              key={index}
+              onClick={() => onSelect(opcao.id, opcao.acrescimo)}
+              className={`card-option ${selectedOption?.id === opcao.id ? 'selected' : ''}`}
+              // REMOVIDO: style={cardStyle}
+            >
+              {/* REMOVIDO: {hasBackground && <div className="card-overlay"></div>} */}
+              <span className="card-number">{opcao.nome}</span>
+              <p className="card-price">{opcao.preco}</p>
+            </div>
+          );
+        })}
       </div>
 
       <div className="next-button-container">
