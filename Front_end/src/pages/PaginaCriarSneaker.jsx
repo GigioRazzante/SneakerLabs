@@ -1,10 +1,6 @@
-// src/pages/PaginaCriarSneaker.jsx
 import React, { useState } from 'react';
 import MenuSelecao from '../components/MenuSelecao';
 import ResumoPedido from '../components/ResumoPedido';
-
-// REMOVIDO: Import de imagens (ex: tenisCasualBg)
-// REMOVIDO: Objeto optionBackgrounds
 
 const passos = [
   {
@@ -123,7 +119,6 @@ const PaginaCriarSneaker = () => {
                   onSelect={(optionId, acrescimo) => handleSelectOption(currentStep, optionId, acrescimo)}
                   selectedOption={selections[currentStep]}
                   onNext={handleNextStep}
-                  // REMOVIDO: optionBackgrounds prop
               />
           );
       } else {
@@ -153,20 +148,6 @@ const PaginaCriarSneaker = () => {
             height: 100%;
             padding: 0;
             overflow-y: auto;
-          }
-          .main-container::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: url(../assets/sneakers-bg.png);
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            opacity: 0.2;
-            z-index: 0;
           }
           .content {
             position: relative;
@@ -217,7 +198,6 @@ const PaginaCriarSneaker = () => {
             gap: 1rem;
             margin-top: 2rem;
           }
-          /* Estilos para card-option (restaurados para o padrão sem imagem de fundo) */
           .card-option {
             background-color: white;
             padding: 2rem;
@@ -227,9 +207,9 @@ const PaginaCriarSneaker = () => {
             cursor: pointer;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             border: 2px solid #FF9D00;
-            position: relative; /* Mantido caso precise para algo futuro, mas sem imagem não é crítico */
-            overflow: hidden; /* Mantido caso precise para algo futuro */
-            color: inherit; /* Volta para a cor padrão do texto */
+            position: relative;
+            overflow: hidden;
+            color: inherit;
           }
           .card-option:hover {
             border-color: #00BFFF;
@@ -241,15 +221,13 @@ const PaginaCriarSneaker = () => {
           .card-number {
             font-size: 2rem;
             font-weight: bold;
-            color: #4B5563; /* Cor padrão do texto */
+            color: #4B5563;
           }
           .card-price {
             font-size: 1rem;
-            color: #777; /* Cor padrão do texto */
+            color: #777;
             margin-top: 0.5rem;
           }
-          /* REMOVIDO: .card-option::before e .card-overlay */
-
           .next-button-container {
             display: flex;
             justify-content: center;

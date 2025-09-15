@@ -1,4 +1,3 @@
-// backend/server.js
 import express from 'express';
 import cors from 'cors'; // Para permitir requisições do seu frontend (domínios diferentes)
 const app = express();
@@ -7,6 +6,9 @@ const PORT = 3001; // Porta do seu backend
 // Middlewares
 app.use(cors()); // Habilita o CORS para permitir requisições do frontend
 app.use(express.json()); // Habilita o Express a ler JSON no corpo das requisições
+
+// --- Simulação de banco de dados em memória (não persistente) Postgree sql dps!!---
+const productionQueue = [];
 
 // --- Lógica de Tradução de Pedido para Caixinha ---
 const translateOrderToBox = (orderDetails) => {
@@ -21,7 +23,7 @@ const translateOrderToBox = (orderDetails) => {
   // Mapeamento para tradução
   const styleMap = {
     "Casual": { blocos: "1 Bloco" },
-    "Corrida": { blocos: "2 Blocos" }, // Mudei "Esportivo" para "Corrida" para combinar com seu frontend
+    "Corrida": { blocos: "2 Blocos" }, 
     "Skate": { blocos: "3 Blocos" },
   };
 
@@ -32,7 +34,7 @@ const translateOrderToBox = (orderDetails) => {
   };
 
   const soladoMap = {
-    "Borracha": { desenho: "Barco" }, // "Borracha comum" virou "Borracha"
+    "Borracha": { desenho: "Barco" }, 
     "EVA": { desenho: "Casa" },
     "Air": { desenho: "Estrela" },
   };
@@ -41,7 +43,7 @@ const translateOrderToBox = (orderDetails) => {
     "Branco": { placa: "Placa Branca" },
     "Preto": { placa: "Placa Preta" },
     "Azul": { placa: "Placa Azul" },
-    "Vermelho": { placa: "Placa Vermelha" }, // Manteve o preço, ajustado na tradução
+    "Vermelho": { placa: "Placa Vermelha" }, 
     "Verde": { placa: "Placa Verde" },
     "Amarelo": { placa: "Placa Amarela" },
   };
@@ -108,26 +110,23 @@ app.post('/api/orders', (req, res) => {
   const boxProductionConfig = translateOrderToBox(orderDetails);
   console.log('Configuração para produção (caixinha):', boxProductionConfig);
 
-  // 2. Simular o envio para produção
-  // Em um ambiente real, você enviaria `boxProductionConfig` para:
-  // - Um banco de dados (MongoDB, PostgreSQL, etc.)
-  // - Uma fila de mensagens (RabbitMQ, Kafka) para ser processado por outro serviço
-  // - Um serviço externo de gerenciamento de produção
-  // Por agora, vamos apenas logar e retornar uma resposta.
-
-  // Exemplo de como você poderia salvar em um array simples (não persistente)
-  // if (!app.locals.productionQueue) {
-  //   app.locals.productionQueue = [];
-  // }
-  // app.locals.productionQueue.push(boxProductionConfig);
-  // console.log("Fila de produção atual:", app.locals.productionQueue);
+  // 2. Salvar o pedido traduzido no nosso "banco de dados" em memória
+  productionQueue.push(boxProductionConfig);
+  console.log('Fila de produção atual:', productionQueue);
 
   res.status(200).json({
     message: "Pedido recebido e enviado para produção.",
     originalOrder: orderDetails,
     productionConfig: boxProductionConfig,
   });
-});// --- Iniciar o servidor ---
+});
+
+// --- Nova Rota para obter todos os pedidos na fila de produção ---
+app.get('/api/productionQueue', (req, res) => {
+  res.status(200).json(productionQueue);
+});
+
+// --- Iniciar o servidor ---
 app.listen(PORT, () => {
   console.log(`Backend rodando na porta ${PORT}`);
 });

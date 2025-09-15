@@ -1,4 +1,3 @@
-// src/components/ResumoPedido.jsx
 import React from 'react';
 
 const ResumoPedido = ({ selections, passos, onFinalize }) => {
