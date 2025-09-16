@@ -14,16 +14,15 @@ const MenuSelecao = ({ passo, onSelect, selectedOption, onNext /* REMOVIDO: opti
 
       <div className="selection-grid">
         {passo.opcoes.map((opcao, index) => {
-          // REMOVIDO: Lógica para background de imagem e overlay
           
           return (
             <div
               key={index}
               onClick={() => onSelect(opcao.id, opcao.acrescimo)}
               className={`card-option ${selectedOption?.id === opcao.id ? 'selected' : ''}`}
-              // REMOVIDO: style={cardStyle}
+            
             >
-              {/* REMOVIDO: {hasBackground && <div className="card-overlay"></div>} */}
+              
               <span className="card-number">{opcao.nome}</span>
               <p className="card-price">{opcao.preco}</p>
             </div>

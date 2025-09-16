@@ -3,139 +3,147 @@ import MenuSelecao from '../components/MenuSelecao';
 import ResumoPedido from '../components/ResumoPedido';
 
 const passos = [
-  {
-    titulo: "Passo 1 de 5: Escolha o seu estilo.",
-    opcoes: [
-      { id: 1, nome: "Casual", preco: "R$ 200", acrescimo: 200 },
-      { id: 2, nome: "Corrida", preco: "R$ 350", acrescimo: 350 },
-      { id: 3, nome: "Skate", preco: "R$ 300", acrescimo: 300 }
-    ],
-  },
-  {
-    titulo: "Passo 2 de 5: Escolha o material.",
-    opcoes: [
-      { id: 1, nome: "Couro", preco: "+ R$ 100", acrescimo: 100 },
-      { id: 2, nome: "Camurça", preco: "+ R$ 120", acrescimo: 120 },
-      { id: 3, nome: "Tecido", preco: "+ R$ 90", acrescimo: 90 }
-    ],
-  },
-  {
-    titulo: "Passo 3 de 5: Escolha o solado.",
-    opcoes: [
-      { id: 1, nome: "Borracha", preco: "+ R$ 40", acrescimo: 40 },
-      { id: 2, nome: "EVA", preco: "+ R$ 60", acrescimo: 60 },
-      { id: 3, nome: "Air", preco: "+ R$ 90", acrescimo: 90 }
-    ],
-  },
-  {
-    titulo: "Passo 4 de 5: Escolha a cor.",
-    opcoes: [
-      { id: 1, nome: "Branco", preco: "+ R$ 20", acrescimo: 20 },
-      { id: 2, nome: "Preto", preco: "+ R$ 30", acrescimo: 30 },
-      { id: 3, nome: "Azul", preco: "+ R$ 25", acrescimo: 25 },
-      { id: 4, nome: "Vermelho", preco: "+ R$ 28", acrescimo: 28 },
-      { id: 5, nome: "Verde", preco: "+ R$ 23", acrescimo: 23 },
-      { id: 6, nome: "Amarelo", preco: "+ R$ 30", acrescimo: 30 }
-    ],
-  },
-  {
-    titulo: "Passo 5 de 5: Adicione detalhes.",
-    opcoes: [
-      { id: 1, nome: "Cadarço normal", preco: "+ R$ 20", acrescimo: 20 },
-      { id: 2, nome: "Cadarço colorido", preco: "+ R$ 30", acrescimo: 30 },
-      { id: 3, nome: "Sem cadarço", preco: "+ R$ 35", acrescimo: 35 }
-    ],
-  },
+    {
+        titulo: "Passo 1 de 5: Escolha o seu estilo.",
+        opcoes: [
+            { id: 1, nome: "Casual", preco: "R$ 200", acrescimo: 200 },
+            { id: 2, nome: "Corrida", preco: "R$ 350", acrescimo: 350 },
+            { id: 3, nome: "Skate", preco: "R$ 300", acrescimo: 300 }
+        ],
+    },
+    {
+        titulo: "Passo 2 de 5: Escolha o material.",
+        opcoes: [
+            { id: 1, nome: "Couro", preco: "+ R$ 100", acrescimo: 100 },
+            { id: 2, nome: "Camurça", preco: "+ R$ 120", acrescimo: 120 },
+            { id: 3, nome: "Tecido", preco: "+ R$ 90", acrescimo: 90 }
+        ],
+    },
+    {
+        titulo: "Passo 3 de 5: Escolha o solado.",
+        opcoes: [
+            { id: 1, nome: "Borracha", preco: "+ R$ 40", acrescimo: 40 },
+            { id: 2, nome: "EVA", preco: "+ R$ 60", acrescimo: 60 },
+            { id: 3, nome: "Air", preco: "+ R$ 90", acrescimo: 90 }
+        ],
+    },
+    {
+        titulo: "Passo 4 de 5: Escolha a cor.",
+        opcoes: [
+            { id: 1, nome: "Branco", preco: "+ R$ 20", acrescimo: 20 },
+            { id: 2, nome: "Preto", preco: "+ R$ 30", acrescimo: 30 },
+            { id: 3, nome: "Azul", preco: "+ R$ 25", acrescimo: 25 },
+            { id: 4, nome: "Vermelho", preco: "+ R$ 28", acrescimo: 28 },
+            { id: 5, nome: "Verde", preco: "+ R$ 23", acrescimo: 23 },
+            { id: 6, nome: "Amarelo", preco: "+ R$ 30", acrescimo: 30 }
+        ],
+    },
+    {
+        titulo: "Passo 5 de 5: Adicione detalhes.",
+        opcoes: [
+            { id: 1, nome: "Cadarço normal", preco: "+ R$ 20", acrescimo: 20 },
+            { id: 2, nome: "Cadarço colorido", preco: "+ R$ 30", acrescimo: 30 },
+            { id: 3, nome: "Sem cadarço", preco: "+ R$ 35", acrescimo: 35 }
+        ],
+    },
 ];
 
 const PaginaCriarSneaker = () => {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [selections, setSelections] = useState({});
+    const [currentStep, setCurrentStep] = useState(0);
+    const [selections, setSelections] = useState({});
 
-  const handleSelectOption = (stepId, optionId, acrescimo) => {
-    setSelections({
-      ...selections,
-      [stepId]: { id: optionId, acrescimo }
-    });
-  };
+    const handleSelectOption = (stepId, optionId, acrescimo) => {
+        setSelections({
+            ...selections,
+            [stepId]: { id: optionId, acrescimo }
+        });
+    };
 
-  const handleNextStep = () => {
-    const selected = selections[currentStep];
-    if (selected) {
-        if (currentStep < passos.length - 1) {
-            setCurrentStep(currentStep + 1);
-        } else {
-            setCurrentStep(passos.length);
-        }
-    } else {
-        alert("Por favor, selecione uma opção para continuar.");
-    }
-  };
-
-  const handleFinalize = async () => {
-    const orderDetails = {};
-    passos.forEach((passo, index) => {
-      const selectedOptionId = selections[index]?.id;
-      if (selectedOptionId !== undefined) {
-        const selected = passo.opcoes.find(opt => opt.id === selectedOptionId);
+    const handleNextStep = () => {
+        const selected = selections[currentStep];
         if (selected) {
-          orderDetails[passo.titulo.split(':')[0].trim()] = selected.nome;
+            if (currentStep < passos.length - 1) {
+                setCurrentStep(currentStep + 1);
+            } else {
+                setCurrentStep(passos.length);
+            }
+        } else {
+            alert("Por favor, selecione uma opção para continuar.");
         }
-      }
-    });
+    };
 
-    console.log("Detalhes do pedido a serem enviados:", orderDetails);
+    const handleFinalize = async () => {
+        const stepMap = {
+            0: "passoUmDeCinco",
+            1: "passoDoisDeCinco",
+            2: "passoTresDeCinco",
+            3: "passoQuatroDeCinco",
+            4: "passoCincoDeCinco",
+        };
 
-    try {
-      const response = await fetch('http://localhost:3001/api/orders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(orderDetails),
-      });
+        const orderDetails = {};
+        passos.forEach((passo, index) => {
+            const selectedOptionId = selections[index]?.id;
+            if (selectedOptionId !== undefined) {
+                const selected = passo.opcoes.find((opt) => opt.id === selectedOptionId);
+                if (selected) {
+                    const newKey = stepMap[index];
+                    orderDetails[newKey] = selected.nome;
+                }
+            }
+        });
 
-      if (response.ok) {
-        alert("Pedido enviado para produção com sucesso!");
-        console.log("Resposta do backend:", await response.json());
-        setCurrentStep(0);
-        setSelections({});
-      } else {
-        const errorData = await response.json();
-        alert(`Erro ao finalizar pedido: ${errorData.message || response.statusText}`);
-        console.error("Erro do backend:", errorData);
-      }
-    } catch (error) {
-      alert("Erro de conexão ao finalizar pedido. Verifique se o backend está rodando.");
-      console.error("Erro na requisição:", error);
-    }
-  };
+        // --- AQUI ESTÁ A PARTE QUE FALTAVA ---
+        try {
+            const response = await fetch('http://localhost:3001/api/orders', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(orderDetails),
+            });
 
-  const renderCurrentStep = () => {
-      if (currentStep < passos.length) {
-          return (
-              <MenuSelecao
-                  passo={passos[currentStep]}
-                  onSelect={(optionId, acrescimo) => handleSelectOption(currentStep, optionId, acrescimo)}
-                  selectedOption={selections[currentStep]}
-                  onNext={handleNextStep}
-              />
-          );
-      } else {
-          return (
-              <ResumoPedido
-                  selections={selections}
-                  passos={passos}
-                  onFinalize={handleFinalize}
-              />
-          );
-      }
-  };
+            if (response.ok) {
+                alert("Pedido enviado para produção com sucesso!");
+                // Opcional: Limpar as seleções ou redirecionar
+                setSelections({});
+                setCurrentStep(0);
+            } else {
+                const errorData = await response.json();
+                alert(`Erro ao enviar pedido: ${errorData.error}`);
+            }
+        } catch (error) {
+            console.error('Erro na requisição:', error);
+            alert("Ocorreu um erro ao enviar o pedido. Por favor, tente novamente.");
+        }
+        // --- FIM DA PARTE QUE FALTAVA ---
+    };
 
-  return (
-    <>
-      <style>
-        {`
+    const renderCurrentStep = () => {
+        if (currentStep < passos.length) {
+            return (
+                <MenuSelecao
+                    passo={passos[currentStep]}
+                    onSelect={(optionId, acrescimo) => handleSelectOption(currentStep, optionId, acrescimo)}
+                    selectedOption={selections[currentStep]}
+                    onNext={handleNextStep}
+                />
+            );
+        } else {
+            return (
+                <ResumoPedido
+                    selections={selections}
+                    passos={passos}
+                    onFinalize={handleFinalize}
+                />
+            );
+        }
+    };
+
+    return (
+        <>
+            <style>
+                {`
           body, html, #root {
             margin: 0;
             padding: 0;
@@ -299,16 +307,16 @@ const PaginaCriarSneaker = () => {
             color: #007bff;
           }
         `}
-      </style>
-      <div id="root">
-        <div className="main-container">
-          <div className="content">
-            {renderCurrentStep()}
-          </div>
-        </div>
-      </div>
-    </>
-  );
+            </style>
+            <div id="root">
+                <div className="main-container">
+                    <div className="content">
+                        {renderCurrentStep()}
+                    </div>
+                </div>
+            </div>
+        </>
+    );
 };
 
 export default PaginaCriarSneaker;
