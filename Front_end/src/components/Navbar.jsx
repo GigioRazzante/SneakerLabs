@@ -1,12 +1,20 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import './Navbar.css'; 
+import { Link, useNavigate } from 'react-router-dom';
+import './Navbar.css';
 
 const Navbar = () => {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    // Aqui você pode adicionar lógica de logout, como remover tokens de autenticação
+    console.log('Usuário deslogado!');
+    navigate('/'); 
+  };
+
   return (
     <nav className="navbar">
       <div className="navbar-left">
-        <Link to="/home" className="navbar-logo-link"> {/* Altere para /home */}
+        <Link to="/home" className="navbar-logo-link">
           <span className="logo-text-black">Sneak</span>
           <span className="logo-text-orange">Lab</span>
         </Link>
@@ -14,7 +22,7 @@ const Navbar = () => {
       <div className="navbar-right">
         <ul className="navbar-links">
           <li>
-            <Link to="/home" className="nav-link">Início</Link> {/* Altere para /home */}
+            <Link to="/home" className="nav-link">Início</Link>
           </li>
           <li>
             <Link to="/catalogo" className="nav-link">Catálogo</Link>
@@ -26,6 +34,9 @@ const Navbar = () => {
             <Link to="/perfil" className="nav-link">Perfil</Link>
           </li>
         </ul>
+        <button className="nav-button" onClick={handleLogout}>
+          Sair
+        </button>
       </div>
     </nav>
   );

@@ -1,49 +1,113 @@
-/* src/components/Navbar.css */
-.navbar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    z-index: 10;
-    background-color: white;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    padding: 1rem 2rem;
-    display: flex;
-    align-items: center;
-    gap: 20%;
+/*
+ * Navbar.css
+ *
+ * Estilos para o componente de navegação principal.
+ * Usando uma abordagem de design responsivo.
+ */
+
+ .navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 10;
+  background-color: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 1rem 2rem;
+  display: flex;
+  align-items: center;
+  /* Alinha a logo à esquerda e os links/botão à direita */
+  /* justify-content:space-between */
+  gap: 24.5%;
+}
+
+.navbar-logo-link {
+  text-decoration: none;
+}
+
+.logo-text-black {
+  color: black;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.logo-text-orange {
+  color: #FF9D00;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+.navbar-left {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+  /* Espaço entre a lista de links e o botão "Sair" */
+  gap: 370px; 
+}
+
+.navbar-links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  /* Espaçamento entre cada link */
+  gap: 40px;
+}
+
+.nav-link {
+  text-decoration: none;
+  color: #555;
+  font-weight: 500;
+  transition: color 0.3s;
+}
+
+.nav-link:hover {
+  color: #FF9D00;
+}
+
+.nav-button {
+  background-color: transparent;
+  color: #FF9D00; 
+  border: 1px solid #FF9D00; 
+  padding: 8px 16px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.nav-button:hover {
+  background-color: #FF9D00;
+  color: #fff;
+}
+
+/* * Media Queries para Responsividade
+* Layout vertical para telas menores que 768px (tablets e smartphones)
+*/
+@media (max-width: 768px) {
+  .navbar {
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem;
   }
-  
+
   .navbar-logo-link {
-    text-decoration: none;
+      margin-bottom: 1rem;
   }
-  
-  .logo-text-black {
-    color: black;
-    font-size: 1.5rem;
-    font-weight: bold;
+
+  .navbar-right {
+      flex-direction: column;
+      width: 100%;
+      gap: 15px;
   }
-  
-  .logo-text-orange {
-    color: #FF9D00;
-    font-size: 1.5rem;
-    font-weight: bold;
-  }
-  
+
   .navbar-links {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    gap: 100px;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      gap: 15px;
   }
-  
-  .nav-link {
-    text-decoration: none;
-    color: #555;
-    font-weight: 500;
-    transition: color 0.3s;
-  }
-  
-  .nav-link:hover {
-    color: #FF9D00;
-  }
+}
