@@ -22,11 +22,15 @@ a:hover {
   color: #535bf2;
 }
 
+/* * CORREÇÃO PRINCIPAL: 
+ * Removemos 'display: flex' e 'place-items: center' para permitir que o 
+ * conteúdo ocupe 100% da largura do navegador e se alinhe ao topo.
+ */
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
+  display: block; /* MUDANÇA: Volta ao comportamento padrão de bloco */
+  place-items: unset; /* MUDANÇA: Remove o alinhamento centralizado */
+  min-width: 100%; /* MUDANÇA: Garante a largura total */
   min-height: 100vh;
 }
 
@@ -65,4 +69,69 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+}
+
+/*
+ * CORREÇÃO PRINCIPAL:
+ * Removemos 'max-width' e 'margin: 0 auto' para que o contêiner principal 
+ * (onde o React monta o seu app) ocupe a largura total.
+ */
+#root {
+  max-width: 100%; /* MUDANÇA: Permite largura total */
+  width: 100%; /* MUDANÇA: Garante largura total */
+  margin: 0; /* MUDANÇA: Remove centralização */
+  padding: 0; /* MUDANÇA: Remove padding que limitava o conteúdo */
+  /* text-align: left; MUDANÇA: Alinha o conteúdo à esquerda */
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+/*
+ * Regras globais para corrigir problemas de layout.
+ * Elas não afetam a sua NavBar, apenas o comportamento da página.
+ */
+*, *::before, *::after {
+  /* 1. Garante que padding e border NÃO aumentem a largura total */
+  box-sizing: border-box; 
+}
+
+html, body {
+  /* 2. Remove o scroll horizontal que aparece quando algo vaza */
+  overflow-x: hidden; 
+  /* 3. Zera as margens padrão do navegador que causam espaçamento */
+  margin: 0;
+  padding: 0;
 }

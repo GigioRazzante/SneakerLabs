@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Navbar from '../components/Navbar'; // IMPORTADO AQUI
 import MenuSelecao from '../components/MenuSelecao';
 import ResumoPedido from '../components/ResumoPedido';
 
@@ -144,175 +145,213 @@ const PaginaCriarSneaker = () => {
         <>
             <style>
                 {`
-          body, html, #root {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-          }
-          .main-container {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            padding: 0;
-            overflow-y: auto;
-          }
-          .content {
-            position: relative;
-            z-index: 1;
-            width: 100%;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-          }
-          .card-container {
-            background-color: white;
-            border-radius: 1rem;
-            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 60rem;
-            margin: 6rem auto 0 auto;
-            padding: 1.5rem;
-            position: relative;
-          }
-          .card-header-bar {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 2rem;
-            background-color: #FF9D00;
-            border-top-left-radius: 1rem;
-            border-top-right-radius: 1rem;
-          }
-          .title-section {
-            text-align: center;
-            margin-top: 1.5rem;
-          }
-          .title {
-            font-size: 1.875rem;
-            font-weight: bold;
-            color: #FF9D00;
-          }
-          .subtitle {
-            color: #333;
-            margin-top: 0.5rem;
-          }
-          .selection-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 1rem;
-            margin-top: 2rem;
-          }
-          .card-option {
-            background-color: white;
-            padding: 2rem;
-            text-align: center;
-            border-radius: 0.75rem;
-            transition: all 0.3s ease-in-out;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            border: 2px solid #FF9D00;
-            position: relative;
-            overflow: hidden;
-            color: inherit;
-          }
-          .card-option:hover {
-            border-color: #00BFFF;
-          }
-          .card-option.selected {
-            border-width: 3px;
-            border-color: #00BFFF;
-          }
-          .card-number {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #4B5563;
-          }
-          .card-price {
-            font-size: 1rem;
-            color: #777;
-            margin-top: 0.5rem;
-          }
-          .next-button-container {
-            display: flex;
-            justify-content: center;
-            margin-top: 2rem;
-          }
-          .next-button {
-            width: 100%;
-            background-color: #22C55E;
-            color: white;
-            font-weight: 600;
-            padding: 0.75rem;
-            border-radius: 9999px;
-            border: none;
-            transition: background-color 0.3s;
-          }
-          .next-button:hover {
-            background-color: #1A9C4B;
-          }
-          .next-button:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
-          }
-          @media (min-width: 768px) {
-            .next-button {
-              width: 33.3333%;
-            }
-          }
-          .summary-list {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            margin-top: 2rem;
-          }
-          .summary-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem;
-            background-color: #f9f9f9;
-            border-radius: 0.5rem;
-            border-left: 5px solid #FF9D00;
-          }
-          .summary-label {
-            font-weight: bold;
-            color: #333;
-          }
-          .summary-value {
-            color: #666;
-          }
-          .summary-total {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 2rem;
-            padding: 1.5rem;
-            background-color: #e6f7ff;
-            border-radius: 0.5rem;
-            border: 1px solid #b3e0ff;
-          }
-          .total-label {
-            font-size: 1.25rem;
-            font-weight: bold;
-            color: #007bff;
-            margin: 0;
-          }
-          .total-value {
-            font-size: 1.25rem;
-            font-weight: bold;
-            color: #007bff;
-          }
-        `}
+                /* VARIÁVEIS GLOBAIS PARA CONSISTÊNCIA */
+                :root {
+                    --laranja-vibrante: #FF9D00;
+                    --preto: #000000;
+                    --azul-selecao: #00BFFF; /* Azul claro/ciano para destaque de seleção */
+                    --verde-confirmar: #22C55E;
+                    --cinza-claro-fundo: #F5F5F5; /* Usado no Catálogo */
+                    --branco: #FFFFFF;
+                    --navbar-height: 5rem; /* Consistente com o padding-top do Catalogo */
+                }
+                
+                /* CORREÇÕES GLOBAIS DE LAYOUT E ROLAGEM */
+                html { overflow-x: hidden; }
+                body, html, #root {
+                    margin: 0;
+                    padding: 0;
+                    width: 100%;
+                    min-height: 100vh;
+                    overflow-x: hidden;
+                    background-color: var(--cinza-claro-fundo); /* Fundo consistente com o Catálogo */
+                }
+                
+                /* Container da Página (Substitui .main-container) */
+                .page-container {
+                    /* Consistente com .catalogo-page-container */
+                    padding-top: var(--navbar-height); 
+                    padding-bottom: 2rem;
+                    width: 100%; 
+                    min-height: 100vh;
+                    display: flex;
+                    justify-content: center; 
+                    align-items: flex-start; 
+                    box-sizing: border-box;
+                }
+
+                .main-content-card {
+                    /* Consistente com .catalogo-main-container */
+                    width: 95%; 
+                    max-width: 960px; /* Um pouco menor que o catálogo, focando no conteúdo da etapa */
+                    background-color: var(--branco);
+                    border-radius: 1.5rem; 
+                    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15); 
+                    padding: 2.5rem;
+                    margin: 1.5rem 0; 
+                    position: relative;
+                }
+
+                /* Layout interno do Card */
+                .card-header-bar {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 1.5rem; /* Ajustado para ser menos intrusivo */
+                    background-color: var(--laranja-vibrante);
+                    border-top-left-radius: 1.5rem;
+                    border-top-right-radius: 1.5rem;
+                }
+                .title-section {
+                    text-align: center;
+                    margin-top: 1.5rem;
+                    margin-bottom: 2rem;
+                }
+                .title {
+                    font-size: 2.2rem;
+                    font-weight: bold;
+                    color: var(--laranja-vibrante);
+                }
+                .subtitle {
+                    color: #555;
+                    margin-top: 0.5rem;
+                    font-size: 1.1rem;
+                }
+                
+                /* Grid de Seleção */
+                .selection-grid {
+                    display: grid;
+                    /* Pelo menos 2 colunas, máximo de 4 em desktop */
+                    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
+                    gap: 1.5rem;
+                    margin-top: 2rem;
+                }
+
+                .card-option {
+                    background-color: var(--cinza-claro-fundo); /* Sutilmente diferente do fundo do card */
+                    padding: 1.5rem;
+                    text-align: center;
+                    border-radius: 0.75rem;
+                    transition: all 0.3s ease-in-out;
+                    cursor: pointer;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                    /* Usa a cor primária para borda padrão */
+                    border: 2px solid var(--laranja-vibrante); 
+                    position: relative;
+                    overflow: hidden;
+                    color: inherit;
+                    height: 100%; /* Garante altura uniforme */
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                }
+                .card-option:hover {
+                    border-color: var(--azul-selecao);
+                    transform: translateY(-3px);
+                    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+                }
+                .card-option.selected {
+                    border-width: 3px;
+                    border-color: var(--azul-selecao);
+                    background-color: #e6f7ff; /* Cor de fundo mais clara para seleção */
+                }
+                .card-number {
+                    font-size: 1.4rem;
+                    font-weight: bold;
+                    color: var(--preto);
+                }
+                .card-price {
+                    font-size: 0.9rem;
+                    color: #777;
+                    margin-top: 0.5rem;
+                    font-weight: 500;
+                }
+
+                /* Botão de Próximo */
+                .next-button-container {
+                    display: flex;
+                    justify-content: center;
+                    margin-top: 3rem;
+                }
+                .next-button {
+                    width: 100%;
+                    max-width: 300px; /* Limita o tamanho em desktop */
+                    background-color: var(--verde-confirmar);
+                    color: white;
+                    font-weight: 600;
+                    padding: 0.8rem;
+                    border-radius: 9999px;
+                    border: none;
+                    transition: background-color 0.3s;
+                    font-size: 1.1rem;
+                }
+                .next-button:hover {
+                    background-color: #1A9C4B;
+                }
+                .next-button:disabled {
+                    background-color: #ccc;
+                    cursor: not-allowed;
+                }
+
+                /* Resumo do Pedido (Ajustes de consistência) */
+                .summary-item {
+                    border-left-color: var(--laranja-vibrante);
+                }
+                .summary-total {
+                    background-color: #fff8e1; /* Fundo diferente para o total */
+                    border: 1px solid var(--laranja-vibrante);
+                }
+                .total-label, .total-value {
+                    color: var(--preto);
+                }
+
+                /* RESPONSIVIDADE */
+                @media (max-width: 768px) {
+                    :root {
+                        --navbar-height: 4.5rem; /* Ajuste para Navbar menor */
+                    }
+                    .page-container {
+                        padding-top: var(--navbar-height);
+                    }
+                    .main-content-card {
+                        padding: 1.5rem;
+                        margin: 1rem 0;
+                    }
+                    .title {
+                        font-size: 1.8rem;
+                    }
+                    .selection-grid {
+                        /* Força 2 colunas para melhor aproveitamento do espaço em tablets */
+                        grid-template-columns: 1fr 1fr; 
+                        gap: 1rem;
+                    }
+                }
+
+                @media (max-width: 480px) {
+                    .main-content-card {
+                        padding: 1rem;
+                        margin: 0.5rem 0;
+                        border-radius: 1rem;
+                    }
+                    .title {
+                        font-size: 1.5rem;
+                    }
+                    .selection-grid {
+                        /* Apenas 1 coluna em celulares muito pequenos */
+                        grid-template-columns: 1fr; 
+                    }
+                }
+                `}
             </style>
-            <div id="root">
-                <div className="main-container">
-                    <div className="content">
-                        {renderCurrentStep()}
-                    </div>
+            
+            <Navbar /> {/* Adicionada a Navbar */}
+
+            <div className="page-container">
+                <div className="main-content-card">
+                    <div className="card-header-bar"></div>
+                    {/* O renderCurrentStep contém o conteúdo do card */}
+                    {renderCurrentStep()}
                 </div>
             </div>
         </>
