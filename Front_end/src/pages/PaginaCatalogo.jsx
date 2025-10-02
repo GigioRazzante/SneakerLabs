@@ -1,7 +1,8 @@
-// src/pages/PaginaCatalogo.jsx (ou onde quer que suas páginas estejam)
+// src/pages/PaginaCatalogo.jsx
 import React from 'react';
-import Navbar from '../components/Navbar'; // Assumindo que o Navbar está em '../components/Navbar'
-import Catalogo from '../components/Catalogo'; // Importa o componente Catalogo
+import Navbar from '../components/Navbar';
+import Catalogo from '../components/Catalogo';
+import Footer from '../components/Footer';
 
 function PaginaCatalogo() {
     return (
@@ -17,43 +18,39 @@ function PaginaCatalogo() {
                     --cinza-claro: #F5F5F5;
                 }
                 
-                /* **CORREÇÃO: Garante que o body use todo o espaço e permita rolagem vertical.** */
+                /* **CORREÇÃO: Remove o background que sobrescrevia o global */
                 body {
                     margin: 0;
                     padding: 0;
                     min-height: 100vh;
                     width: 100%;
+                    /* ⚠️ REMOVIDO: background-color */
                 }
-
 
                 /* Estilos da Página e do Contêiner Principal */
                 .catalogo-page-container {
-                    /* Usar padding-top para compensar o Navbar fixo, se for o caso */
                     padding-top: 5rem; 
                     padding-bottom: 2rem;
-                    /* Ocupa a largura total da tela */
                     width: 100%; 
                     min-height: 100vh;
-                    background-color: var(--cinza-claro); 
+                    /* ⚠️ REMOVIDO: background-color: var(--cinza-claro); */
                     display: flex;
-                    /* Centraliza o container principal horizontalmente */
                     justify-content: center; 
-                    /* Alinha ao topo para começar logo após o Navbar */
                     align-items: flex-start; 
                     box-sizing: border-box;
                 }
 
                 .catalogo-main-container {
-                    width: 95%; /* Use uma porcentagem maior ou 'auto' */
+                    width: 95%;
                     max-width: 1200px;
                     background-color: var(--branco);
                     border-radius: 1.5rem; 
                     box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15); 
                     padding: 2.5rem;
-                    margin-top: 1.5rem; /* Margem do topo para afastar do Navbar */
+                    margin-top: 1.5rem;
                 }
                 
-                /* Estilos do Conteúdo do Catálogo (mantidos de antes) */
+                /* Estilos do Conteúdo do Catálogo */
                 .catalogo-titulo {
                     font-size: 2.5rem;
                     color: var(--laranja-vibrante);
@@ -164,16 +161,17 @@ function PaginaCatalogo() {
                 `}
             </style>
             
-           {/* O Navbar precisa ter um z-index alto no CSS para ficar por cima */}
-           <Navbar /> 
+           <Navbar />
 
-<div className="catalogo-page-container">
-    <div className="catalogo-main-container">
-        <Catalogo />
-    </div>
-</div>
-</>
-);
+            <div className="catalogo-page-container">
+                <div className="catalogo-main-container">
+                    <Catalogo />
+                </div>
+            </div>
+            
+            <Footer/>
+        </>
+    );
 }
 
 export default PaginaCatalogo;

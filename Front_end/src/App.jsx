@@ -1,41 +1,53 @@
-// src/App.jsx (Atualizado)
+// src/App.jsx
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-
-// Importe todos os seus componentes de página
-import PaginaInicial from './pages/PaginaInicial.jsx'; // Nova página inicial deslogada
+import PaginaInicial from './pages/PaginaInicial.jsx';
 import PaginaInicialLog from './pages/PaginaInicialLog.jsx';
 import PaginaCatalogo from './pages/PaginaCatalogo.jsx';
 import PaginaCriarSneaker from './pages/PaginaCriarSneaker.jsx';
 import PaginaPerfil from './pages/PaginaPerfil.jsx';
 import PaginaLogin from './pages/PaginaLogin.jsx';
 import PaginaCadastro from './pages/PaginaCadastro.jsx';
-// Navbar não precisa ser importada aqui, pois é importada em cada página.
 
-// Removemos AppLayout pois as páginas (Inicial e Log) já importam sua própria Navbar.
+// Componente para gerenciar o background baseado na rota
+function BackgroundHandler() {
+  const location = useLocation();
+
+  useEffect(() => {
+    const path = location.pathname;
+    console.log('📍 Rota atual:', path); // DEBUG
+    
+    // Páginas que devem ter fundo branco/cinza
+    if (path === "/login" || path === "/cadastro" || path === "/") {
+      console.log('🎯 Aplicando fundo branco para rota:', path);
+      document.body.classList.add("no-bg");
+    } else {
+      console.log('🎨 Aplicando background da imagem para rota:', path);
+      document.body.classList.remove("no-bg");
+    }
+  }, [location]);
+
+  return null;
+}
 
 function App() {
   return (
     <Router>
+      <BackgroundHandler />
       <Routes>
-        {/* Rota Raiz: Página Inicial DESLOGADA (apenas com NavbarInicial) */}
+        {/* Rota Raiz: Página Inicial DESLOGADA (deve ter fundo branco) */}
         <Route path="/" element={<PaginaInicial />} /> 
         
-        {/* Rotas de Autenticação (Sem Navbar) */}
+        {/* Rotas de Autenticação (Sem Navbar) - devem ter fundo branco */}
         <Route path="/login" element={<PaginaLogin />} />
         <Route path="/cadastro" element={<PaginaCadastro />} />
 
-        {/* Rotas Logadas (Com a Navbar completa) */}
-        {/* Nota: Essas páginas (PaginaInicialLog, Catalogo, etc.) já possuem a Navbar importada */}
+        {/* Rotas Logadas - devem ter background da imagem */}
         <Route path="/home" element={<PaginaInicialLog />} />
         <Route path="/catalogo" element={<PaginaCatalogo />} />
         <Route path="/criar-sneaker" element={<PaginaCriarSneaker />} />
         <Route path="/perfil" element={<PaginaPerfil />} />
-
-        {/* Opcional: Redirecionamento de / para /login se a rota / for PaginaInicial */}
-        {/* Se o PaginaInicial redirecionar, este é o melhor lugar. */}
-
       </Routes>
     </Router>
   );

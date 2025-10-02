@@ -1,8 +1,6 @@
 /*
  * Navbar.css
- *
  * Estilos para o componente de navegação principal.
- * Usando uma abordagem de design responsivo.
  */
 
  .navbar {
@@ -10,19 +8,20 @@
   top: 0;
   left: 0;
   width: 100%;
-  z-index: 10;
+  z-index: 1000;
   background-color: white;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   padding: 1rem 2rem;
   display: flex;
   align-items: center;
-  /* Alinha a logo à esquerda e os links/botão à direita */
-  /* justify-content:space-between */
-  gap: 24.5%;
+  justify-content: space-between;
+  gap: 2rem;
 }
 
 .navbar-logo-link {
   text-decoration: none;
+  display: flex;
+  align-items: center;
 }
 
 .logo-text-black {
@@ -36,17 +35,32 @@
   font-size: 1.5rem;
   font-weight: bold;
 }
-.navbar-left {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
+
+/* Botão Hamburger - Visível apenas em mobile */
+.hamburger-menu {
+  display: none;
+  flex-direction: column;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  gap: 4px;
 }
 
+.hamburger-menu span {
+  width: 25px;
+  height: 3px;
+  background-color: #333;
+  transition: all 0.3s ease;
+  border-radius: 2px;
+}
+
+/* Navbar Right - Layout Desktop */
 .navbar-right {
   display: flex;
   align-items: center;
-  /* Espaço entre a lista de links e o botão "Sair" */
-  gap: 370px; 
+  gap: 2rem;
+  transition: all 0.3s ease;
 }
 
 .navbar-links {
@@ -54,8 +68,8 @@
   margin: 0;
   padding: 0;
   display: flex;
-  /* Espaçamento entre cada link */
-  gap: 40px;
+  gap: 2rem;
+  align-items: center;
 }
 
 .nav-link {
@@ -63,10 +77,62 @@
   color: #555;
   font-weight: 500;
   transition: color 0.3s;
+  padding: 0.5rem 0;
+  position: relative;
+  white-space: nowrap;
 }
 
 .nav-link:hover {
   color: #FF9D00;
+}
+
+/* .nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: #FF9D00;
+  transition: width 0.3s ease;
+} */
+
+.nav-link:hover::after {
+  width: 100%;
+}
+
+/* Container para avatar e botão Sair */
+.navbar-user-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-avatar-link {
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  font-size: 1.1rem;
+  border: 2px solid #FF9D00;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.user-avatar:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
 .nav-button {
@@ -77,6 +143,8 @@
   border-radius: 5px;
   cursor: pointer;
   transition: all 0.3s ease;
+  white-space: nowrap;
+  font-weight: 500;
 }
 
 .nav-button:hover {
@@ -84,30 +152,190 @@
   color: #fff;
 }
 
-/* * Media Queries para Responsividade
-* Layout vertical para telas menores que 768px (tablets e smartphones)
-*/
-@media (max-width: 768px) {
+/* Menu Overlay */
+.menu-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+
+/* ========== RESPONSIVIDADE ========== */
+
+/* Tablet (768px - 1024px) */
+@media (max-width: 1024px) {
   .navbar {
-      flex-direction: column;
-      align-items: center;
-      padding: 1rem;
-  }
-
-  .navbar-logo-link {
-      margin-bottom: 1rem;
-  }
-
-  .navbar-right {
-      flex-direction: column;
-      width: 100%;
-      gap: 15px;
+    padding: 1rem 1.5rem;
+    gap: 1rem;
   }
 
   .navbar-links {
-      flex-direction: column;
-      align-items: center;
-      width: 100%;
-      gap: 15px;
+    gap: 1.5rem;
   }
+
+  .navbar-right {
+    gap: 1.5rem;
+  }
+}
+
+/* Mobile Large (641px - 768px) */
+@media (max-width: 768px) {
+  .navbar {
+    padding: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .hamburger-menu {
+    display: flex;
+    order: 2;
+    margin-left: auto;
+  }
+
+  .navbar-right {
+    position: fixed;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background-color: white;
+    flex-direction: column;
+    padding: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transform: translateY(-100%);
+    opacity: 0;
+    visibility: hidden;
+    gap: 1.5rem;
+  }
+
+  .navbar-right--open {
+    transform: translateY(0);
+    opacity: 1;
+    visibility: visible;
+    top: 100%;
+  }
+
+  .navbar-links {
+    flex-direction: column;
+    width: 100%;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .nav-link {
+    padding: 0.75rem 0;
+    font-size: 1.1rem;
+    width: 100%;
+    display: block;
+  }
+
+  .navbar-user-section {
+    flex-direction: column;
+    width: 100%;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .user-avatar {
+    width: 45px;
+    height: 45px;
+    font-size: 1.2rem;
+  }
+
+  .nav-button {
+    width: 100%;
+    max-width: 200px;
+    padding: 10px 20px;
+    font-size: 1rem;
+  }
+
+  .menu-overlay {
+    display: block;
+  }
+
+  /* Animação do hamburger quando aberto */
+  .navbar-right--open + .hamburger-menu span:nth-child(1) {
+    transform: rotate(45deg) translate(6px, 6px);
+  }
+
+  .navbar-right--open + .hamburger-menu span:nth-child(2) {
+    opacity: 0;
+  }
+
+  .navbar-right--open + .hamburger-menu span:nth-child(3) {
+    transform: rotate(-45deg) translate(6px, -6px);
+  }
+}
+
+/* Mobile Small (até 640px) */
+@media (max-width: 640px) {
+  .navbar {
+    padding: 0.75rem 1rem;
+  }
+
+  .logo-text-black,
+  .logo-text-orange {
+    font-size: 1.3rem;
+  }
+
+  .navbar-right {
+    padding: 1.5rem;
+  }
+
+  .nav-link {
+    font-size: 1rem;
+    padding: 0.6rem 0;
+  }
+
+  .user-avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 1.1rem;
+  }
+
+  .nav-button {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+  }
+}
+
+/* Mobile Extra Small (até 480px) */
+@media (max-width: 480px) {
+  .navbar {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .logo-text-black,
+  .logo-text-orange {
+    font-size: 1.2rem;
+  }
+
+  .navbar-right {
+    padding: 1rem;
+  }
+
+  .nav-link {
+    font-size: 0.95rem;
+  }
+
+  .user-avatar {
+    width: 35px;
+    height: 35px;
+    font-size: 1rem;
+  }
+}
+
+/* Acessibilidade - Foco visível */
+.nav-link:focus,
+.nav-button:focus,
+.hamburger-menu:focus {
+  outline: 2px solid #FF9D00;
+  outline-offset: 2px;
+}
+
+/* Prevenir scroll quando menu mobile está aberto */
+body.menu-open {
+  overflow: hidden;
 }

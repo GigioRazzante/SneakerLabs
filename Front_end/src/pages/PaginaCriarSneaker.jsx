@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import Navbar from '../components/Navbar'; // IMPORTADO AQUI
+import Navbar from '../components/Navbar';
 import MenuSelecao from '../components/MenuSelecao';
 import ResumoPedido from '../components/ResumoPedido';
+import Footer from '../components/Footer';
 
 const passos = [
     {
@@ -94,7 +95,6 @@ const PaginaCriarSneaker = () => {
             }
         });
 
-        // --- AQUI ESTÁ A PARTE QUE FALTAVA ---
         try {
             const response = await fetch('http://localhost:3001/api/orders', {
                 method: 'POST',
@@ -106,7 +106,6 @@ const PaginaCriarSneaker = () => {
 
             if (response.ok) {
                 alert("Pedido enviado para produção com sucesso!");
-                // Opcional: Limpar as seleções ou redirecionar
                 setSelections({});
                 setCurrentStep(0);
             } else {
@@ -117,7 +116,6 @@ const PaginaCriarSneaker = () => {
             console.error('Erro na requisição:', error);
             alert("Ocorreu um erro ao enviar o pedido. Por favor, tente novamente.");
         }
-        // --- FIM DA PARTE QUE FALTAVA ---
     };
 
     const renderCurrentStep = () => {
@@ -149,11 +147,11 @@ const PaginaCriarSneaker = () => {
                 :root {
                     --laranja-vibrante: #FF9D00;
                     --preto: #000000;
-                    --azul-selecao: #00BFFF; /* Azul claro/ciano para destaque de seleção */
+                    --azul-selecao: #00BFFF;
                     --verde-confirmar: #22C55E;
-                    --cinza-claro-fundo: #F5F5F5; /* Usado no Catálogo */
+                    --cinza-claro-fundo: #F5F5F5;
                     --branco: #FFFFFF;
-                    --navbar-height: 5rem; /* Consistente com o padding-top do Catalogo */
+                    --navbar-height: 5rem;
                 }
                 
                 /* CORREÇÕES GLOBAIS DE LAYOUT E ROLAGEM */
@@ -164,12 +162,11 @@ const PaginaCriarSneaker = () => {
                     width: 100%;
                     min-height: 100vh;
                     overflow-x: hidden;
-                    background-color: var(--cinza-claro-fundo); /* Fundo consistente com o Catálogo */
+                    /* ⚠️ REMOVIDO: background-color: var(--cinza-claro-fundo); */
                 }
                 
-                /* Container da Página (Substitui .main-container) */
+                /* Container da Página */
                 .page-container {
-                    /* Consistente com .catalogo-page-container */
                     padding-top: var(--navbar-height); 
                     padding-bottom: 2rem;
                     width: 100%; 
@@ -181,9 +178,8 @@ const PaginaCriarSneaker = () => {
                 }
 
                 .main-content-card {
-                    /* Consistente com .catalogo-main-container */
                     width: 95%; 
-                    max-width: 960px; /* Um pouco menor que o catálogo, focando no conteúdo da etapa */
+                    max-width: 960px;
                     background-color: var(--branco);
                     border-radius: 1.5rem; 
                     box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15); 
@@ -198,7 +194,7 @@ const PaginaCriarSneaker = () => {
                     top: 0;
                     left: 0;
                     width: 100%;
-                    height: 1.5rem; /* Ajustado para ser menos intrusivo */
+                    height: 1.5rem;
                     background-color: var(--laranja-vibrante);
                     border-top-left-radius: 1.5rem;
                     border-top-right-radius: 1.5rem;
@@ -222,26 +218,24 @@ const PaginaCriarSneaker = () => {
                 /* Grid de Seleção */
                 .selection-grid {
                     display: grid;
-                    /* Pelo menos 2 colunas, máximo de 4 em desktop */
                     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
                     gap: 1.5rem;
                     margin-top: 2rem;
                 }
 
                 .card-option {
-                    background-color: var(--cinza-claro-fundo); /* Sutilmente diferente do fundo do card */
+                    background-color: var(--cinza-claro-fundo);
                     padding: 1.5rem;
                     text-align: center;
                     border-radius: 0.75rem;
                     transition: all 0.3s ease-in-out;
                     cursor: pointer;
                     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                    /* Usa a cor primária para borda padrão */
                     border: 2px solid var(--laranja-vibrante); 
                     position: relative;
                     overflow: hidden;
                     color: inherit;
-                    height: 100%; /* Garante altura uniforme */
+                    height: 100%;
                     display: flex;
                     flex-direction: column;
                     justify-content: center;
@@ -254,7 +248,7 @@ const PaginaCriarSneaker = () => {
                 .card-option.selected {
                     border-width: 3px;
                     border-color: var(--azul-selecao);
-                    background-color: #e6f7ff; /* Cor de fundo mais clara para seleção */
+                    background-color: #e6f7ff;
                 }
                 .card-number {
                     font-size: 1.4rem;
@@ -276,7 +270,7 @@ const PaginaCriarSneaker = () => {
                 }
                 .next-button {
                     width: 100%;
-                    max-width: 300px; /* Limita o tamanho em desktop */
+                    max-width: 300px;
                     background-color: var(--verde-confirmar);
                     color: white;
                     font-weight: 600;
@@ -294,12 +288,12 @@ const PaginaCriarSneaker = () => {
                     cursor: not-allowed;
                 }
 
-                /* Resumo do Pedido (Ajustes de consistência) */
+                /* Resumo do Pedido */
                 .summary-item {
                     border-left-color: var(--laranja-vibrante);
                 }
                 .summary-total {
-                    background-color: #fff8e1; /* Fundo diferente para o total */
+                    background-color: #fff8e1;
                     border: 1px solid var(--laranja-vibrante);
                 }
                 .total-label, .total-value {
@@ -309,7 +303,7 @@ const PaginaCriarSneaker = () => {
                 /* RESPONSIVIDADE */
                 @media (max-width: 768px) {
                     :root {
-                        --navbar-height: 4.5rem; /* Ajuste para Navbar menor */
+                        --navbar-height: 4.5rem;
                     }
                     .page-container {
                         padding-top: var(--navbar-height);
@@ -322,7 +316,6 @@ const PaginaCriarSneaker = () => {
                         font-size: 1.8rem;
                     }
                     .selection-grid {
-                        /* Força 2 colunas para melhor aproveitamento do espaço em tablets */
                         grid-template-columns: 1fr 1fr; 
                         gap: 1rem;
                     }
@@ -338,22 +331,21 @@ const PaginaCriarSneaker = () => {
                         font-size: 1.5rem;
                     }
                     .selection-grid {
-                        /* Apenas 1 coluna em celulares muito pequenos */
                         grid-template-columns: 1fr; 
                     }
                 }
                 `}
             </style>
             
-            <Navbar /> {/* Adicionada a Navbar */}
+            <Navbar />
 
             <div className="page-container">
                 <div className="main-content-card">
                     <div className="card-header-bar"></div>
-                    {/* O renderCurrentStep contém o conteúdo do card */}
                     {renderCurrentStep()}
                 </div>
             </div>
+            <Footer/>
         </>
     );
 };

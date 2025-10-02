@@ -6,9 +6,14 @@ const Navbar = () => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    // Aqui você pode adicionar lógica de logout, como remover tokens de autenticação
     console.log('Usuário deslogado!');
     navigate('/'); 
+  };
+
+  // Dados mockados do usuário (substitua pelos dados reais do seu contexto/API)
+  const userData = {
+    username: 'UsuarioSneakerLab',
+    profileColor: '#FF9D00'
   };
 
   return (
@@ -34,9 +39,24 @@ const Navbar = () => {
             <Link to="/perfil" className="nav-link">Perfil</Link>
           </li>
         </ul>
-        <button className="nav-button" onClick={handleLogout}>
-          Sair
-        </button>
+        
+        {/* Container para avatar e botão Sair */}
+        <div className="navbar-user-section">
+          {/* Avatar/Bolinha do usuário */}
+          <Link to="/perfil" className="user-avatar-link">
+            <div 
+              className="user-avatar"
+              style={{ backgroundColor: userData.profileColor }}
+            >
+              {userData.username.charAt(0).toUpperCase()}
+            </div>
+          </Link>
+          
+          {/* Botão Sair */}
+          <button className="nav-button" onClick={handleLogout}>
+            Sair
+          </button>
+        </div>
       </div>
     </nav>
   );

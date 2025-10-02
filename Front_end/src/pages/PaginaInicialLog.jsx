@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 
 const PaginaInicialLog = () => {
     return (
@@ -23,9 +24,9 @@ const PaginaInicialLog = () => {
                     margin: 0;
                     padding: 0;
                     width: 100%;
-                    min-height: 100vh; /* Use min-height em vez de height para permitir que o conteúdo cresça */
+                    min-height: 100vh;
                     overflow-x: hidden;
-                    background-color: var(--cinza-claro); 
+                    /* ⚠️ REMOVIDO: background-color: var(--cinza-claro); */
                 }
 
                 /* Container Principal (Afastamento da Navbar) */
@@ -37,20 +38,18 @@ const PaginaInicialLog = () => {
                     flex-direction: column;
                     align-items: center;
                     justify-content: flex-start;
-                    /* PADDING AJUSTADO PARA NAVBAR FIXA */
                     padding-top: var(--navbar-height); 
-                    padding-bottom: 3rem; /* Espaço no final da página */
+                    padding-bottom: 3rem;
                 }
 
                 .content-logged {
                     position: relative;
                     z-index: 1;
                     width: 100%;
-                    /* Removido min-height: 100vh para permitir rolagem natural do conteúdo */
                     display: flex;
                     flex-direction: column;
                     align-items: center;
-                    justify-content: flex-start; /* Alinha o conteúdo ao topo, não ao centro verticalmente */
+                    justify-content: flex-start;
                     text-align: center;
                     padding: 0 1rem;
                     box-sizing: border-box;
@@ -63,7 +62,7 @@ const PaginaInicialLog = () => {
                 }
 
                 .title-logged {
-                    font-size: 2.8rem; /* Ligeiramente maior para impacto */
+                    font-size: 2.8rem;
                     font-weight: bold;
                     color: var(--cinza-escuro);
                     margin-bottom: 0.5rem;
@@ -80,7 +79,7 @@ const PaginaInicialLog = () => {
                     justify-content: center;
                     gap: 2rem;
                     flex-wrap: wrap;
-                    max-width: 1100px; /* Aumenta o espaço para desktops */
+                    max-width: 1100px;
                     width: 95%;
                     margin: 0 auto;
                 }
@@ -90,11 +89,10 @@ const PaginaInicialLog = () => {
                     flex-direction: column;
                     justify-content: center;
                     align-items: center;
-                    /* Tamanho fixo para desktop, que será ajustado em mobile */
                     width: 250px; 
                     height: 350px; 
                     background-color: var(--branco);
-                    border-radius: 1.5rem; /* Borda mais suave */
+                    border-radius: 1.5rem;
                     box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
                     transition: all 0.3s ease-in-out;
                     text-decoration: none;
@@ -121,7 +119,7 @@ const PaginaInicialLog = () => {
                 .icon-sneaker,
                 .icon-catalog,
                 .icon-profile {
-                    font-size: 5rem; /* Ícones maiores */
+                    font-size: 5rem;
                     margin-bottom: 1.5rem;
                     color: var(--laranja-vibrante);
                 }
@@ -145,7 +143,7 @@ const PaginaInicialLog = () => {
 
                 @media (max-width: 768px) {
                     :root {
-                        --navbar-height: 4.5rem; /* Navbar menor em mobile */
+                        --navbar-height: 4.5rem;
                     }
                     .main-container-logged {
                         padding-top: var(--navbar-height); 
@@ -155,17 +153,15 @@ const PaginaInicialLog = () => {
                         margin: 1.5rem 0;
                     }
                     .card-container-logged {
-                        /* Permite que os cards fiquem um embaixo do outro, mas centralizados */
                         flex-direction: column;
                         align-items: center;
                         gap: 1.5rem;
                     }
                     .card-logged {
-                        /* Ocupa a largura total do container (95%) em mobile, com largura máxima */
                         width: 95%;
                         max-width: 400px;
-                        height: 180px; /* Mais curtos para caberem na tela */
-                        flex-direction: row; /* Conteúdo alinhado lado a lado */
+                        height: 180px;
+                        flex-direction: row;
                         justify-content: space-around;
                         padding: 0 1rem;
                     }
@@ -178,13 +174,13 @@ const PaginaInicialLog = () => {
                     .icon-sneaker,
                     .icon-catalog,
                     .icon-profile {
-                        font-size: 3rem; /* Ícones menores em mobile */
+                        font-size: 3rem;
                         margin-bottom: 0;
                     }
                     .card-text {
                         font-size: 1.1rem;
                         text-align: left;
-                        flex-grow: 1; /* Ocupa o espaço restante */
+                        flex-grow: 1;
                     }
                 }
                 `}
@@ -224,6 +220,7 @@ const PaginaInicialLog = () => {
                     </div>
                 </div>
             </div>
+            <Footer/>
         </>
     );
 };

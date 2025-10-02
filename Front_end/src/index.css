@@ -22,16 +22,21 @@ a:hover {
   color: #535bf2;
 }
 
-/* * CORREÇÃO PRINCIPAL: 
- * Removemos 'display: flex' e 'place-items: center' para permitir que o 
- * conteúdo ocupe 100% da largura do navegador e se alinhe ao topo.
- */
 body {
   margin: 0;
-  display: block; /* MUDANÇA: Volta ao comportamento padrão de bloco */
-  place-items: unset; /* MUDANÇA: Remove o alinhamento centralizado */
-  min-width: 100%; /* MUDANÇA: Garante a largura total */
+  display: block;
+  min-width: 100%;
   min-height: 100vh;
+
+  /* ✅ Background padrão SneakLab */
+  background: url('./assets/sneakerlabBg.png') no-repeat center center fixed;
+  background-size: cover;
+}
+
+/* ✅ Para páginas sem background (Login/Cadastro/Inicial) */
+body.no-bg {
+  background: #f5f5f5 !important;
+  background-color: #f5f5f5 !important;
 }
 
 h1 {
@@ -71,17 +76,23 @@ button:focus-visible {
   }
 }
 
-/*
- * CORREÇÃO PRINCIPAL:
- * Removemos 'max-width' e 'margin: 0 auto' para que o contêiner principal 
- * (onde o React monta o seu app) ocupe a largura total.
- */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
+
 #root {
-  max-width: 100%; /* MUDANÇA: Permite largura total */
-  width: 100%; /* MUDANÇA: Garante largura total */
-  margin: 0; /* MUDANÇA: Remove centralização */
-  padding: 0; /* MUDANÇA: Remove padding que limitava o conteúdo */
-  /* text-align: left; MUDANÇA: Alinha o conteúdo à esquerda */
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
 }
 
 .logo {
@@ -118,20 +129,4 @@ button:focus-visible {
 
 .read-the-docs {
   color: #888;
-}
-/*
- * Regras globais para corrigir problemas de layout.
- * Elas não afetam a sua NavBar, apenas o comportamento da página.
- */
-*, *::before, *::after {
-  /* 1. Garante que padding e border NÃO aumentem a largura total */
-  box-sizing: border-box; 
-}
-
-html, body {
-  /* 2. Remove o scroll horizontal que aparece quando algo vaza */
-  overflow-x: hidden; 
-  /* 3. Zera as margens padrão do navegador que causam espaçamento */
-  margin: 0;
-  padding: 0;
 }
