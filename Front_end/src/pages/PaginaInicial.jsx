@@ -1,8 +1,10 @@
-// src/pages/PaginaInicial.jsx (Página para usuário DESLOGADO)
 import React from 'react';
 import { Link } from 'react-router-dom';
 import NavbarInicial from '../components/NavBarInicial';
 import Footer from '../components/Footer';
+
+// ⚠️ Se você está importando uma imagem local, adicione a importação aqui:
+// import BackgroundImage from '../assets/sua-imagem-de-fundo.jpg'; 
 
 const PaginaInicial = () => {
     return (
@@ -14,15 +16,22 @@ const PaginaInicial = () => {
                     --laranja-vibrante: #FF9D00;
                     --preto: #000000;
                     --cinza-escuro: #333;
-                    --cinza-claro: #f5f5f5; /* CORRIGIDO: usando a mesma cor do no-bg */
+                    --cinza-claro: #f5f5f5;
                     --branco: #FFFFFF;
                     --navbar-height: 6rem;
                 }
                 
-                /* IMPORTANTE: NÃO definir background no body aqui */
-                /* O BackgroundHandler já cuida disso */
+                /* CORREÇÕES GLOBAIS DE LAYOUT E ROLAGEM */
+                body, html, #root {
+                    margin: 0;
+                    padding: 0;
+                    width: 100%;
+                    min-height: 100vh;
+                    overflow-x: hidden;
+                }
                 
                 .main-container-logged {
+                    position: relative;
                     width: 100%;
                     min-height: 100vh;
                     display: flex;
@@ -31,10 +40,21 @@ const PaginaInicial = () => {
                     justify-content: flex-start;
                     padding-top: var(--navbar-height); 
                     padding-bottom: 3rem; 
+                    /* Fundo transparente para mostrar o BG do body */
+                    background-image: none; 
+                    background-color: transparent; 
                 }
 
                 .content-logged {
+                    /* Fundo totalmente transparente */
+                    background-color: transparent; 
+                    border-radius: 0; 
+                    padding: 0; 
+                    margin: 0;
+                    
+                    z-index: 1;
                     width: 100%;
+                    max-width: 1200px;
                     display: flex;
                     flex-direction: column;
                     align-items: center;
@@ -43,16 +63,25 @@ const PaginaInicial = () => {
                     padding: 0 1rem;
                     box-sizing: border-box;
                 }
-
-                .title-section-logged {
-                    margin: 2rem 0;
-                    max-width: 900px;
+                
+                /* =======================================================
+                 * ✅ NOVO ESTILO: Fundo branco semi-transparente para a seção do título
+                 * ======================================================= */
+                .title-section-logged { 
+                    margin: 2rem 0; 
+                    max-width: 900px; 
+                    
+                    /* Define o fundo branco com 70% de opacidade (30% de transparência) */
+                    background-color: rgba(255, 255, 255, 0.7); 
+                    padding: 1rem 2rem; /* Adiciona um padding para o fundo aparecer */
+                    border-radius: 10px; /* Opcional: bordas arredondadas */
+                    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Opcional: Sombra leve */
                 }
 
                 .title-logged {
                     font-size: 2.8rem; 
                     font-weight: bold;
-                    color: var(--cinza-escuro);
+                    color: var(--cinza-escuro); 
                     margin-bottom: 0.5rem;
                 }
 
@@ -61,72 +90,25 @@ const PaginaInicial = () => {
                     color: #555;
                 }
 
-                .card-container-logged {
-                    display: flex;
-                    justify-content: center;
-                    gap: 2rem;
-                    flex-wrap: wrap;
-                    max-width: 1100px; 
-                    width: 95%;
-                    margin: 0 auto;
-                }
-
-                .card-logged {
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: center;
-                    align-items: center;
-                    width: 250px; 
-                    height: 350px; 
-                    background-color: var(--branco);
-                    border-radius: 1.5rem; 
-                    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-                    transition: all 0.3s ease-in-out;
-                    text-decoration: none;
-                    color: inherit;
-                    border: 3px solid var(--laranja-vibrante);
-                    box-sizing: border-box; 
-                }
-
-                .card-logged:hover {
-                    transform: translateY(-8px) scale(1.02);
-                    box-shadow: 0 18px 25px rgba(0, 0, 0, 0.2);
-                }
-
-                .card-content {
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: center;
-                    align-items: center;
-                    width: 100%;
-                    height: 100%;
-                    padding: 1.5rem;
-                }
-
-                .icon-sneaker,
-                .icon-catalog,
-                .icon-profile {
-                    font-size: 5rem; 
-                    margin-bottom: 1.5rem;
-                    color: var(--laranja-vibrante);
-                }
-
-                .card-text {
-                    font-size: 1.4rem;
-                    font-weight: 700;
-                    color: var(--preto);
-                }
+                /* O restante dos estilos (cards, responsividade) permanecem o mesmo */
+                .card-container-logged { display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; max-width: 1100px; width: 95%; margin: 0 auto; }
+                .card-logged { display: flex; flex-direction: column; justify-content: center; align-items: center; width: 250px; height: 350px; background-color: var(--branco); border-radius: 1.5rem; box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1); transition: all 0.3s ease-in-out; text-decoration: none; color: inherit; border: 3px solid var(--laranja-vibrante); box-sizing: border-box; }
+                .card-logged:hover { transform: translateY(-8px) scale(1.02); box-shadow: 0 18px 25px rgba(0, 0, 0, 0.2); }
+                .card-content { display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; height: 100%; padding: 1.5rem; }
+                .icon-sneaker, .icon-catalog, .icon-profile { font-size: 5rem; margin-bottom: 1.5rem; color: var(--laranja-vibrante); }
+                .card-text { font-size: 1.4rem; font-weight: 700; color: var(--preto); }
                 
                 /* RESPONSIVIDADE */
                 @media (max-width: 1024px) {
                     .title-logged { font-size: 2.2rem; }
                     .subtitle-logged { font-size: 1.4rem; }
+                    .title-section-logged { padding: 1rem; }
                 }
 
                 @media (max-width: 768px) {
                     :root { --navbar-height: 4.5rem; }
                     .main-container-logged { padding-top: var(--navbar-height); padding-bottom: 2rem; }
-                    .title-section-logged { margin: 1.5rem 0; }
+                    .title-section-logged { margin: 1.5rem 0; padding: 0.75rem; width: 90%; }
                     .card-container-logged { flex-direction: column; align-items: center; gap: 1.5rem; }
                     .card-logged { 
                         width: 95%; max-width: 400px; height: 180px; 

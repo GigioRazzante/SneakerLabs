@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Navbar from '../components/Navbar';
 import MenuSelecao from '../components/MenuSelecao';
 import ResumoPedido from '../components/ResumoPedido';
+import CarrinhoPedido from '../components/CarrinhoPedido';
 import Footer from '../components/Footer';
 
 const passos = [
@@ -53,6 +54,7 @@ const passos = [
 const PaginaCriarSneaker = () => {
     const [currentStep, setCurrentStep] = useState(0);
     const [selections, setSelections] = useState({});
+    const [pedidos, setPedidos] = useState([]);
 
     const handleSelectOption = (stepId, optionId, acrescimo) => {
         setSelections({
@@ -67,14 +69,48 @@ const PaginaCriarSneaker = () => {
             if (currentStep < passos.length - 1) {
                 setCurrentStep(currentStep + 1);
             } else {
-                setCurrentStep(passos.length);
+                setCurrentStep(passos.length); // Vai para o resumo
             }
         } else {
             alert("Por favor, selecione uma opção para continuar.");
         }
     };
 
-    const handleFinalize = async () => {
+    const handleFinalize = () => {
+        // Criar o objeto do pedido atual
+        const items = Object.keys(selections).map(stepId => {
+            const stepIndex = parseInt(stepId, 10);
+            const selectedOptionId = selections[stepIndex].id;
+            const selectedOption = passos[stepIndex].opcoes.find(opt => opt.id === selectedOptionId);
+            
+            if (selectedOption) {
+                return {
+                    step: stepIndex + 1,
+                    title: passos[stepIndex].titulo.split(':')[1]?.trim() || passos[stepIndex].titulo,
+                    category: passos[stepIndex].titulo.split(':')[0]?.trim(),
+                    name: selectedOption.nome,
+                    price: selectedOption.preco,
+                    acrescimo: selectedOption.acrescimo
+                };
+            }
+            return null;
+        }).filter(item => item !== null);
+
+        const novoPedido = {
+            id: Date.now(), // ID único baseado no timestamp
+            items: items,
+            dataCriacao: new Date().toLocaleString('pt-BR')
+        };
+
+        // Adicionar o novo pedido à lista de pedidos e ir para o carrinho
+        setPedidos([...pedidos, novoPedido]);
+        setSelections({}); // Limpa as seleções atuais
+        setCurrentStep(passos.length + 1); // Vai direto para o carrinho
+    };
+
+    const handleConfirmarPedidos = async () => {
+        if (pedidos.length === 0) return;
+
         const stepMap = {
             0: "passoUmDeCinco",
             1: "passoDoisDeCinco",
@@ -83,41 +119,61 @@ const PaginaCriarSneaker = () => {
             4: "passoCincoDeCinco",
         };
 
-        const orderDetails = {};
-        passos.forEach((passo, index) => {
-            const selectedOptionId = selections[index]?.id;
-            if (selectedOptionId !== undefined) {
-                const selected = passo.opcoes.find((opt) => opt.id === selectedOptionId);
-                if (selected) {
-                    const newKey = stepMap[index];
-                    orderDetails[newKey] = selected.nome;
+        try {
+            // Enviar cada pedido individualmente
+            for (const pedido of pedidos) {
+                const totalAcrescimos = pedido.items.reduce((sum, item) => sum + item.acrescimo, 0);
+                
+                // Formato dos detalhes para o backend
+                const orderDetails = {
+                    pedidoId: pedido.id,
+                    data: pedido.dataCriacao,
+                    total: totalAcrescimos // Adiciona o total
+                };
+
+                // Adicionar os detalhes das escolhas
+                passos.forEach((passo, index) => {
+                    // Busca o item no array 'items' do pedido que corresponde a este passo (index + 1)
+                    const itemDoPedido = pedido.items.find(item => item.step === index + 1);
+                    if (itemDoPedido) {
+                        const newKey = stepMap[index];
+                        orderDetails[newKey] = itemDoPedido.name;
+                    }
+                });
+
+                const response = await fetch('http://localhost:3001/api/orders', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(orderDetails),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Erro ao enviar pedido');
                 }
             }
-        });
 
-        try {
-            const response = await fetch('http://localhost:3001/api/orders', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(orderDetails),
-            });
-
-            if (response.ok) {
-                alert("Pedido enviado para produção com sucesso!");
-                setSelections({});
-                setCurrentStep(0);
-            } else {
-                const errorData = await response.json();
-                alert(`Erro ao enviar pedido: ${errorData.error}`);
-            }
+            alert(`${pedidos.length} pedido(s) enviado(s) para produção com sucesso!`);
+            // Resetar tudo
+            setSelections({});
+            setPedidos([]);
+            setCurrentStep(0);
+            
         } catch (error) {
             console.error('Erro na requisição:', error);
-            alert("Ocorreu um erro ao enviar o pedido. Por favor, tente novamente.");
+            alert(`Ocorreu um erro ao enviar os pedidos: ${error.message}`);
         }
     };
 
+    const handleIncluirMaisPedidos = () => {
+        // Manter os pedidos no carrinho (`pedidos`) e voltar para criar um novo
+        setSelections({}); // Limpar as seleções para o novo pedido
+        setCurrentStep(0); // Voltar ao primeiro passo
+    };
+    
+    // Função utilitária para renderizar o passo atual
     const renderCurrentStep = () => {
         if (currentStep < passos.length) {
             return (
@@ -128,7 +184,8 @@ const PaginaCriarSneaker = () => {
                     onNext={handleNextStep}
                 />
             );
-        } else {
+        } else if (currentStep === passos.length) {
+            // Tela de Resumo, antes de adicionar ao carrinho
             return (
                 <ResumoPedido
                     selections={selections}
@@ -136,7 +193,29 @@ const PaginaCriarSneaker = () => {
                     onFinalize={handleFinalize}
                 />
             );
+        } else if (currentStep === passos.length + 1 && pedidos.length > 0) {
+            // Tela de Carrinho (Múltiplos Pedidos)
+            return (
+                <CarrinhoPedido
+                    pedidos={pedidos}
+                    onConfirmarPedidos={handleConfirmarPedidos}
+                    onIncluirMaisPedidos={handleIncluirMaisPedidos}
+                />
+            );
         }
+        // Fallback ou caso onde não há pedidos no carrinho (pode-se adicionar um estado de carrinho vazio)
+        return (
+             <div style={{textAlign: 'center', marginTop: '5rem'}}>
+                 <h2>Carrinho Vazio</h2>
+                 <button 
+                     className="next-button" 
+                     onClick={() => setCurrentStep(0)}
+                     style={{maxWidth: '250px'}}
+                 >
+                     Começar a Personalizar
+                 </button>
+             </div>
+        );
     };
 
     return (
@@ -162,7 +241,6 @@ const PaginaCriarSneaker = () => {
                     width: 100%;
                     min-height: 100vh;
                     overflow-x: hidden;
-                    /* ⚠️ REMOVIDO: background-color: var(--cinza-claro-fundo); */
                 }
                 
                 /* Container da Página */
@@ -176,7 +254,7 @@ const PaginaCriarSneaker = () => {
                     align-items: flex-start; 
                     box-sizing: border-box;
                 }
-
+    
                 .main-content-card {
                     width: 95%; 
                     max-width: 960px;
@@ -187,7 +265,7 @@ const PaginaCriarSneaker = () => {
                     margin: 1.5rem 0; 
                     position: relative;
                 }
-
+    
                 /* Layout interno do Card */
                 .card-header-bar {
                     position: absolute;
@@ -222,7 +300,7 @@ const PaginaCriarSneaker = () => {
                     gap: 1.5rem;
                     margin-top: 2rem;
                 }
-
+    
                 .card-option {
                     background-color: var(--cinza-claro-fundo);
                     padding: 1.5rem;
@@ -261,7 +339,7 @@ const PaginaCriarSneaker = () => {
                     margin-top: 0.5rem;
                     font-weight: 500;
                 }
-
+    
                 /* Botão de Próximo */
                 .next-button-container {
                     display: flex;
@@ -287,19 +365,210 @@ const PaginaCriarSneaker = () => {
                     background-color: #ccc;
                     cursor: not-allowed;
                 }
-
-                /* Resumo do Pedido */
+    
+                /* ========== ESTILOS PARA O RESUMO DO PEDIDO ========== */
+                .summary-list {
+                    margin: 2rem 0;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1rem;
+                }
+    
                 .summary-item {
-                    border-left-color: var(--laranja-vibrante);
+                    background-color: var(--cinza-claro-fundo);
+                    border-radius: 0.75rem;
+                    padding: 1.5rem;
+                    border-left: 4px solid var(--laranja-vibrante);
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
                 }
-                .summary-total {
-                    background-color: #fff8e1;
-                    border: 1px solid var(--laranja-vibrante);
+    
+                .summary-item-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 0.5rem;
+                    border-bottom: 1px solid #ddd;
+                    padding-bottom: 0.5rem;
                 }
-                .total-label, .total-value {
+    
+                .summary-step {
+                    font-weight: bold;
+                    color: var(--laranja-vibrante);
+                    font-size: 0.9rem;
+                }
+    
+                .summary-category {
+                    font-weight: 600;
+                    color: var(--preto);
+                    font-size: 1rem;
+                }
+    
+                .summary-item-details,
+                .summary-item-price {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-top: 0.5rem;
+                }
+    
+                .summary-label {
+                    font-weight: 500;
+                    color: #666;
+                }
+    
+                .summary-value {
+                    font-weight: 600;
                     color: var(--preto);
                 }
+    
+                .summary-total {
+                    background-color: #fff8e1;
+                    border: 2px solid var(--laranja-vibrante);
+                    border-radius: 0.75rem;
+                    padding: 1.5rem;
+                    margin-top: 2rem;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    font-weight: bold;
+                    font-size: 1.2rem;
+                }
+    
+                .total-label {
+                    color: var(--preto);
+                }
+    
+                .total-value {
+                    color: var(--laranja-vibrante);
+                }
 
+                /* ESTILO ESPECÍFICO PARA O VALOR TOTAL (total-price) - COR LARANJA */
+                .total-price {
+                    color: var(--laranja-vibrante); /* Usando a cor vibrante definida */
+                    font-weight: bold;
+                    /* Se precisar sobrescrever algo mais específico, adicione aqui */
+                }
+                /* ========== FIM DOS ESTILOS DO RESUMO ========== */
+
+                /* ========== ESTILOS PARA O CARRINHO COM MÚLTIPLOS PEDIDOS ========== */
+                .pedidos-list {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 2rem;
+                }
+                .pedido-item {
+                    /* CORRIGIDO: Fundo branco para melhor contraste */
+                    background: var(--branco);
+                    border-radius: 1rem;
+                    padding: 1.5rem;
+                    border: 2px solid var(--laranja-vibrante);
+                }
+                .pedido-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 1rem;
+                    padding-bottom: 0.5rem;
+                    border-bottom: 2px solid var(--laranja-vibrante);
+                }
+                .pedido-title {
+                    color: var(--laranja-vibrante);
+                    margin: 0;
+                    font-size: 1.3rem;
+                }
+                .pedido-date {
+                    color: #666;
+                    font-size: 0.9rem;
+                }
+
+                .cart-item {
+                    display: flex;
+                    justify-content: space-between;
+                    margin-bottom: 0.5rem;
+                    padding-bottom: 0.5rem;
+                    border-bottom: 1px solid #ddd;
+                }
+                
+                .item-category {
+                    /* CORRIGIDO: Define cor preta */
+                    font-weight: 500;
+                    color: var(--preto); 
+                }
+                
+                .item-choice {
+                    /* CORRIGIDO: Define cor preta */
+                    font-weight: 600;
+                    color: var(--preto); 
+                }
+
+                .pedido-divider {
+                    border: none;
+                    border-top: 2px dashed var(--laranja-vibrante);
+                    margin: 2rem 0;
+                }
+                .total-geral {
+                    background-color: #fff8e1;
+                    border: 2px solid var(--laranja-vibrante);
+                    border-radius: 1rem;
+                    padding: 1.5rem;
+                    margin-top: 1rem;
+                }
+                .total-geral-content {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    font-weight: bold;
+                    font-size: 1.3rem;
+                }
+                .total-geral-label {
+                    color: var(--preto);
+                }
+                .total-geral-value {
+                    color: var(--laranja-vibrante);
+                }
+
+                .cart-actions {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1rem;
+                    width: 100%;
+                    max-width: 400px;
+                    margin: 2rem auto 0; 
+                }
+
+                .confirm-button, .add-more-button {
+                    padding: 1rem 2rem;
+                    border: none;
+                    border-radius: 9999px;
+                    font-weight: 600;
+                    font-size: 1.1rem;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    text-align: center;
+                }
+
+                .confirm-button {
+                    background-color: var(--verde-confirmar);
+                    color: white;
+                }
+
+                .confirm-button:hover {
+                    background-color: #1A9C4B;
+                    transform: translateY(-2px);
+                }
+
+                .add-more-button {
+                    background-color: var(--laranja-vibrante);
+                    color: white;
+                }
+
+                .add-more-button:hover {
+                    background-color: #e68a00;
+                    transform: translateY(-2px);
+                }
+                
+                /* ========== FIM DOS ESTILOS DO CARRINHO COM MÚLTIPLOS PEDIDOS ========== */
+                
                 /* RESPONSIVIDADE */
                 @media (max-width: 768px) {
                     :root {
@@ -319,8 +588,46 @@ const PaginaCriarSneaker = () => {
                         grid-template-columns: 1fr 1fr; 
                         gap: 1rem;
                     }
-                }
+                    
+                    /* Responsividade para o resumo */
+                    .summary-item {
+                        padding: 1rem;
+                    }
+                    
+                    .summary-item-header {
+                        flex-direction: column;
+                        align-items: flex-start;
+                        gap: 0.25rem;
+                    }
+                    
+                    .summary-total {
+                        padding: 1rem;
+                        font-size: 1.1rem;
+                    }
 
+                    /* Responsividade para o carrinho com múltiplos pedidos */
+                    .pedido-header {
+                        flex-direction: column;
+                        align-items: flex-start;
+                        gap: 0.5rem;
+                    }
+                
+                    .pedido-item {
+                        padding: 1rem;
+                    }
+                
+                    .total-geral {
+                        padding: 1rem;
+                    }
+                
+                    .total-geral-content {
+                        font-size: 1.1rem;
+                        flex-direction: column;
+                        gap: 0.5rem;
+                        text-align: center;
+                    }
+                }
+    
                 @media (max-width: 480px) {
                     .main-content-card {
                         padding: 1rem;
@@ -333,12 +640,27 @@ const PaginaCriarSneaker = () => {
                     .selection-grid {
                         grid-template-columns: 1fr; 
                     }
+
+                    .image-placeholder {
+                        padding: 2rem 1rem;
+                    }
+
+                    .image-placeholder span {
+                        font-size: 3rem;
+                    }
+
+                    .cart-summary {
+                        padding: 1rem;
+                    }
+                    .cart-actions {
+                        max-width: 100%;
+                    }
                 }
                 `}
             </style>
             
             <Navbar />
-
+    
             <div className="page-container">
                 <div className="main-content-card">
                     <div className="card-header-bar"></div>

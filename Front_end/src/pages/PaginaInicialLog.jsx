@@ -26,7 +26,6 @@ const PaginaInicialLog = () => {
                     width: 100%;
                     min-height: 100vh;
                     overflow-x: hidden;
-                    /* ⚠️ REMOVIDO: background-color: var(--cinza-claro); */
                 }
 
                 /* Container Principal (Afastamento da Navbar) */
@@ -40,6 +39,8 @@ const PaginaInicialLog = () => {
                     justify-content: flex-start;
                     padding-top: var(--navbar-height); 
                     padding-bottom: 3rem;
+                    /* Garantindo a transparência para o background do body/root */
+                    background-color: transparent;
                 }
 
                 .content-logged {
@@ -53,10 +54,18 @@ const PaginaInicialLog = () => {
                     text-align: center;
                     padding: 0 1rem;
                     box-sizing: border-box;
+                    /* Garantindo a transparência para o background do body/root */
+                    background-color: transparent;
                 }
 
                 /* Títulos */
                 .title-section-logged {
+                    /* ✅ ALTERAÇÕES APLICADAS AQUI: Fundo branco 70% opaco */
+                    background-color: rgba(255, 255, 255, 0.7); 
+                    padding: 1rem 2rem; 
+                    border-radius: 10px; 
+                    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+
                     margin: 2rem 0;
                     max-width: 900px;
                 }
@@ -132,12 +141,16 @@ const PaginaInicialLog = () => {
                 
                 /* RESPONSIVIDADE (Tablets e Mobile) */
                 @media (max-width: 1024px) {
-                     .title-logged {
+                    .title-logged {
                         font-size: 2.2rem;
                     }
 
                     .subtitle-logged {
                         font-size: 1.4rem;
+                    }
+                    /* Ajustando padding do título para telas menores */
+                    .title-section-logged { 
+                        padding: 1rem; 
                     }
                 }
 
@@ -151,6 +164,9 @@ const PaginaInicialLog = () => {
                     }
                     .title-section-logged {
                         margin: 1.5rem 0;
+                        /* Ajustando padding e largura para mobile */
+                        padding: 0.75rem;
+                        width: 90%; 
                     }
                     .card-container-logged {
                         flex-direction: column;
