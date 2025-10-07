@@ -33,12 +33,13 @@ const passos = [
     {
         titulo: "Passo 4 de 5: Escolha a cor.",
         opcoes: [
-            { id: 1, nome: "Branco", preco: "+ R$ 20", acrescimo: 20 },
-            { id: 2, nome: "Preto", preco: "+ R$ 30", acrescimo: 30 },
-            { id: 3, nome: "Azul", preco: "+ R$ 25", acrescimo: 25 },
-            { id: 4, nome: "Vermelho", preco: "+ R$ 28", acrescimo: 28 },
-            { id: 5, nome: "Verde", preco: "+ R$ 23", acrescimo: 23 },
-            { id: 6, nome: "Amarelo", preco: "+ R$ 30", acrescimo: 30 }
+            // CORES ADICIONADAS
+            { id: 1, nome: "Branco", preco: "+ R$ 20", acrescimo: 20, background: "#FFFFFF" },
+            { id: 2, nome: "Preto", preco: "+ R$ 30", acrescimo: 30, background: "#000000" },
+            { id: 3, nome: "Azul", preco: "+ R$ 25", acrescimo: 25, background: "#007BFF" },
+            { id: 4, nome: "Vermelho", preco: "+ R$ 28", acrescimo: 28, background: "#DC3545" },
+            { id: 5, nome: "Verde", preco: "+ R$ 23", acrescimo: 23, background: "#28A745" },
+            { id: 6, nome: "Amarelo", preco: "+ R$ 30", acrescimo: 30, background: "#FFC107" }
         ],
     },
     {
@@ -302,7 +303,7 @@ const PaginaCriarSneaker = () => {
                 }
     
                 .card-option {
-                    background-color: var(--cinza-claro-fundo);
+                    /* REMOVIDO: background-color: var(--cinza-claro-fundo); */
                     padding: 1.5rem;
                     text-align: center;
                     border-radius: 0.75rem;
@@ -312,12 +313,48 @@ const PaginaCriarSneaker = () => {
                     border: 2px solid var(--laranja-vibrante); 
                     position: relative;
                     overflow: hidden;
-                    color: inherit;
+                    color: var(--branco); /* Texto branco por padrão, para fundos escuros/imagens */
                     height: 100%;
                     display: flex;
                     flex-direction: column;
                     justify-content: center;
+                    /* Adicionado: fallback para navegadores sem imagem de fundo */
+                    background-color: var(--cinza-claro-fundo);
                 }
+
+                /* NOVO: Overlay para escurecer a imagem e manter o texto legível */
+                .image-overlay {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-color: rgba(0, 0, 0, 0.4); /* Escurece 40% */
+                    z-index: 1; /* Abaixo do texto */
+                    transition: background-color 0.3s ease;
+                }
+                .card-option:hover .image-overlay {
+                    background-color: rgba(0, 0, 0, 0.55);
+                }
+
+                /* NOVO: Ajusta o texto para ficar acima do overlay e garante visibilidade */
+                .card-number, .card-price {
+                    position: relative;
+                    z-index: 2; /* Acima do overlay */
+                    color: inherit; /* Usa a cor definida no card-option (branco) */
+                    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5); 
+                }
+
+                .card-number {
+                    font-size: 1.4rem;
+                    font-weight: bold;
+                }
+                .card-price {
+                    font-size: 0.9rem;
+                    margin-top: 0.5rem;
+                    font-weight: 500;
+                }
+    
                 .card-option:hover {
                     border-color: var(--azul-selecao);
                     transform: translateY(-3px);
@@ -326,20 +363,29 @@ const PaginaCriarSneaker = () => {
                 .card-option.selected {
                     border-width: 3px;
                     border-color: var(--azul-selecao);
-                    background-color: #e6f7ff;
+                    /* Permite que a cor de fundo seja visível, mas adiciona um anel visual */
+                    box-shadow: 0 0 0 4px rgba(0, 191, 255, 0.5);
                 }
-                .card-number {
-                    font-size: 1.4rem;
-                    font-weight: bold;
+
+                /* SOBRESCRITA DE CORES PARA CARDS CLAROS (BRANCO/AMARELO) */
+                .card-option[style*="#FFFFFF"] {
+                    border-color: #ccc;
+                }
+                .card-option[style*="#FFFFFF"] .card-number,
+                .card-option[style*="#FFFFFF"] .card-price,
+                .card-option[style*="#FFC107"] .card-number, 
+                .card-option[style*="#FFC107"] .card-price {
                     color: var(--preto);
+                    text-shadow: none;
                 }
-                .card-price {
-                    font-size: 0.9rem;
-                    color: #777;
-                    margin-top: 0.5rem;
-                    font-weight: 500;
+
+                /* Efeito de seleção em cards de cores escuras: texto branco + anel azul */
+                .card-option.selected[style*="#000000"] .card-number, 
+                .card-option.selected[style*="#000000"] .card-price {
+                    color: var(--branco);
+                    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
                 }
-    
+
                 /* Botão de Próximo */
                 .next-button-container {
                     display: flex;
@@ -444,9 +490,8 @@ const PaginaCriarSneaker = () => {
 
                 /* ESTILO ESPECÍFICO PARA O VALOR TOTAL (total-price) - COR LARANJA */
                 .total-price {
-                    color: var(--laranja-vibrante); /* Usando a cor vibrante definida */
+                    color: var(--laranja-vibrante); 
                     font-weight: bold;
-                    /* Se precisar sobrescrever algo mais específico, adicione aqui */
                 }
                 /* ========== FIM DOS ESTILOS DO RESUMO ========== */
 
@@ -457,7 +502,6 @@ const PaginaCriarSneaker = () => {
                     gap: 2rem;
                 }
                 .pedido-item {
-                    /* CORRIGIDO: Fundo branco para melhor contraste */
                     background: var(--branco);
                     border-radius: 1rem;
                     padding: 1.5rem;
@@ -490,13 +534,11 @@ const PaginaCriarSneaker = () => {
                 }
                 
                 .item-category {
-                    /* CORRIGIDO: Define cor preta */
                     font-weight: 500;
                     color: var(--preto); 
                 }
                 
                 .item-choice {
-                    /* CORRIGIDO: Define cor preta */
                     font-weight: 600;
                     color: var(--preto); 
                 }

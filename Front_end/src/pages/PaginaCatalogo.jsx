@@ -1,4 +1,4 @@
-// src/pages/PaginaCatalogo.jsx
+// src/pages/PaginaCatalogo.jsx (COMPLETO E CORRIGIDO)
 import React from 'react';
 import Navbar from '../components/Navbar';
 import Catalogo from '../components/Catalogo';
@@ -103,18 +103,29 @@ function PaginaCatalogo() {
                 }
 
                 .card-img-placeholder {
-                    width: 100px;
-                    height: 100px;
+                    /* AUMENTADO O TAMANHO AQUI */
+                    width: 150px; 
+                    height: 150px;
                     border-radius: 0.5rem;
-                    background-color: var(--cinza-claro);
+                    /* background-color removido na correção anterior */
                     margin-bottom: 0.75rem;
                     display: flex;
                     justify-content: center;
                     align-items: center;
                 }
+                
+                /* Garante que a imagem preencha o novo tamanho */
+                .card-img-placeholder img {
+                    max-width: 100%;
+                    max-height: 100%;
+                    /* 🚀 CORREÇÃO: Usa 'cover' para ampliar e preencher todo o contêiner */
+                    object-fit: cover;
+                    border-radius: 0.5rem;
+                }
 
                 .card-img-placeholder i {
-                    font-size: 3rem;
+                    /* AUMENTADO O TAMANHO DO ÍCONE AQUI */
+                    font-size: 4rem; 
                     color: var(--cinza-medio); 
                 }
                 
@@ -148,8 +159,9 @@ function PaginaCatalogo() {
                         grid-template-columns: 1fr 1fr; 
                     }
                     .card-img-placeholder {
-                        width: 80px;
-                        height: 80px;
+                        /* AJUSTE PARA RESPONSIVIDADE */
+                        width: 120px;
+                        height: 120px;
                     }
                 }
 
@@ -161,7 +173,7 @@ function PaginaCatalogo() {
                 `}
             </style>
             
-           <Navbar />
+            <Navbar />
 
             <div className="catalogo-page-container">
                 <div className="catalogo-main-container">

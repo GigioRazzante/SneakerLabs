@@ -2,30 +2,51 @@
 
 import React from 'react';
 
-// Dados mockados para o Catálogo (Sem alterações nos dados)
+// 1. ✅ IMPORTAÇÃO DAS IMAGENS DE ESTILO
+import estiloCasual from '../assets/estiloCasual.png';
+import estiloEsportivo from '../assets/estiloEsportivo.png';
+import estiloSkate from '../assets/estiloSkate.png';
+
+// 2. ✅ IMPORTAÇÃO DAS IMAGENS DE MATERIAL
+import materialCouro from '../assets/materialCouro.png';
+import materialTecido from '../assets/materialTecido.png';
+import materialCamurca from '../assets/materialCamurca.png';
+
+// 3. ✅ IMPORTAÇÃO DAS IMAGENS DE SOLADO
+import soladoBorracha from '../assets/soladoBorracha.png';
+import soladoEva from '../assets/soladoEva.png';
+import soladoAir from '../assets/soladoAir.png';
+
+// 4. 🚀 IMPORTAÇÃO DAS NOVAS IMAGENS DE DETALHES/CADARÇOS
+import cadarcoNormal from '../assets/cadarcoNormal.png';
+import cadarcoColorido from '../assets/cadarcoColorido.png';
+import semCadarco from '../assets/semCadarco.png';
+
+
+// Dados mockados para o Catálogo
 const categorias = [
     {
         nome: "Estilos",
         itens: [
-            { id: 1, legenda: "Casual" },
-            { id: 2, legenda: "Esportivo" },
-            { id: 3, legenda: "Skate" },
+            { id: 1, legenda: "Casual", imgSrc: estiloCasual }, 
+            { id: 2, legenda: "Esportivo", imgSrc: estiloEsportivo },
+            { id: 3, legenda: "Skate", imgSrc: estiloSkate },
         ]
     },
     {
         nome: "Materiais",
         itens: [
-            { id: 4, legenda: "Couro" },
-            { id: 5, legenda: "Lona" },
-            { id: 6, legenda: "Sintético" },
+            { id: 4, legenda: "Couro", imgSrc: materialCouro },
+            { id: 5, legenda: "Tecido", imgSrc: materialTecido }, 
+            { id: 6, legenda: "Camurça", imgSrc: materialCamurca }, 
         ]
     },
     {
         nome: "Solado",
         itens: [
-            { id: 7, legenda: "Borracha" },
-            { id: 8, legenda: "EVA" },
-            { id: 9, legenda: "PU" },
+            { id: 7, legenda: "Borracha", imgSrc: soladoBorracha },
+            { id: 8, legenda: "EVA", imgSrc: soladoEva },
+            { id: 9, legenda: "Air", imgSrc: soladoAir },
         ]
     },
     {
@@ -40,14 +61,16 @@ const categorias = [
         ]
     },
     {
-        nome: "Detalhes",
+        nome: "Cadarços", // 5. 🚀 Mudei a categoria para "Cadarços"
         itens: [
-            { id: 16, legenda: "Costura" }, 
-            { id: 17, legenda: "Logo" },    
-            { id: 18, legenda: "Etiqueta" }, 
+            // 5. 🚀 ATRIBUIÇÃO DAS IMAGENS DE CADARÇOS
+            { id: 16, legenda: "Normal", imgSrc: cadarcoNormal }, 
+            { id: 17, legenda: "Colorido", imgSrc: cadarcoColorido },    
+            { id: 18, legenda: "Sem Cadarço", imgSrc: semCadarco }, 
         ]
     },
 ];
+
 
 // Sub-componente para renderizar um Card
 const CardCatalogo = ({ item }) => {
@@ -55,14 +78,10 @@ const CardCatalogo = ({ item }) => {
     const textColor = item.corTexto || '#000000';
     const borderColor = item.corBorda || 'transparent'; 
     
-    // Identifica se é um card de Cor. 
-    // É um card de cor se tiver a propriedade 'corFundo' definida.
-    const isColorCard = !!item.corFundo; 
+    const isColorCard = !!item.corFundo; // Se tem corFundo, é um card de Cor.
+    const hasImage = !!item.imgSrc; // Se tem imgSrc, é um card que usa imagem.
 
-    // Usado apenas para definir a cor do ícone no caso de fundo claro (não-cores)
-    const isLightBackground = backgroundColor === '#FFFFFF' || backgroundColor === '#F5F5F5' || backgroundColor === '#FFC107'; 
-
-    // Extrai apenas o nome da cor (se houver o '–')
+    // Extrai apenas o nome (para cores) ou usa a legenda completa (para outros)
     const corApenas = item.legenda.includes('–') 
         ? item.legenda.split('–')[0].trim() 
         : item.legenda;
@@ -70,28 +89,42 @@ const CardCatalogo = ({ item }) => {
     return (
         <div 
             className="catalogo-card" 
-            // Para cards de cor, o background será a cor
             style={{ 
                 backgroundColor: isColorCard ? backgroundColor : '#FFFFFF', 
                 border: `1px solid ${borderColor}` 
             }}
         >
             
-            {/* ✅ MODIFICAÇÃO: Renderiza o placeholder APENAS se NÃO for um Card de Cor */}
+            {/* Lógica de Renderização de Ícone / Imagem */}
             {!isColorCard && (
                 <div 
                     className="card-img-placeholder" 
                     style={{ 
-                        // O placeholder agora usa uma cor sólida para preencher o espaço da imagem
-                        backgroundColor: '#A6A6A6',
+                        // Cor de fundo do placeholder: transparente se tiver imagem, cinza se for fallback.
+                        backgroundColor: hasImage ? 'transparent' : '#A6A6A6',
                         border: 'none', 
                     }}
                 >
-                    {/* Ícone simples para representação */}
-                    <i 
-                        className="fa-solid fa-shoe-prints" 
-                        style={{ color: '#FFFFFF' }} // Ícone branco contra o cinza do placeholder
-                    ></i>
+                    {/* Renderiza a imagem real OU o placeholder de ícone */}
+                    {hasImage ? (
+                        <img 
+                            src={item.imgSrc} 
+                            alt={`Imagem do detalhe ${item.legenda}`} 
+                            style={{ 
+                                width: '100%', 
+                                height: '100%', 
+                                // O objectFit: 'cover' está definido no CSS global da PaginaCatalogo
+                                objectFit: 'cover', 
+                                borderRadius: '0.5rem'
+                            }}
+                        />
+                    ) : (
+                        /* Ícone simples para as outras seções (que não possuem imagem) */
+                        <i 
+                            className="fa-solid fa-shoe-prints" 
+                            style={{ color: '#FFFFFF' }}
+                        ></i>
+                    )}
                 </div>
             )}
             
@@ -113,7 +146,6 @@ const Catalogo = () => {
                     <h2 className="secao-titulo">{categoria.nome}</h2>
                     <div className="catalogo-grid">
                         {categoria.itens.map(item => (
-                            // Note que agora o CardCatalogo usa a cor do item se for cor, ou branco se for outra coisa.
                             <CardCatalogo key={item.id} item={item} />
                         ))}
                     </div>
