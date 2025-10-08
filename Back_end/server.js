@@ -1,9 +1,15 @@
 import express from 'express';
 import cors from 'cors';
 import { Pool } from 'pg';
+import fetch from 'node-fetch'; // Certifique-se de que 'node-fetch' está instalado se você não estiver usando Node.js 18+
 
 const app = express();
 const PORT = 3001;
+
+// ATENÇÃO: Se o seu backend for exposto publicamente, use o IP externo
+// Por enquanto, usaremos localhost e a porta do backend.
+const BACKEND_URL = `http://localhost:${PORT}`; 
+const PROD_API_URL = 'http://52.1.197.112:3000/queue/items';
 
 app.use(cors());
 app.use(express.json());
@@ -27,15 +33,15 @@ const generateBoxPayload = (orderDetails) => {
     };
 
     const materialMap = {
-        "Couro": 1, // Bloco Azul
-        "Camurça": 2, // Bloco Vermelho
-        "Tecido": 3, // Bloco Preto
+        "Couro": 1, 
+        "Camurça": 2, 
+        "Tecido": 3, 
     };
 
     const soladoMap = {
-        "Borracha": "1", // Barco
-        "EVA": "2", // Casa
-        "Air": "3", // Estrela
+        "Borracha": "1", 
+        "EVA": "2", 
+        "Air": "3", 
     };
 
     const corMap = {
@@ -60,7 +66,7 @@ const generateBoxPayload = (orderDetails) => {
     const cor = orderDetails.passoQuatroDeCinco;
     const detalhes = orderDetails.passoCincoDeCinco;
 
-    const numBlocos = styleMap[estilo].numBlocos;
+    const numBlocos = styleMap[estilo]?.numBlocos || 1; // Garante um default
     const corMaterial = materialMap[material];
     const padraoSolado = soladoMap[solado];
     const corLamina = corMap[cor];
@@ -79,86 +85,218 @@ const generateBoxPayload = (orderDetails) => {
             padrao3: padraoSolado,
         };
 
-        // Adiciona as lâminas com base na escolha de "Detalhes" e "Cor"
-        if (numLaminas >= 1) {
-            bloco.lamina1 = corLamina;
-        }
-        if (numLaminas >= 2) {
-            bloco.lamina2 = corLamina;
-        }
-        if (numLaminas >= 3) {
-            bloco.lamina3 = corLamina;
-        }
+        if (numLaminas >= 1) { bloco.lamina1 = corLamina; }
+        if (numLaminas >= 2) { bloco.lamina2 = corLamina; }
+        if (numLaminas >= 3) { bloco.lamina3 = corLamina; }
         
         order[`bloco${i}`] = bloco;
     }
 
     return {
         payload: {
-            orderId: `SNEAKER-LAB-${Date.now()}`,
+            // Gera um ID de produção temporário. O ID real será o retornado pela máquina
+            orderId: `SNEAKER-TEMP-${Date.now()}`, 
             sku: "KIT-01",
             order: order,
         },
-        callbackUrl: "http://localhost:3333/callback"
+        // O callbackUrl é ESSENCIAL para o rastreio da Sprint 02
+        callbackUrl: `${BACKEND_URL}/api/callback` 
     };
 };
 
-// --- Endpoint da API para Pedidos ---
+// =======================================================================
+// ROTA 1: RECEBIMENTO DO CARRINHO (FATIAMENTO E ENVIO) - REFATORADO
+// =======================================================================
 app.post('/api/orders', async (req, res) => {
-    const orderDetails = req.body;
+    // Esperamos um array de produtos do carrinho
+    const { clienteId = 1, produtos } = req.body; // clienteId é um placeholder se não tiver auth
 
-    if (!orderDetails || Object.keys(orderDetails).length === 0) {
-        return res.status(400).json({ message: "Nenhum detalhe de pedido recebido." });
+    if (!produtos || produtos.length === 0) {
+        return res.status(400).json({ message: "Nenhum produto no carrinho para processar." });
     }
 
-    console.log('Pedido recebido do frontend:', orderDetails);
-
-    const estilo = orderDetails.passoUmDeCinco;
-    const material = orderDetails.passoDoisDeCinco;
-    const solado = orderDetails.passoTresDeCinco;
-    const cor = orderDetails.passoQuatroDeCinco;
-    const detalhes = orderDetails.passoCincoDeCinco;
-
     try {
-        // 1. Salvar o pedido original no banco de dados
-        const result = await pool.query(
-            'INSERT INTO pedidos (estilo, material, solado, cor, detalhes) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-            [estilo, material, solado, cor, detalhes]
+        // 1. Salvar o Pedido Mestre (Tabela 'pedidos')
+        const pedidoMestreResult = await pool.query(
+            'INSERT INTO pedidos (cliente_id, status_geral) VALUES ($1, $2) RETURNING id',
+            [clienteId, 'PENDENTE']
         );
-        console.log('Pedido salvo no banco de dados:', result.rows[0]);
+        const pedidoId = pedidoMestreResult.rows[0].id;
+        
+        const produtosEnviados = [];
 
-        // 2. Traduzir o pedido para o novo formato de payload da caixa
-        const boxProductionPayload = generateBoxPayload(orderDetails);
-        console.log('Payload para produção (caixinha):', JSON.stringify(boxProductionPayload, null, 2));
+        // 2. FATIAMENTO E ENVIO (Iterar sobre cada produto do carrinho)
+        for (const produto of produtos) {
+            const orderDetails = produto.configuracoes;
 
-        // 3. Enviar o payload para o servidor de produção
-        const productionResponse = await fetch('http://52.1.197.112:3000/queue/items', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(boxProductionPayload),
-        });
+            // 2.1. Salvar o Produto Individual (Tabela 'produtos_do_pedido')
+            const produtoSalvoResult = await pool.query(
+                `INSERT INTO produtos_do_pedido (
+                    pedido_id, estilo, material, solado, cor, detalhes, status_producao
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+                [
+                    pedidoId, 
+                    orderDetails.passoUmDeCinco, 
+                    orderDetails.passoDoisDeCinco,
+                    orderDetails.passoTresDeCinco,
+                    orderDetails.passoQuatroDeCinco,
+                    orderDetails.passoCincoDeCinco,
+                    'FILA' // Status inicial
+                ]
+            );
+            const produtoDbId = produtoSalvoResult.rows[0].id;
+            
+            // 2.2. Traduzir e Enviar para Produção
+            const boxProductionPayload = generateBoxPayload(orderDetails);
+            
+            console.log(`[Pedido ${pedidoId}] Enviando produto DB ID ${produtoDbId} para produção...`);
 
-        if (!productionResponse.ok) {
-            throw new Error(`Erro na API de produção: ${productionResponse.statusText}`);
+            const productionResponse = await fetch(PROD_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(boxProductionPayload),
+            });
+
+            if (!productionResponse.ok) {
+                 // Em caso de falha de envio, atualiza o status do produto
+                 await pool.query('UPDATE produtos_do_pedido SET status_producao = $1 WHERE id = $2', ['FALHA_ENVIO', produtoDbId]);
+                 throw new Error(`Erro ao enviar produto ${produtoDbId}: ${productionResponse.statusText}`);
+            }
+
+            const productionData = await productionResponse.json();
+            const rastreioId = productionData.id;
+
+            // 2.3. Salvar o ID de Rastreio da Máquina (CRUCIAL PARA O SPRINT 02)
+            await pool.query(
+                'UPDATE produtos_do_pedido SET id_rastreio_maquina = $1 WHERE id = $2',
+                [rastreioId, produtoDbId]
+            );
+
+            produtosEnviados.push({ 
+                produtoDbId, 
+                rastreioId,
+                status: 'ENVIADO'
+            });
         }
 
-        const productionData = await productionResponse.json();
-        console.log('Resposta da API de produção:', productionData);
-
-        // 4. Enviar a resposta de sucesso de volta para o front-end
+        // 3. Resposta de sucesso para o Frontend
         res.status(200).json({
-            message: "Pedido recebido, salvo e enviado para produção.",
-            originalOrder: orderDetails,
-            productionId: productionData.id, // ID para rastrear o pedido
+            message: `Pedido #${pedidoId} recebido e ${produtosEnviados.length} produtos enviados para produção.`,
+            pedidoId: pedidoId,
+            produtosEnviados: produtosEnviados,
         });
 
     } catch (err) {
-        console.error('Erro ao processar o pedido:', err.message);
-        res.status(500).json({ error: 'Erro ao processar o pedido. Por favor, tente novamente.' });
+        console.error('Erro ao processar o carrinho:', err.message);
+        res.status(500).json({ error: 'Erro ao processar o carrinho. Por favor, tente novamente.' });
     }
 });
+
+
+// =======================================================================
+// ROTA 2: CALLBACK DA MÁQUINA DE PRODUÇÃO (RASTREABILIDADE) - NOVO
+// =======================================================================
+app.post('/api/callback', async (req, res) => {
+    const { id, status, slot } = req.body; // id é o id_rastreio_maquina
+    
+    // Verificação básica do payload
+    if (!id || status !== 'FINISHED' || !slot) {
+        console.warn('Callback recebido inválido ou produto não finalizado:', req.body);
+        return res.status(200).send({ message: "Payload recebido, mas ignorado (não finalizado)." });
+    }
+
+    try {
+        console.log(`[CALLBACK] Produto ID Rastreio ${id} pronto. Slot: ${slot}`);
+
+        // 1. Encontre o produto no seu BD pelo ID de Rastreio e atualize o status e slot.
+        const updateResult = await pool.query(
+            'UPDATE produtos_do_pedido SET status_producao = $1, slot_expedicao = $2 WHERE id_rastreio_maquina = $3 RETURNING pedido_id',
+            ['PRONTO', slot, id]
+        );
+
+        if (updateResult.rows.length === 0) {
+            console.warn(`Produto com ID de rastreio ${id} não encontrado no banco de dados.`);
+            return res.status(404).send({ error: 'Produto não rastreado encontrado.' });
+        }
+        
+        const pedidoId = updateResult.rows[0].pedido_id;
+
+        // 2. Verifique o Status do Pedido Mestre (Lógica de Consolidação)
+        
+        // Conta quantos produtos do pedido ainda não estão PRONTOS
+        const statusCheck = await pool.query(
+            'SELECT count(*) FROM produtos_do_pedido WHERE pedido_id = $1 AND status_producao != $2',
+            [pedidoId, 'PRONTO']
+        );
+        
+        const produtosPendentes = parseInt(statusCheck.rows[0].count, 10);
+        
+        if (produtosPendentes === 0) {
+            // Todos os produtos estão PRONTOS! O Pedido Mestre foi concluído.
+            await pool.query(
+                'UPDATE pedidos SET status_geral = $1 WHERE id = $2',
+                ['CONCLUIDO', pedidoId]
+            );
+            console.log(`[CONCLUIDO] Pedido Mestre #${pedidoId} finalizado.`);
+
+            // TODO: Aqui você implementaria a Notificação para o cliente (e-mail, etc.)
+        } else {
+            console.log(`[AGUARDANDO] Pedido Mestre #${pedidoId} aguardando ${produtosPendentes} produto(s).`);
+        }
+
+        res.status(200).send({ message: "Callback processado com sucesso. Status do pedido atualizado." });
+
+    } catch (err) {
+        console.error('Erro ao processar callback:', err.message);
+        res.status(500).send({ error: 'Erro interno ao processar callback.' });
+    }
+});
+
+
+// =======================================================================
+// ROTA 3: BUSCA DE STATUS DO PEDIDO (Para o Frontend Rastrear) - NOVO
+// =======================================================================
+app.get('/api/orders/:id/status', async (req, res) => {
+    const pedidoId = req.params.id;
+
+    try {
+        // 1. Obter o status geral do pedido
+        const pedidoResult = await pool.query(
+            'SELECT status_geral FROM pedidos WHERE id = $1',
+            [pedidoId]
+        );
+
+        if (pedidoResult.rows.length === 0) {
+            return res.status(404).json({ message: "Pedido não encontrado." });
+        }
+        
+        const statusGeral = pedidoResult.rows[0].status_geral;
+
+        // 2. Obter o status e slot de cada produto fatiado
+        const produtosResult = await pool.query(
+            'SELECT estilo, material, status_producao, slot_expedicao FROM produtos_do_pedido WHERE pedido_id = $1',
+            [pedidoId]
+        );
+
+        res.status(200).json({
+            pedidoId: pedidoId,
+            statusGeral: statusGeral,
+            produtos: produtosResult.rows.map(row => ({
+                configuracao: `${row.estilo} / ${row.material} / ...`, // Simplificado para exibição
+                status: row.status_producao,
+                slotExpedicao: row.slot_expedicao
+            }))
+        });
+
+    } catch (err) {
+        console.error('Erro ao buscar status do pedido:', err.message);
+        res.status(500).json({ error: 'Erro ao buscar status do pedido.' });
+    }
+});
+
 
 // --- Iniciar o servidor ---
 app.listen(PORT, () => {
     console.log(`Backend rodando na porta ${PORT}`);
+    console.log(`Callback URL para máquina: ${BACKEND_URL}/api/callback`);
 });

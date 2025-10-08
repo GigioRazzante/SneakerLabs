@@ -255,7 +255,7 @@ const PaginaCadastro = () => {
                             </button>
                         </form>
                         <p className="register-link-text">
-                            Já possui uma conta? <Link to="/" className="register-link">clique aqui</Link>
+                            Já possui uma conta? <Link to="/login" className="register-link">clique aqui</Link>
                         </p>
                     </div>
                 </div>

@@ -36,8 +36,22 @@ const AlterarDadosUsuario = () => {
         console.log("Dados de usuário a serem salvos:", userData);
         console.log("Nova Senha:", newPassword);
         console.log('Dados atualizados com sucesso!');
+        // Aqui você adicionaria a lógica real de atualização no backend/autenticação
         setCurrentPassword('');
         setNewPassword('');
+    };
+
+    // FUNÇÕES PARA OS NOVOS BOTÕES DE NAVEGAÇÃO
+    const handleAccessOrders = () => {
+        // Lógica de navegação para MeusPedidos.jsx
+        console.log('>>> Ação: Navegar para a página MeusPedidos.jsx');
+        // Ex: navigate('/meus-pedidos');
+    };
+
+    const handleTrackOrder = () => {
+        // Lógica de navegação para TelaDeRastreamento.jsx
+        console.log('>>> Ação: Navegar para a página TelaDeRastreamento.jsx');
+        // Ex: navigate('/rastreamento');
     };
 
     return (
@@ -129,6 +143,8 @@ const AlterarDadosUsuario = () => {
                 .color-option.selected {
                     transform: scale(1.2);
                     border: 2px solid #FF9D00;
+                    outline: 2px solid #FF9D00; /* Para acessibilidade e destaque */
+                    outline-offset: 1px;
                 }
 
                 .form-grid {
@@ -213,6 +229,44 @@ const AlterarDadosUsuario = () => {
                 .save-button:active {
                     transform: scale(0.98);
                 }
+                
+                /* Estilos para os Novos Botões */
+                .secondary-button-group {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1rem;
+                    margin-top: 2rem;
+                    padding-top: 2rem;
+                    border-top: 1px solid #eee;
+                    align-items: center;
+                }
+
+                .secondary-button {
+                    width: 100%;
+                    max-width: 300px;
+                    padding: 0.75rem 2rem;
+                    background: transparent;
+                    color: #1A1A1A;
+                    border: 2px solid #1A1A1A;
+                    border-radius: 2rem;
+                    font-weight: 600;
+                    font-size: 1rem;
+                    cursor: pointer;
+                    transition: all 0.3s;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                }
+
+                .secondary-button:hover {
+                    background: #1A1A1A;
+                    color: white;
+                    transform: scale(1.02);
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                }
+
+                .secondary-button:active {
+                    transform: scale(0.98);
+                }
+
 
                 @media (max-width: 768px) {
                     .profile-card-container {
@@ -234,17 +288,17 @@ const AlterarDadosUsuario = () => {
             </style>
 
             <div className="profile-card-container">
-                <div className="card-header-bar"></div>
+                <div className="card-header-bar" style={{ backgroundColor: userData.profileColor }}></div>
                 
                 <div className="profile-title-section">
-                    <h1 className="profile-main-title">Configurações do Perfil</h1>
+                    <h1 className="profile-main-title" style={{ color: userData.profileColor }}>Configurações do Perfil</h1>
                 </div>
 
                 {/* Seção do Avatar */}
                 <div className="avatar-section">
                     <div 
                         className="avatar"
-                        style={{ backgroundColor: userData.profileColor }}
+                        style={{ backgroundColor: userData.profileColor, borderColor: userData.profileColor }}
                     >
                         {userData.username.charAt(0).toUpperCase()}
                     </div>
@@ -356,11 +410,21 @@ const AlterarDadosUsuario = () => {
 
                     {/* Botão Salvar */}
                     <div style={{ display: 'flex', justifyContent: 'center' }}>
-                        <button type="submit" className="save-button">
+                        <button type="submit" className="save-button" style={{ backgroundColor: userData.profileColor }}>
                             Salvar Alterações
                         </button>
                     </div>
                 </form>
+
+                {/* Grupo de Botões Secundários (Novos) */}
+                <div className="secondary-button-group">
+                    <button type="button" onClick={handleAccessOrders} className="secondary-button">
+                        Acessar Meus Pedidos
+                    </button>
+                    <button type="button" onClick={handleTrackOrder} className="secondary-button">
+                        Rastrear um Pedido
+                    </button>
+                </div>
             </div>
         </>
     );
