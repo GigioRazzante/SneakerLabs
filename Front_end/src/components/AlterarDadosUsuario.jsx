@@ -1,4 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+// 1. IMPORTAÇÕES DOS NOVOS COMPONENTES
+import MeusPedidos from './MeusPedidos'; 
+import RastrearPedido from './RastrearPedido'; // Assumindo que este é o nome real do 2º componente
 
 const MOCK_USER_DATA = {
     email: 'user@sneakerlab.com',
@@ -9,10 +14,19 @@ const MOCK_USER_DATA = {
     profileColor: '#FF9D00',
 };
 
+// Constantes para as Views
+const VIEWS = {
+    PROFILE: 'profile',
+    ORDERS: 'orders',
+    TRACKING: 'tracking'
+};
+
 const AlterarDadosUsuario = () => {
     const [userData, setUserData] = useState(MOCK_USER_DATA);
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
+    // 2. ESTADO PARA GERENCIAR A VISUALIZAÇÃO ATIVA
+    const [activeView, setActiveView] = useState(VIEWS.PROFILE);
 
     const colorOptions = ['#FF9D00', '#1A1A1A', '#007BFF', '#28A745', '#DC3545', '#6F42C1'];
 
@@ -35,28 +49,102 @@ const AlterarDadosUsuario = () => {
         e.preventDefault();
         console.log("Dados de usuário a serem salvos:", userData);
         console.log("Nova Senha:", newPassword);
-        console.log('Dados atualizados com sucesso!');
-        // Aqui você adicionaria a lógica real de atualização no backend/autenticação
+        alert('Dados atualizados com sucesso!');
         setCurrentPassword('');
         setNewPassword('');
     };
 
-    // FUNÇÕES PARA OS NOVOS BOTÕES DE NAVEGAÇÃO
+    // 3. FUNÇÕES PARA OS NOVOS BOTÕES DE NAVEGAÇÃO (ATUALIZADAS)
     const handleAccessOrders = () => {
-        // Lógica de navegação para MeusPedidos.jsx
-        console.log('>>> Ação: Navegar para a página MeusPedidos.jsx');
-        // Ex: navigate('/meus-pedidos');
+        setActiveView(VIEWS.ORDERS); // Muda para a view Meus Pedidos
+        console.log('>>> Ação: Navegar para Meus Pedidos');
     };
 
     const handleTrackOrder = () => {
-        // Lógica de navegação para TelaDeRastreamento.jsx
-        console.log('>>> Ação: Navegar para a página TelaDeRastreamento.jsx');
-        // Ex: navigate('/rastreamento');
+        setActiveView(VIEWS.TRACKING); // Muda para a view Rastrear Pedido
+        console.log('>>> Ação: Navegar para Rastreamento');
     };
 
+    const handleBackToProfile = () => {
+        setActiveView(VIEWS.PROFILE); // Volta para a tela principal de Perfil
+    };
+
+
+    // 4. LÓGICA DE RENDERIZAÇÃO CONDICIONAL
+    const renderContent = () => {
+        switch (activeView) {
+            case VIEWS.ORDERS:
+                return <MeusPedidos />;
+            case VIEWS.TRACKING:
+                return <RastrearPedido />;
+            case VIEWS.PROFILE:
+            default:
+                return (
+                    <form onSubmit={handleSave}>
+                        {/* Seu formulário existente de Alterar Dados (Form-Grid, Senha, Botão Salvar) */}
+                        <h3 className="section-title" style={{ marginTop: '0' }}>Dados Pessoais</h3>
+                        <div className="form-grid">
+                            {/* Nome de Usuário */}
+                            <div className="form-group">
+                                <label htmlFor="username" className="form-label">Nome de Usuário</label>
+                                <input type="text" id="username" value={userData.username} onChange={handleChange} className="form-input" required />
+                            </div>
+
+                            {/* Email */}
+                            <div className="form-group">
+                                <label htmlFor="email" className="form-label">Email</label>
+                                <input type="email" id="email" value={userData.email} onChange={handleChange} className="form-input" disabled />
+                                <p className="help-text">O email não pode ser alterado por aqui</p>
+                            </div>
+
+                            {/* Data de Nascimento */}
+                            <div className="form-group">
+                                <label htmlFor="birthdate" className="form-label">Data de Nascimento</label>
+                                <input type="date" id="birthdate" value={userData.birthdate} onChange={handleChange} className="form-input" required />
+                            </div>
+
+                            {/* Telefone */}
+                            <div className="form-group">
+                                <label htmlFor="phone" className="form-label">Telefone</label>
+                                <input type="tel" id="phone" value={userData.phone} onChange={handleChange} className="form-input" placeholder="(99) 99999-9999" required />
+                            </div>
+                        </div>
+
+                        {/* Seção de Senha */}
+                        <h3 className="section-title">Alterar Senha</h3>
+                        <p className="help-text">Preencha ambos os campos apenas se quiser alterar sua senha</p>
+
+                        <div className="form-grid">
+                            {/* Senha Atual */}
+                            <div className="form-group">
+                                <label htmlFor="currentPassword" className="form-label">Senha Atual</label>
+                                <input type="password" id="currentPassword" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="form-input" placeholder="********" />
+                            </div>
+
+                            {/* Nova Senha */}
+                            <div className="form-group">
+                                <label htmlFor="newPassword" className="form-label">Nova Senha</label>
+                                <input type="password" id="newPassword" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="form-input" placeholder="********" />
+                            </div>
+                        </div>
+
+                        {/* Botão Salvar */}
+                        <div style={{ display: 'flex', justifyContent: 'center' }}>
+                            <button type="submit" className="save-button" style={{ backgroundColor: userData.profileColor }}>
+                                Salvar Alterações
+                            </button>
+                        </div>
+                    </form>
+                );
+        }
+    };
+
+
+    // JSX Principal
     return (
         <>
             <style>
+                {/* ESTILOS AQUI (MANTIDOS IGUAIS) */}
                 {`
                 .profile-card-container {
                     position: relative;
@@ -267,6 +355,21 @@ const AlterarDadosUsuario = () => {
                     transform: scale(0.98);
                 }
 
+                /* Estilo para botão de voltar */
+                .back-button {
+                    background: none;
+                    border: none;
+                    color: #007BFF;
+                    cursor: pointer;
+                    padding: 0;
+                    margin-bottom: 1rem;
+                    font-size: 1rem;
+                }
+
+                .back-button:hover {
+                    text-decoration: underline;
+                }
+
 
                 @media (max-width: 768px) {
                     .profile-card-container {
@@ -291,140 +394,64 @@ const AlterarDadosUsuario = () => {
                 <div className="card-header-bar" style={{ backgroundColor: userData.profileColor }}></div>
                 
                 <div className="profile-title-section">
-                    <h1 className="profile-main-title" style={{ color: userData.profileColor }}>Configurações do Perfil</h1>
+                    <h1 className="profile-main-title" style={{ color: userData.profileColor }}>
+                        {/* Título dinâmico */}
+                        {activeView === VIEWS.PROFILE ? "Configurações do Perfil" : activeView === VIEWS.ORDERS ? "Seus Pedidos" : "Rastreamento"}
+                    </h1>
                 </div>
 
-                {/* Seção do Avatar */}
-                <div className="avatar-section">
-                    <div 
-                        className="avatar"
-                        style={{ backgroundColor: userData.profileColor, borderColor: userData.profileColor }}
-                    >
-                        {userData.username.charAt(0).toUpperCase()}
-                    </div>
+                {/* Botão Voltar (aparece apenas nas sub-telas) */}
+                {activeView !== VIEWS.PROFILE && (
+                    <button onClick={handleBackToProfile} className="back-button">
+                        ← Voltar para Configurações
+                    </button>
+                )}
 
-                    <div className="color-selector">
-                        {colorOptions.map((color) => (
-                            <button
-                                key={color}
-                                type="button"
-                                onClick={() => handleColorChange(color)}
-                                className={`color-option ${userData.profileColor === color ? 'selected' : ''}`}
-                                style={{ backgroundColor: color }}
-                                aria-label={`Selecionar cor ${color}`}
-                            />
-                        ))}
-                    </div>
-                    <p className="help-text">Escolha a cor da sua bolinha de perfil</p>
-                </div>
 
-                {/* Formulário */}
-                <form onSubmit={handleSave}>
-                    <div className="form-grid">
-                        {/* Nome de Usuário */}
-                        <div className="form-group">
-                            <label htmlFor="username" className="form-label">Nome de Usuário</label>
-                            <input
-                                type="text"
-                                id="username"
-                                value={userData.username}
-                                onChange={handleChange}
-                                className="form-input"
-                                required
-                            />
+                {activeView === VIEWS.PROFILE && (
+                    <>
+                        {/* Seção do Avatar (Apenas na tela de Perfil) */}
+                        <div className="avatar-section">
+                            <div 
+                                className="avatar"
+                                style={{ backgroundColor: userData.profileColor, borderColor: userData.profileColor }}
+                            >
+                                {userData.username.charAt(0).toUpperCase()}
+                            </div>
+
+                            <div className="color-selector">
+                                {colorOptions.map((color) => (
+                                    <button
+                                        key={color}
+                                        type="button"
+                                        onClick={() => handleColorChange(color)}
+                                        className={`color-option ${userData.profileColor === color ? 'selected' : ''}`}
+                                        style={{ backgroundColor: color }}
+                                        aria-label={`Selecionar cor ${color}`}
+                                    />
+                                ))}
+                            </div>
+                            <p className="help-text">Escolha a cor da sua bolinha de perfil</p>
                         </div>
+                    </>
+                )}
 
-                        {/* Email */}
-                        <div className="form-group">
-                            <label htmlFor="email" className="form-label">Email</label>
-                            <input
-                                type="email"
-                                id="email"
-                                value={userData.email}
-                                onChange={handleChange}
-                                className="form-input"
-                                disabled
-                            />
-                            <p className="help-text">O email não pode ser alterado por aqui</p>
-                        </div>
 
-                        {/* Data de Nascimento */}
-                        <div className="form-group">
-                            <label htmlFor="birthdate" className="form-label">Data de Nascimento</label>
-                            <input
-                                type="date"
-                                id="birthdate"
-                                value={userData.birthdate}
-                                onChange={handleChange}
-                                className="form-input"
-                                required
-                            />
-                        </div>
+                {/* RENDERIZAÇÃO CONDICIONAL */}
+                {renderContent()}
 
-                        {/* Telefone */}
-                        <div className="form-group">
-                            <label htmlFor="phone" className="form-label">Telefone</label>
-                            <input
-                                type="tel"
-                                id="phone"
-                                value={userData.phone}
-                                onChange={handleChange}
-                                className="form-input"
-                                placeholder="(99) 99999-9999"
-                                required
-                            />
-                        </div>
-                    </div>
 
-                    {/* Seção de Senha */}
-                    <h3 className="section-title">Alterar Senha</h3>
-                    <p className="help-text">Preencha ambos os campos apenas se quiser alterar sua senha</p>
-
-                    <div className="form-grid">
-                        {/* Senha Atual */}
-                        <div className="form-group">
-                            <label htmlFor="currentPassword" className="form-label">Senha Atual</label>
-                            <input
-                                type="password"
-                                id="currentPassword"
-                                value={currentPassword}
-                                onChange={(e) => setCurrentPassword(e.target.value)}
-                                className="form-input"
-                                placeholder="********"
-                            />
-                        </div>
-
-                        {/* Nova Senha */}
-                        <div className="form-group">
-                            <label htmlFor="newPassword" className="form-label">Nova Senha</label>
-                            <input
-                                type="password"
-                                id="newPassword"
-                                value={newPassword}
-                                onChange={(e) => setNewPassword(e.target.value)}
-                                className="form-input"
-                                placeholder="********"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Botão Salvar */}
-                    <div style={{ display: 'flex', justifyContent: 'center' }}>
-                        <button type="submit" className="save-button" style={{ backgroundColor: userData.profileColor }}>
-                            Salvar Alterações
+                {/* Grupo de Botões Secundários (Apenas na tela de Perfil) */}
+                {activeView === VIEWS.PROFILE && (
+                    <div className="secondary-button-group">
+                        <button type="button" onClick={handleAccessOrders} className="secondary-button">
+                            Acessar Meus Pedidos
+                        </button>
+                        <button type="button" onClick={handleTrackOrder} className="secondary-button">
+                            Rastrear um Pedido
                         </button>
                     </div>
-                </form>
-
-                {/* Grupo de Botões Secundários (Novos) */}
-                <div className="secondary-button-group">
-                    <button type="button" onClick={handleAccessOrders} className="secondary-button">
-                        Acessar Meus Pedidos
-                    </button>
-                    <button type="button" onClick={handleTrackOrder} className="secondary-button">
-                        Rastrear um Pedido
-                    </button>
-                </div>
+                )}
             </div>
         </>
     );

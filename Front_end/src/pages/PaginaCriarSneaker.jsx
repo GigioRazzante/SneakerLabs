@@ -5,6 +5,7 @@ import ResumoPedido from '../components/ResumoPedido';
 import CarrinhoPedido from '../components/CarrinhoPedido';
 import Footer from '../components/Footer';
 
+// Mantenha o passos igual ao seu original
 const passos = [
     {
         titulo: "Passo 1 de 5: Escolha o seu estilo.",
@@ -33,7 +34,6 @@ const passos = [
     {
         titulo: "Passo 4 de 5: Escolha a cor.",
         opcoes: [
-            // CORES ADICIONADAS
             { id: 1, nome: "Branco", preco: "+ R$ 20", acrescimo: 20, background: "#FFFFFF" },
             { id: 2, nome: "Preto", preco: "+ R$ 30", acrescimo: 30, background: "#000000" },
             { id: 3, nome: "Azul", preco: "+ R$ 25", acrescimo: 25, background: "#007BFF" },
@@ -56,6 +56,9 @@ const PaginaCriarSneaker = () => {
     const [currentStep, setCurrentStep] = useState(0);
     const [selections, setSelections] = useState({});
     const [pedidos, setPedidos] = useState([]);
+    
+    // Supondo que o cliente está logado com ID 1, conforme o teste de backend
+    const CLIENTE_ID = 1;
 
     const handleSelectOption = (stepId, optionId, acrescimo) => {
         setSelections({
@@ -66,7 +69,8 @@ const PaginaCriarSneaker = () => {
 
     const handleNextStep = () => {
         const selected = selections[currentStep];
-        if (selected) {
+        // Verifica se a seleção existe e se a opção dentro dela é válida (um ID foi selecionado)
+        if (selected && selected.id !== undefined) {
             if (currentStep < passos.length - 1) {
                 setCurrentStep(currentStep + 1);
             } else {
@@ -78,7 +82,7 @@ const PaginaCriarSneaker = () => {
     };
 
     const handleFinalize = () => {
-        // Criar o objeto do pedido atual
+        // Mapeia as seleções atuais para um formato legível para o resumo e o carrinho
         const items = Object.keys(selections).map(stepId => {
             const stepIndex = parseInt(stepId, 10);
             const selectedOptionId = selections[stepIndex].id;
@@ -89,7 +93,7 @@ const PaginaCriarSneaker = () => {
                     step: stepIndex + 1,
                     title: passos[stepIndex].titulo.split(':')[1]?.trim() || passos[stepIndex].titulo,
                     category: passos[stepIndex].titulo.split(':')[0]?.trim(),
-                    name: selectedOption.nome,
+                    name: selectedOption.nome, // O NOME (string) é a informação chave para o Backend
                     price: selectedOption.preco,
                     acrescimo: selectedOption.acrescimo
                 };
@@ -98,7 +102,7 @@ const PaginaCriarSneaker = () => {
         }).filter(item => item !== null);
 
         const novoPedido = {
-            id: Date.now(), // ID único baseado no timestamp
+            id: Date.now(), // ID do pedido para o Frontend
             items: items,
             dataCriacao: new Date().toLocaleString('pt-BR')
         };
@@ -109,9 +113,13 @@ const PaginaCriarSneaker = () => {
         setCurrentStep(passos.length + 1); // Vai direto para o carrinho
     };
 
+    /**
+     * FUNÇÃO CORRIGIDA para enviar o JSON em lote para o Backend
+     */
     const handleConfirmarPedidos = async () => {
         if (pedidos.length === 0) return;
 
+        // Mapeamento das chaves do objeto de configuração esperado pelo Backend
         const stepMap = {
             0: "passoUmDeCinco",
             1: "passoDoisDeCinco",
@@ -120,50 +128,59 @@ const PaginaCriarSneaker = () => {
             4: "passoCincoDeCinco",
         };
 
-        try {
-            // Enviar cada pedido individualmente
-            for (const pedido of pedidos) {
-                const totalAcrescimos = pedido.items.reduce((sum, item) => sum + item.acrescimo, 0);
-                
-                // Formato dos detalhes para o backend
-                const orderDetails = {
-                    pedidoId: pedido.id,
-                    data: pedido.dataCriacao,
-                    total: totalAcrescimos // Adiciona o total
-                };
+        // 1. Criar o array 'produtos' no formato esperado pelo Backend
+        const produtosParaEnvio = pedidos.map(pedido => {
+            const configuracoes = {};
 
-                // Adicionar os detalhes das escolhas
-                passos.forEach((passo, index) => {
-                    // Busca o item no array 'items' do pedido que corresponde a este passo (index + 1)
-                    const itemDoPedido = pedido.items.find(item => item.step === index + 1);
-                    if (itemDoPedido) {
-                        const newKey = stepMap[index];
-                        orderDetails[newKey] = itemDoPedido.name;
-                    }
-                });
-
-                const response = await fetch('http://localhost:3001/api/orders', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(orderDetails),
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Erro ao enviar pedido');
+            // Mapeia os 5 itens do pedido para o objeto de configuracoes
+            passos.forEach((passo, index) => {
+                const itemDoPedido = pedido.items.find(item => item.step === index + 1);
+                if (itemDoPedido) {
+                    const newKey = stepMap[index];
+                    // Usa o NOME da opção selecionada (ex: "Skate", "Couro", "Branco")
+                    configuracoes[newKey] = itemDoPedido.name; 
                 }
+            });
+
+            // Retorna o objeto do produto no formato esperado
+            return {
+                configuracoes: configuracoes
+            };
+        });
+
+        // 2. Montar o BODY final da requisição POST
+        const bodyRequisicao = {
+            clienteId: CLIENTE_ID, // ID do cliente
+            produtos: produtosParaEnvio // Array com todos os produtos do carrinho
+        };
+        
+        console.log("JSON enviado para o Backend:", JSON.stringify(bodyRequisicao, null, 2));
+
+        try {
+            const response = await fetch('http://localhost:3001/api/orders', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(bodyRequisicao),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `Erro HTTP ${response.status}: Falha ao enviar pedido.`);
             }
 
-            alert(`${pedidos.length} pedido(s) enviado(s) para produção com sucesso!`);
-            // Resetar tudo
+            const successData = await response.json();
+            
+            alert(`Pedido #${successData.pedidoId} recebido e ${successData.produtosEnviados.length} produto(s) enviado(s) para produção!`);
+            
+            // Resetar o estado do Frontend após o sucesso
             setSelections({});
             setPedidos([]);
             setCurrentStep(0);
             
         } catch (error) {
-            console.error('Erro na requisição:', error);
+            console.error('Erro na requisição POST /api/orders:', error);
             alert(`Ocorreu um erro ao enviar os pedidos: ${error.message}`);
         }
     };
@@ -174,7 +191,7 @@ const PaginaCriarSneaker = () => {
         setCurrentStep(0); // Voltar ao primeiro passo
     };
     
-    // Função utilitária para renderizar o passo atual
+    // Função utilitária para renderizar o passo atual (código inalterado)
     const renderCurrentStep = () => {
         if (currentStep < passos.length) {
             return (
@@ -204,25 +221,25 @@ const PaginaCriarSneaker = () => {
                 />
             );
         }
-        // Fallback ou caso onde não há pedidos no carrinho (pode-se adicionar um estado de carrinho vazio)
+        // Fallback ou caso onde não há pedidos no carrinho
         return (
-             <div style={{textAlign: 'center', marginTop: '5rem'}}>
-                 <h2>Carrinho Vazio</h2>
-                 <button 
-                     className="next-button" 
-                     onClick={() => setCurrentStep(0)}
-                     style={{maxWidth: '250px'}}
-                 >
-                     Começar a Personalizar
-                 </button>
-             </div>
+            <div style={{textAlign: 'center', marginTop: '5rem'}}>
+                <h2>Carrinho Vazio</h2>
+                <button 
+                    className="next-button" 
+                    onClick={() => setCurrentStep(0)}
+                    style={{maxWidth: '250px'}}
+                >
+                    Começar a Personalizar
+                </button>
+            </div>
         );
     };
 
     return (
         <>
-            <style>
-                {`
+            {/* O bloco <style> não precisa ser alterado */}
+            <style>{`
                 /* VARIÁVEIS GLOBAIS PARA CONSISTÊNCIA */
                 :root {
                     --laranja-vibrante: #FF9D00;
@@ -653,15 +670,15 @@ const PaginaCriarSneaker = () => {
                         align-items: flex-start;
                         gap: 0.5rem;
                     }
-                
+                    
                     .pedido-item {
                         padding: 1rem;
                     }
-                
+                    
                     .total-geral {
                         padding: 1rem;
                     }
-                
+                    
                     .total-geral-content {
                         font-size: 1.1rem;
                         flex-direction: column;
@@ -698,8 +715,7 @@ const PaginaCriarSneaker = () => {
                         max-width: 100%;
                     }
                 }
-                `}
-            </style>
+            `}</style>
             
             <Navbar />
     

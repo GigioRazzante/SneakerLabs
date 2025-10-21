@@ -9,19 +9,54 @@ const PaginaCadastro = () => {
     const [username, setUsername] = useState('');
     const [birthdate, setBirthdate] = useState('');
     const [phone, setPhone] = useState('');
+    const [loading, setLoading] = useState(false); // 🚨 NOVO: Estado para controle de carregamento
     const navigate = useNavigate();
 
-    const handleCadastro = (e) => {
+    const handleCadastro = async (e) => { // 🚨 ALTERADO: Função agora é assíncrona
         e.preventDefault();
 
-        // Lógica de validação simples do formulário
-        if (email && password && username && birthdate && phone) {
-            console.log('Dados de cadastro:', { email, password, username, birthdate, phone });
-            // Neste ponto, você enviaria os dados para o seu backend.
-            alert('Cadastro realizado com sucesso! Bem-vindo ao SneakLab! 🎉');
-            navigate('/'); // Redireciona para a página de login após o cadastro
-        } else {
+        // 1. Validação básica
+        if (!email || !password || !username || !birthdate || !phone) {
             alert('Por favor, preencha todos os campos.');
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            // 2. Chamada à API do Backend para Cadastro
+            const response = await fetch('http://localhost:3001/api/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email,
+                    senha: password,             // Ajuste o nome do campo se seu backend usar 'password'
+                    nome_usuario: username,      // Ajuste o nome do campo
+                    data_nascimento: birthdate,  // Ajuste o nome do campo
+                    telefone: phone,             // Ajuste o nome do campo
+                }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // Cadastro bem-sucedido
+                console.log('Resposta do Cadastro:', data);
+                alert('Cadastro realizado com sucesso! Bem-vindo ao SneakLab! 🎉');
+                
+                // Redireciona para a página de login para que o usuário possa logar com o novo ID
+                navigate('/login'); 
+            } else {
+                // Erro retornado pelo backend (ex: email já cadastrado)
+                alert(`Falha no cadastro: ${data.error || 'Erro desconhecido. Verifique se o servidor está rodando.'}`);
+            }
+        } catch (error) {
+            console.error('Erro de rede ou no servidor:', error);
+            alert('Não foi possível conectar ao servidor. Verifique a conexão ou tente novamente mais tarde.');
+        } finally {
+            setLoading(false); // Finaliza o carregamento, independentemente do sucesso ou falha
         }
     };
 
@@ -125,6 +160,16 @@ const PaginaCadastro = () => {
                     color: rgba(255, 255, 255, 0.7);
                 }
 
+                /* Apenas para corrigir a cor do texto do input[type="date"] no Chrome */
+                .input-group input[type="date"] {
+                    color: #fff; 
+                }
+
+                /* Garante que o texto do input[type="date"] seja branco quando preenchido */
+                .input-group input[type="date"]::-webkit-datetime-edit {
+                    color: #fff;
+                }
+                
                 .remember-me {
                     display: flex;
                     align-items: center;
@@ -140,12 +185,18 @@ const PaginaCadastro = () => {
                     color: #FF9D00;
                     font-weight: bold;
                     cursor: pointer;
-                    transition: background-color 0.3s;
+                    transition: background-color 0.3s, opacity 0.3s;
                 }
                 
-                .login-button:hover {
+                .login-button:hover:not(:disabled) { /* 🚨 NOVO: Desativa hover quando disabled */
                     background-color: #f0f0f0;
                 }
+                
+                .login-button:disabled { /* 🚨 NOVO: Estilo para disabled */
+                    opacity: 0.6;
+                    cursor: not-allowed;
+                }
+
 
                 .register-link-text {
                     margin-top: 1.5rem;
@@ -250,8 +301,8 @@ const PaginaCadastro = () => {
                                 />
                             </div>
                             
-                            <button type="submit" className="login-button">
-                                Cadastrar
+                            <button type="submit" className="login-button" disabled={loading}>
+                                {loading ? 'Cadastrando...' : 'Cadastrar'}
                             </button>
                         </form>
                         <p className="register-link-text">

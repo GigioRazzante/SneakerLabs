@@ -105,7 +105,7 @@ const generateBoxPayload = (orderDetails) => {
 };
 
 // =======================================================================
-// ROTA 1: RECEBIMENTO DO CARRINHO (FATIAMENTO E ENVIO) - REFATORADO
+// ROTA 1: RECEBIMENTO DO CARRINHO (FATIAMENTO E ENVIO)
 // =======================================================================
 app.post('/api/orders', async (req, res) => {
     // Esperamos um array de produtos do carrinho
@@ -194,7 +194,7 @@ app.post('/api/orders', async (req, res) => {
 
 
 // =======================================================================
-// ROTA 2: CALLBACK DA MÁQUINA DE PRODUÇÃO (RASTREABILIDADE) - NOVO
+// ROTA 2: CALLBACK DA MÁQUINA DE PRODUÇÃO (RASTREABILIDADE)
 // =======================================================================
 app.post('/api/callback', async (req, res) => {
     const { id, status, slot } = req.body; // id é o id_rastreio_maquina
@@ -254,15 +254,15 @@ app.post('/api/callback', async (req, res) => {
 
 
 // =======================================================================
-// ROTA 3: BUSCA DE STATUS DO PEDIDO (Para o Frontend Rastrear) - NOVO
+// ROTA 3: BUSCA DE STATUS DO PEDIDO (Para o Frontend Rastrear)
 // =======================================================================
 app.get('/api/orders/:id/status', async (req, res) => {
     const pedidoId = req.params.id;
 
     try {
-        // 1. Obter o status geral do pedido
+        // 1. Obter o status geral do pedido e a data de criação
         const pedidoResult = await pool.query(
-            'SELECT status_geral FROM pedidos WHERE id = $1',
+            'SELECT status_geral, data_criacao FROM pedidos WHERE id = $1',
             [pedidoId]
         );
 
@@ -270,27 +270,126 @@ app.get('/api/orders/:id/status', async (req, res) => {
             return res.status(404).json({ message: "Pedido não encontrado." });
         }
         
-        const statusGeral = pedidoResult.rows[0].status_geral;
+        const { status_geral, data_criacao } = pedidoResult.rows[0];
 
-        // 2. Obter o status e slot de cada produto fatiado
+        // 2. Obter o status, slot e estilo/material de cada produto fatiado
         const produtosResult = await pool.query(
-            'SELECT estilo, material, status_producao, slot_expedicao FROM produtos_do_pedido WHERE pedido_id = $1',
+            'SELECT estilo, material, status_producao, slot_expedicao, id_rastreio_maquina FROM produtos_do_pedido WHERE pedido_id = $1',
             [pedidoId]
         );
 
         res.status(200).json({
             pedidoId: pedidoId,
-            statusGeral: statusGeral,
+            statusGeral: status_geral,
+            dataCriacao: data_criacao, // Adicionado para exibição na tela de Rastreio
             produtos: produtosResult.rows.map(row => ({
                 configuracao: `${row.estilo} / ${row.material} / ...`, // Simplificado para exibição
                 status: row.status_producao,
-                slotExpedicao: row.slot_expedicao
+                slotExpedicao: row.slot_expedicao,
+                rastreioId: row.id_rastreio_maquina // Adicionado para exibição
             }))
         });
 
     } catch (err) {
         console.error('Erro ao buscar status do pedido:', err.message);
         res.status(500).json({ error: 'Erro ao buscar status do pedido.' });
+    }
+});
+
+
+// =======================================================================
+// ROTA 4: LISTA TODOS OS PEDIDOS DO CLIENTE (Para o Frontend MeusPedidos)
+// =======================================================================
+app.get('/api/orders/cliente/:clienteId', async (req, res) => {
+    const { clienteId } = req.params;
+
+    try {
+        const queryPedidos = `
+            SELECT 
+                p.id AS pedido_id, 
+                p.data_criacao, 
+                p.status_geral,
+                COUNT(pd.id) AS total_produtos,
+                -- Supondo R$ 150.00 por produto para calcular o valor total
+                (COUNT(pd.id) * 150.00) AS valor_total 
+            FROM 
+                pedidos p
+            LEFT JOIN 
+                produtos_do_pedido pd ON p.id = pd.pedido_id
+            WHERE 
+                p.cliente_id = $1
+            GROUP BY
+                p.id, p.data_criacao, p.status_geral
+            ORDER BY 
+                p.data_criacao DESC;
+        `;
+        
+        const resultado = await pool.query(queryPedidos, [clienteId]);
+        
+        // 🚨 NOVO: Mapear os resultados para converter strings numéricas em floats
+        const pedidosFormatados = resultado.rows.map(pedido => ({
+            ...pedido,
+            // Converte a string do banco de dados (PostgreSQL) para um float
+            valor_total: parseFloat(pedido.valor_total),
+            // Converte a contagem de produtos para um inteiro
+            total_produtos: parseInt(pedido.total_produtos, 10)
+        }));
+
+        return res.status(200).json({
+            mensagem: `Pedidos encontrados para o cliente ${clienteId}.`,
+            pedidos: pedidosFormatados // Usa a lista formatada
+        });
+
+    } catch (error) {
+        console.error("Erro ao buscar pedidos por cliente ID:", error);
+        return res.status(500).json({ 
+            error: "Erro interno do servidor ao buscar pedidos." 
+        });
+    }
+});
+
+
+// =======================================================================
+// 🚨 ROTA 5: CADASTRO DE CLIENTE (Adicionado para resolver o 404)
+// =======================================================================
+app.post('/api/auth/register', async (req, res) => {
+    // Campos que esperamos do frontend (os nomes devem corresponder aos do PaginaCadastro.jsx)
+    const { email, senha, nome_usuario, data_nascimento, telefone } = req.body;
+
+    // 1. Validação simples
+    if (!email || !senha || !nome_usuario || !data_nascimento || !telefone) {
+        return res.status(400).json({ error: "Todos os campos de cadastro são obrigatórios." });
+    }
+
+    // 2. Lógica para inserção no banco de dados
+    try {
+        // ATENÇÃO: Em um ambiente de produção real, é OBRIGATÓRIO usar hash de senha (ex: bcrypt)!
+        
+        // Insere o novo cliente no banco e usa 'RETURNING id' para pegar o ID gerado pelo BD
+        const result = await pool.query(
+            `INSERT INTO clientes (email, senha, nome_usuario, data_nascimento, telefone)
+             VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+            [email, senha, nome_usuario, data_nascimento, telefone]
+        );
+
+        const clienteId = result.rows[0].id;
+        
+        // 3. Resposta de sucesso (Status 201 - Created)
+        res.status(201).json({ 
+            message: "Cadastro realizado com sucesso!",
+            clienteId: clienteId 
+        });
+
+    } catch (err) {
+        console.error('Erro ao cadastrar cliente:', err);
+        
+        // Verifica se é um erro de duplicidade (assumindo que 'email' tem UNIQUE constraint no BD)
+        if (err.code === '23505') { // Código de erro do Postgres para violação de unique constraint
+            return res.status(409).json({ error: "Este e-mail já está cadastrado. Tente fazer login." });
+        }
+
+        // Erro genérico do servidor
+        res.status(500).json({ error: "Erro interno do servidor ao registrar o cliente." });
     }
 });
 
