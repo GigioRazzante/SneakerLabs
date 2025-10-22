@@ -1,34 +1,37 @@
 import React, { useState, useEffect } from 'react';
-// 🚨 NOVO: Importe useNavigate do react-router-dom
 import { useNavigate } from 'react-router-dom'; 
+import { useAuth } from '../context/AuthContext.jsx'; // 👈 IMPORTAR O CONTEXT
 import Navbar from '../components/Navbar'; 
 
-
-// Define o ID do cliente para buscar (deve ser o mesmo usado na criação do pedido)
-const CLIENTE_ID = 1; 
-
 const MeusPedidos = () => {
-    // 🚨 NOVO: Inicialize o useNavigate
     const navigate = useNavigate(); 
+    const { user } = useAuth(); // 👈 PEGAR O USUÁRIO DO CONTEXT
     
     const [pedidos, setPedidos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Mapeamento de status para cores (para uma melhor UX)
+    // Mapeamento de status para cores
     const statusColors = {
-        CONCLUIDO: '#22C55E', // Verde (var(--verde-confirmar))
-        PENDENTE: '#FF9D00',  // Laranja (var(--laranja-vibrante))
-        CANCELADO: '#DC3545', // Vermelho
+        CONCLUIDO: '#22C55E',
+        PENDENTE: '#FF9D00',
+        CANCELADO: '#DC3545',
     };
 
     useEffect(() => {
         const fetchPedidos = async () => {
+            // 👈 VERIFICAR SE USUÁRIO ESTÁ LOGADO
+            if (!user || !user.id) {
+                setError('Usuário não logado');
+                setLoading(false);
+                return;
+            }
+
             setLoading(true);
             setError(null);
             try {
-                // Rota para buscar todos os pedidos de um cliente
-                const response = await fetch(`http://localhost:3001/api/orders/cliente/${CLIENTE_ID}`);
+                // 👈 USAR O ID DO USUÁRIO LOGADO
+                const response = await fetch(`http://localhost:3001/api/orders/cliente/${user.id}`);
 
                 if (!response.ok) {
                     const errorData = await response.json();
@@ -38,35 +41,60 @@ const MeusPedidos = () => {
                 const data = await response.json();
                 
                 // O Backend retorna um array de pedidos
-                setPedidos(data.pedidos); 
+                setPedidos(data.pedidos || []); // 👈 GARANTIR QUE É UM ARRAY
                 
             } catch (err) {
                 console.error('Erro ao buscar pedidos:', err);
-                setError(err.message);
+                setError(err.message || 'Erro interno do servidor ao buscar pedidos.');
             } finally {
                 setLoading(false);
             }
         };
 
         fetchPedidos();
-    }, []); // A dependência vazia garante que roda apenas na montagem
+    }, [user]); // 👈 ADICIONAR user COMO DEPENDÊNCIA
 
     const formatarData = (dataString) => {
-        // Assume que a data pode vir como '2025-10-21 14:57:01.63622-03'
-        // Extrai apenas a data para exibição
         try {
             const dataObj = new Date(dataString);
             return dataObj.toLocaleDateString('pt-BR');
         } catch {
-            return dataString; // Retorna o original se houver erro
+            return dataString;
         }
     };
 
-    // 🚨 ALTERADO: Implementação real da navegação
     const handleRastrearPedido = (pedidoId) => {
-        // Usa o hook navigate para mudar a rota, passando o ID
         navigate(`/rastrear-pedido/${pedidoId}`);
     };
+
+    // 👈 REDIRECIONAR SE NÃO ESTIVER LOGADO
+    if (!user) {
+        return (
+            <div style={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center', 
+                height: '50vh',
+                flexDirection: 'column',
+                gap: '1rem'
+            }}>
+                <p>Você precisa estar logado para ver seus pedidos.</p>
+                <button 
+                    onClick={() => navigate('/login')}
+                    style={{
+                        padding: '0.75rem 1.5rem',
+                        backgroundColor: '#FF9D00',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '0.5rem',
+                        cursor: 'pointer'
+                    }}
+                >
+                    Fazer Login
+                </button>
+            </div>
+        );
+    }
 
     return (
         <>
@@ -75,9 +103,11 @@ const MeusPedidos = () => {
             <div className="page-container" style={{paddingTop: '6rem'}}> 
                 <div className="main-content-card" style={{maxWidth: '800px', padding: '2rem 1.5rem'}}>
                     <div className="title-section">
-                        {/* ESTE É O TÍTULO QUE RECEBERÁ O NOVO ESTILO CSS */}
                         <h2 className="title">Histórico de Pedidos</h2>
                         <p className="subtitle">Seus pedidos personalizados e status de produção.</p>
+                        <p className="user-info" style={{ fontSize: '0.9rem', color: '#666', marginTop: '0.5rem' }}>
+                            Cliente: {user.nome_usuario} (ID: {user.id})
+                        </p>
                     </div>
 
                     {loading && <p style={{ textAlign: 'center' }}>Carregando pedidos...</p>}
@@ -91,7 +121,7 @@ const MeusPedidos = () => {
                     
                     {!loading && pedidos.length === 0 && !error && (
                         <p style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '1.1rem' }}>
-                            Nenhum pedido encontrado para o Cliente ID {CLIENTE_ID}.
+                            Nenhum pedido encontrado para sua conta.
                         </p>
                     )}
 
@@ -111,14 +141,11 @@ const MeusPedidos = () => {
                                 <div className="pedido-details">
                                     <p>Data do Pedido: <strong>{formatarData(pedido.data_criacao)}</strong></p>
                                     <p>Total de Itens: <strong>{pedido.total_produtos}</strong></p>
-                                    {/* O toFixed está seguro agora, se você aplicou a correção do backend */}
                                     <p>Valor Total: <strong className="total-price">R$ {pedido.valor_total ? pedido.valor_total.toFixed(2).replace('.', ',') : 'N/A'}</strong></p>
                                 </div>
                                 
-                                {/* Botão para ir para a tela de Rastreio DETALHADO */}
                                 <button 
                                     className="rastrear-button"
-                                    // 🚨 CHAMADA ATUALIZADA: Passa o ID para a função de navegação
                                     onClick={() => handleRastrearPedido(pedido.pedido_id)}
                                 >
                                     Rastrear Detalhes »
@@ -129,24 +156,18 @@ const MeusPedidos = () => {
                 </div>
             </div>
             
-            
-            
-            
-            {/* Estilos específicos para esta tela */}
             <style>{`
-                /* NOVO ESTILO PARA CORRIGIR A COR DO TÍTULO */
                 .title-section .title {
-                    color: #1A1A1A; /* Cor do texto para preto (ou outra cor escura) */
+                    color: #1A1A1A;
                     font-size: 2rem;
                     font-weight: bold;
                     margin-bottom: 0.5rem;
                 }
                 
                 .title-section .subtitle {
-                    color: #666; /* Cor do subtítulo para legibilidade */
+                    color: #666;
                     font-size: 1rem;
                 }
-                /* FIM DO NOVO ESTILO */
 
                 .pedidos-lista {
                     display: flex;

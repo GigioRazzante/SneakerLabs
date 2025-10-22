@@ -1,18 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext.jsx'; // 👈 IMPORTAR O CONTEXT
 
 // 1. IMPORTAÇÕES DOS NOVOS COMPONENTES
 import MeusPedidos from './MeusPedidos'; 
-import RastrearPedido from './RastrearPedido'; // Assumindo que este é o nome real do 2º componente
-
-const MOCK_USER_DATA = {
-    email: 'user@sneakerlab.com',
-    password: 'senhaSegura123', 
-    username: 'UsuarioSneakerLab',
-    birthdate: '1995-05-20',
-    phone: '21987654321',
-    profileColor: '#FF9D00',
-};
+import RastrearPedido from './RastrearPedido';
 
 // Constantes para as Views
 const VIEWS = {
@@ -22,13 +14,174 @@ const VIEWS = {
 };
 
 const AlterarDadosUsuario = () => {
-    const [userData, setUserData] = useState(MOCK_USER_DATA);
+    // 2. USAR O CONTEXT EM VEZ DE LOCALSTORAGE DIRETO
+    const { user, updateUser } = useAuth();
+    const navigate = useNavigate();
+    
+    // 3. ESTADOS PARA DADOS DO USUÁRIO E CARREGAMENTO
+    const [userData, setUserData] = useState({
+        email: '',
+        username: '',
+        birthdate: '',
+        phone: '',
+        profileColor: '#FF9D00',
+    });
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
-    // 2. ESTADO PARA GERENCIAR A VISUALIZAÇÃO ATIVA
     const [activeView, setActiveView] = useState(VIEWS.PROFILE);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [saving, setSaving] = useState(false);
 
     const colorOptions = ['#FF9D00', '#1A1A1A', '#007BFF', '#28A745', '#DC3545', '#6F42C1'];
+
+    // 4. EFFECT PARA CARREGAR DADOS DO USUÁRIO DO CONTEXT
+    useEffect(() => {
+        if (user) {
+            setUserData({
+                email: user.email || '',
+                username: user.nome_usuario || '',
+                birthdate: user.data_nascimento || '',
+                phone: user.telefone || '',
+                profileColor: '#FF9D00',
+            });
+            setLoading(false);
+        } else {
+            setError('Usuário não logado');
+            setLoading(false);
+        }
+    }, [user]);
+
+    // 5. FUNÇÕES DE NAVEGAÇÃO (QUE ESTAVAM FALTANDO)
+    const handleAccessOrders = () => {
+        setActiveView(VIEWS.ORDERS);
+        console.log('>>> Ação: Navegar para Meus Pedidos');
+    };
+
+    const handleTrackOrder = () => {
+        setActiveView(VIEWS.TRACKING);
+        console.log('>>> Ação: Navegar para Rastreamento');
+    };
+
+    const handleBackToProfile = () => {
+        setActiveView(VIEWS.PROFILE);
+    };
+
+    // 6. FUNÇÃO RENDERCONTENT (QUE ESTAVA FALTANDO)
+    const renderContent = () => {
+        switch (activeView) {
+            case VIEWS.ORDERS:
+                return <MeusPedidos />;
+            case VIEWS.TRACKING:
+                return <RastrearPedido />;
+            case VIEWS.PROFILE:
+            default:
+                return (
+                    <form onSubmit={handleSave}>
+                        <h3 className="section-title" style={{ marginTop: '0' }}>Dados Pessoais</h3>
+                        <div className="form-grid">
+                            {/* Nome de Usuário */}
+                            <div className="form-group">
+                                <label htmlFor="username" className="form-label">Nome de Usuário</label>
+                                <input 
+                                    type="text" 
+                                    id="username" 
+                                    value={userData.username} 
+                                    onChange={handleChange} 
+                                    className="form-input" 
+                                    required 
+                                />
+                            </div>
+
+                            {/* Email */}
+                            <div className="form-group">
+                                <label htmlFor="email" className="form-label">Email</label>
+                                <input 
+                                    type="email" 
+                                    id="email" 
+                                    value={userData.email} 
+                                    onChange={handleChange} 
+                                    className="form-input" 
+                                    disabled 
+                                />
+                                <p className="help-text">O email não pode ser alterado por aqui</p>
+                            </div>
+
+                            {/* Data de Nascimento */}
+                            <div className="form-group">
+                                <label htmlFor="birthdate" className="form-label">Data de Nascimento</label>
+                                <input 
+                                    type="date" 
+                                    id="birthdate" 
+                                    value={userData.birthdate} 
+                                    onChange={handleChange} 
+                                    className="form-input" 
+                                    required 
+                                />
+                            </div>
+
+                            {/* Telefone */}
+                            <div className="form-group">
+                                <label htmlFor="phone" className="form-label">Telefone</label>
+                                <input 
+                                    type="tel" 
+                                    id="phone" 
+                                    value={userData.phone} 
+                                    onChange={handleChange} 
+                                    className="form-input" 
+                                    placeholder="(99) 99999-9999" 
+                                    required 
+                                />
+                            </div>
+                        </div>
+
+                        {/* Seção de Senha */}
+                        <h3 className="section-title">Alterar Senha</h3>
+                        <p className="help-text">Preencha ambos os campos apenas se quiser alterar sua senha</p>
+
+                        <div className="form-grid">
+                            {/* Senha Atual */}
+                            <div className="form-group">
+                                <label htmlFor="currentPassword" className="form-label">Senha Atual</label>
+                                <input 
+                                    type="password" 
+                                    id="currentPassword" 
+                                    value={currentPassword} 
+                                    onChange={(e) => setCurrentPassword(e.target.value)} 
+                                    className="form-input" 
+                                    placeholder="********" 
+                                />
+                            </div>
+
+                            {/* Nova Senha */}
+                            <div className="form-group">
+                                <label htmlFor="newPassword" className="form-label">Nova Senha</label>
+                                <input 
+                                    type="password" 
+                                    id="newPassword" 
+                                    value={newPassword} 
+                                    onChange={(e) => setNewPassword(e.target.value)} 
+                                    className="form-input" 
+                                    placeholder="********" 
+                                />
+                            </div>
+                        </div>
+
+                        {/* Botão Salvar */}
+                        <div style={{ display: 'flex', justifyContent: 'center' }}>
+                            <button 
+                                type="submit" 
+                                className="save-button" 
+                                style={{ backgroundColor: userData.profileColor }}
+                                disabled={saving}
+                            >
+                                {saving ? 'Salvando...' : 'Salvar Alterações'}
+                            </button>
+                        </div>
+                    </form>
+                );
+        }
+    };
 
     const handleChange = (e) => {
         const { id, value } = e.target;
@@ -45,106 +198,87 @@ const AlterarDadosUsuario = () => {
         }));
     };
 
-    const handleSave = (e) => {
+    // 7. FUNÇÃO handleSave ATUALIZADA
+    const handleSave = async (e) => {
         e.preventDefault();
-        console.log("Dados de usuário a serem salvos:", userData);
-        console.log("Nova Senha:", newPassword);
-        alert('Dados atualizados com sucesso!');
-        setCurrentPassword('');
-        setNewPassword('');
-    };
+        setSaving(true);
+        
+        try {
+            if (!user) {
+                alert('Usuário não logado');
+                navigate('/login');
+                return;
+            }
 
-    // 3. FUNÇÕES PARA OS NOVOS BOTÕES DE NAVEGAÇÃO (ATUALIZADAS)
-    const handleAccessOrders = () => {
-        setActiveView(VIEWS.ORDERS); // Muda para a view Meus Pedidos
-        console.log('>>> Ação: Navegar para Meus Pedidos');
-    };
+            // Preparar dados para enviar
+            const { email, profileColor, ...dataToUpdate } = userData;
+            
+            const response = await fetch(`http://localhost:3001/api/cliente/${user.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    nome_usuario: dataToUpdate.username,
+                    data_nascimento: dataToUpdate.birthdate,
+                    telefone: dataToUpdate.phone,
+                })
+            });
 
-    const handleTrackOrder = () => {
-        setActiveView(VIEWS.TRACKING); // Muda para a view Rastrear Pedido
-        console.log('>>> Ação: Navegar para Rastreamento');
-    };
+            if (response.ok) {
+                // ✅ ATUALIZA O CONTEXT COM OS NOVOS DADOS
+                updateUser({
+                    nome_usuario: dataToUpdate.username,
+                    data_nascimento: dataToUpdate.birthdate,
+                    telefone: dataToUpdate.phone,
+                });
+                
+                console.log("Dados de usuário atualizados:", userData);
+                alert('Dados atualizados com sucesso!');
+                setCurrentPassword('');
+                setNewPassword('');
+            } else {
+                throw new Error('Erro ao atualizar dados');
+            }
 
-    const handleBackToProfile = () => {
-        setActiveView(VIEWS.PROFILE); // Volta para a tela principal de Perfil
-    };
-
-
-    // 4. LÓGICA DE RENDERIZAÇÃO CONDICIONAL
-    const renderContent = () => {
-        switch (activeView) {
-            case VIEWS.ORDERS:
-                return <MeusPedidos />;
-            case VIEWS.TRACKING:
-                return <RastrearPedido />;
-            case VIEWS.PROFILE:
-            default:
-                return (
-                    <form onSubmit={handleSave}>
-                        {/* Seu formulário existente de Alterar Dados (Form-Grid, Senha, Botão Salvar) */}
-                        <h3 className="section-title" style={{ marginTop: '0' }}>Dados Pessoais</h3>
-                        <div className="form-grid">
-                            {/* Nome de Usuário */}
-                            <div className="form-group">
-                                <label htmlFor="username" className="form-label">Nome de Usuário</label>
-                                <input type="text" id="username" value={userData.username} onChange={handleChange} className="form-input" required />
-                            </div>
-
-                            {/* Email */}
-                            <div className="form-group">
-                                <label htmlFor="email" className="form-label">Email</label>
-                                <input type="email" id="email" value={userData.email} onChange={handleChange} className="form-input" disabled />
-                                <p className="help-text">O email não pode ser alterado por aqui</p>
-                            </div>
-
-                            {/* Data de Nascimento */}
-                            <div className="form-group">
-                                <label htmlFor="birthdate" className="form-label">Data de Nascimento</label>
-                                <input type="date" id="birthdate" value={userData.birthdate} onChange={handleChange} className="form-input" required />
-                            </div>
-
-                            {/* Telefone */}
-                            <div className="form-group">
-                                <label htmlFor="phone" className="form-label">Telefone</label>
-                                <input type="tel" id="phone" value={userData.phone} onChange={handleChange} className="form-input" placeholder="(99) 99999-9999" required />
-                            </div>
-                        </div>
-
-                        {/* Seção de Senha */}
-                        <h3 className="section-title">Alterar Senha</h3>
-                        <p className="help-text">Preencha ambos os campos apenas se quiser alterar sua senha</p>
-
-                        <div className="form-grid">
-                            {/* Senha Atual */}
-                            <div className="form-group">
-                                <label htmlFor="currentPassword" className="form-label">Senha Atual</label>
-                                <input type="password" id="currentPassword" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="form-input" placeholder="********" />
-                            </div>
-
-                            {/* Nova Senha */}
-                            <div className="form-group">
-                                <label htmlFor="newPassword" className="form-label">Nova Senha</label>
-                                <input type="password" id="newPassword" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="form-input" placeholder="********" />
-                            </div>
-                        </div>
-
-                        {/* Botão Salvar */}
-                        <div style={{ display: 'flex', justifyContent: 'center' }}>
-                            <button type="submit" className="save-button" style={{ backgroundColor: userData.profileColor }}>
-                                Salvar Alterações
-                            </button>
-                        </div>
-                    </form>
-                );
+        } catch (err) {
+            console.error('Erro ao salvar dados:', err);
+            alert('Erro ao atualizar dados. Tente novamente.');
+        } finally {
+            setSaving(false);
         }
     };
 
+    // 8. ESTADOS DE CARREGAMENTO E ERRO
+    if (loading) {
+        return (
+            <div className="profile-card-container">
+                <div className="card-header-bar" style={{ backgroundColor: '#FF9D00' }}></div>
+                <div style={{ textAlign: 'center', padding: '2rem' }}>
+                    <p>Carregando dados do usuário...</p>
+                </div>
+            </div>
+        );
+    }
 
-    // JSX Principal
+    if (error) {
+        return (
+            <div className="profile-card-container">
+                <div className="card-header-bar" style={{ backgroundColor: '#FF9D00' }}></div>
+                <div style={{ textAlign: 'center', padding: '2rem', color: 'red' }}>
+                    <p>{error}</p>
+                    <button onClick={() => navigate('/login')} className="secondary-button">
+                        Fazer Login
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // 9. JSX PRINCIPAL (MESMO QUE O SEU)
     return (
         <>
             <style>
-                {/* ESTILOS AQUI (MANTIDOS IGUAIS) */}
                 {`
                 .profile-card-container {
                     position: relative;
@@ -231,7 +365,7 @@ const AlterarDadosUsuario = () => {
                 .color-option.selected {
                     transform: scale(1.2);
                     border: 2px solid #FF9D00;
-                    outline: 2px solid #FF9D00; /* Para acessibilidade e destaque */
+                    outline: 2px solid #FF9D00;
                     outline-offset: 1px;
                 }
 
@@ -309,13 +443,18 @@ const AlterarDadosUsuario = () => {
                     margin-top: 2rem;
                 }
 
-                .save-button:hover {
+                .save-button:hover:not(:disabled) {
                     background: #e68a00;
                     transform: scale(1.02);
                 }
 
                 .save-button:active {
                     transform: scale(0.98);
+                }
+
+                .save-button:disabled {
+                    opacity: 0.7;
+                    cursor: not-allowed;
                 }
                 
                 /* Estilos para os Novos Botões */
@@ -370,7 +509,6 @@ const AlterarDadosUsuario = () => {
                     text-decoration: underline;
                 }
 
-
                 @media (max-width: 768px) {
                     .profile-card-container {
                         padding: 1.5rem;
@@ -395,7 +533,6 @@ const AlterarDadosUsuario = () => {
                 
                 <div className="profile-title-section">
                     <h1 className="profile-main-title" style={{ color: userData.profileColor }}>
-                        {/* Título dinâmico */}
                         {activeView === VIEWS.PROFILE ? "Configurações do Perfil" : activeView === VIEWS.ORDERS ? "Seus Pedidos" : "Rastreamento"}
                     </h1>
                 </div>
@@ -406,7 +543,6 @@ const AlterarDadosUsuario = () => {
                         ← Voltar para Configurações
                     </button>
                 )}
-
 
                 {activeView === VIEWS.PROFILE && (
                     <>
@@ -436,10 +572,8 @@ const AlterarDadosUsuario = () => {
                     </>
                 )}
 
-
                 {/* RENDERIZAÇÃO CONDICIONAL */}
                 {renderContent()}
-
 
                 {/* Grupo de Botões Secundários (Apenas na tela de Perfil) */}
                 {activeView === VIEWS.PROFILE && (

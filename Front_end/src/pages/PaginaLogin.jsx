@@ -1,38 +1,34 @@
+// src/pages/PaginaLogin.jsx
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext.jsx'; // 👈 IMPORTAR O HOOK
 import ImagemTenis from '../assets/ImgPagLogin.png';
 
 const PaginaLogin = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+    
+    const { login } = useAuth(); // 👈 USAR O HOOK
     const navigate = useNavigate();
 
-    const usuariosValidos = [
-        { email: 'usuario@sneaklab.com', password: 'senha123' },
-        { email: 'teste@email.com', password: '123' },
-        { email: 'admin@sneaklab.com', password: 'admin' },
-        { email: 'AdminTest', password: '1234' },
-    ];
-
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
+        setLoading(true);
 
-        const usuarioEncontrado = usuariosValidos.find(
-            (user) => user.email === email && user.password === password
-        );
-
-        if (usuarioEncontrado) {
-            console.log('Login bem-sucedido!');
+        const result = await login(email, password);
+        
+        if (result.success) {
             alert('Login realizado com sucesso! 🎉');
-            navigate('/home'); // MUDANÇA AQUI
+            navigate('/home');
         } else {
-            console.log('Credenciais inválidas.');
-            alert('Credenciais inválidas. Por favor, tente novamente.');
+            alert(`Erro no login: ${result.error}`);
         }
+        
+        setLoading(false);
     };
 
     return (
-        // ... (o restante do seu código JSX)
         <>
             <style>
                 {`
@@ -150,8 +146,13 @@ const PaginaLogin = () => {
                     transition: background-color 0.3s;
                 }
                 
-                .login-button:hover {
+                .login-button:hover:not(:disabled) {
                     background-color: #f0f0f0;
+                }
+
+                .login-button:disabled {
+                    opacity: 0.7;
+                    cursor: not-allowed;
                 }
 
                 .register-link-text {
@@ -203,13 +204,14 @@ const PaginaLogin = () => {
                         </h2>
                         <form onSubmit={handleLogin}>
                             <div className="input-group">
-                                <label htmlFor="email">Usuário</label>
+                                <label htmlFor="email">Usuário/Email</label>
                                 <input
                                     type="text"
                                     id="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="NomeUsuario"
+                                    placeholder="seuemail@exemplo.com"
+                                    required
                                 />
                             </div>
                             <div className="input-group">
@@ -220,14 +222,19 @@ const PaginaLogin = () => {
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="********"
+                                    required
                                 />
                             </div>
                             <div className="remember-me">
                                 <input type="checkbox" id="remember" />
                                 <label htmlFor="remember" style={{ marginLeft: '0.5rem', fontWeight: 'normal' }}>Lembre-me</label>
                             </div>
-                            <button type="submit" className="login-button">
-                                Entrar
+                            <button 
+                                type="submit" 
+                                className="login-button"
+                                disabled={loading}
+                            >
+                                {loading ? 'Entrando...' : 'Entrar'}
                             </button>
                         </form>
                         <p className="register-link-text">
