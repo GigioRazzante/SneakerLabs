@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext.jsx'; // 👈 IMPORTAR O CONTEXT
+import { useAuth } from '../context/AuthContext.jsx';
 
 // 1. IMPORTAÇÕES DOS NOVOS COMPONENTES
 import MeusPedidos from './MeusPedidos'; 
@@ -15,7 +15,7 @@ const VIEWS = {
 
 const AlterarDadosUsuario = () => {
     // 2. USAR O CONTEXT EM VEZ DE LOCALSTORAGE DIRETO
-    const { user, updateUser } = useAuth();
+    const { user, updateUser, loading: authLoading } = useAuth();
     const navigate = useNavigate();
     
     // 3. ESTADOS PARA DADOS DO USUÁRIO E CARREGAMENTO
@@ -29,8 +29,6 @@ const AlterarDadosUsuario = () => {
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [activeView, setActiveView] = useState(VIEWS.PROFILE);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
     const [saving, setSaving] = useState(false);
 
     const colorOptions = ['#FF9D00', '#1A1A1A', '#007BFF', '#28A745', '#DC3545', '#6F42C1'];
@@ -45,14 +43,10 @@ const AlterarDadosUsuario = () => {
                 phone: user.telefone || '',
                 profileColor: '#FF9D00',
             });
-            setLoading(false);
-        } else {
-            setError('Usuário não logado');
-            setLoading(false);
         }
     }, [user]);
 
-    // 5. FUNÇÕES DE NAVEGAÇÃO (QUE ESTAVAM FALTANDO)
+    // 5. FUNÇÕES DE NAVEGAÇÃO
     const handleAccessOrders = () => {
         setActiveView(VIEWS.ORDERS);
         console.log('>>> Ação: Navegar para Meus Pedidos');
@@ -67,7 +61,33 @@ const AlterarDadosUsuario = () => {
         setActiveView(VIEWS.PROFILE);
     };
 
-    // 6. FUNÇÃO RENDERCONTENT (QUE ESTAVA FALTANDO)
+    // 6. RENDERIZAÇÃO CONDICIONAL BASEADA NO ESTADO DE LOADING
+    if (authLoading) {
+        return (
+            <div className="profile-card-container">
+                <div className="card-header-bar" style={{ backgroundColor: '#FF9D00' }}></div>
+                <div style={{ textAlign: 'center', padding: '2rem' }}>
+                    <p>Carregando dados do usuário...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!user) {
+        return (
+            <div className="profile-card-container">
+                <div className="card-header-bar" style={{ backgroundColor: '#FF9D00' }}></div>
+                <div style={{ textAlign: 'center', padding: '2rem', color: 'red' }}>
+                    <p>Usuário não logado</p>
+                    <button onClick={() => navigate('/login')} className="secondary-button">
+                        Fazer Login
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // 7. FUNÇÃO RENDERCONTENT (APÓS VERIFICAÇÕES)
     const renderContent = () => {
         switch (activeView) {
             case VIEWS.ORDERS:
@@ -198,18 +218,12 @@ const AlterarDadosUsuario = () => {
         }));
     };
 
-    // 7. FUNÇÃO handleSave ATUALIZADA
+    // 8. FUNÇÃO handleSave ATUALIZADA
     const handleSave = async (e) => {
         e.preventDefault();
         setSaving(true);
         
         try {
-            if (!user) {
-                alert('Usuário não logado');
-                navigate('/login');
-                return;
-            }
-
             // Preparar dados para enviar
             const { email, profileColor, ...dataToUpdate } = userData;
             
@@ -249,33 +263,7 @@ const AlterarDadosUsuario = () => {
         }
     };
 
-    // 8. ESTADOS DE CARREGAMENTO E ERRO
-    if (loading) {
-        return (
-            <div className="profile-card-container">
-                <div className="card-header-bar" style={{ backgroundColor: '#FF9D00' }}></div>
-                <div style={{ textAlign: 'center', padding: '2rem' }}>
-                    <p>Carregando dados do usuário...</p>
-                </div>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="profile-card-container">
-                <div className="card-header-bar" style={{ backgroundColor: '#FF9D00' }}></div>
-                <div style={{ textAlign: 'center', padding: '2rem', color: 'red' }}>
-                    <p>{error}</p>
-                    <button onClick={() => navigate('/login')} className="secondary-button">
-                        Fazer Login
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
-    // 9. JSX PRINCIPAL (MESMO QUE O SEU)
+    // 9. JSX PRINCIPAL (APENAS SE USER ESTIVER LOGADO E LOADING TERMINADO)
     return (
         <>
             <style>

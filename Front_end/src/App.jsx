@@ -1,7 +1,7 @@
 // src/App.jsx
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext.jsx'; // 👈 IMPORTAR O PROVIDER
+import { AuthProvider } from './context/AuthContext.jsx';
 
 import PaginaInicial from './pages/PaginaInicial.jsx';
 import PaginaInicialLog from './pages/PaginaInicialLog.jsx';
@@ -21,12 +21,12 @@ function BackgroundHandler() {
     const path = location.pathname;
     console.log('📍 Rota atual:', path); // DEBUG
     
-    // Páginas que devem ter fundo branco/cinza
+    // 🚨 CORREÇÃO: Remover "/rastrear-pedido/" da lista de fundo branco
+    // Páginas que devem ter fundo branco/cinza (apenas páginas deslogadas)
     if (
       path === "/login" || 
       path === "/cadastro" || 
-      path === "/" || 
-      path.startsWith("/rastrear-pedido/")
+      path === "/"  // Apenas raiz (página inicial deslogada)
     ) {
       console.log('🎯 Aplicando fundo branco/customizado para rota:', path);
       document.body.classList.add("no-bg");
@@ -43,7 +43,6 @@ function BackgroundHandler() {
 
 function App() {
   return (
-    // 👈 ENVOLVER TUDO COM O AUTH PROVIDER
     <AuthProvider>
       <Router>
         <BackgroundHandler />
@@ -55,14 +54,13 @@ function App() {
           <Route path="/login" element={<PaginaLogin />} />
           <Route path="/cadastro" element={<PaginaCadastro />} />
 
+          {/* 🚨 CORREÇÃO: RastrearPedido agora está entre as rotas logadas */}
           {/* Rotas Logadas (background da imagem) */}
           <Route path="/home" element={<PaginaInicialLog />} />
           <Route path="/catalogo" element={<PaginaCatalogo />} />
           <Route path="/criar-sneaker" element={<PaginaCriarSneaker />} />
           <Route path="/perfil" element={<PaginaPerfil />} />
           <Route path="/meus-pedidos" element={<MeusPedidos />} />
-          
-          {/* Rota Dinâmica (fundo branco/customizado) */}
           <Route path="/rastrear-pedido/:pedidoId" element={<RastrearPedido />} />
         </Routes>
       </Router>

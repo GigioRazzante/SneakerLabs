@@ -108,28 +108,11 @@ const PaginaCriarSneaker = () => {
         }
     };
 
-    const handleFinalize = () => {
-        const items = Object.keys(selections).map(stepId => {
-            const stepIndex = parseInt(stepId, 10);
-            const selectedOptionId = selections[stepIndex].id;
-            const selectedOption = passos[stepIndex].opcoes.find(opt => opt.id === selectedOptionId);
-            
-            if (selectedOption) {
-                return {
-                    step: stepIndex + 1,
-                    title: passos[stepIndex].titulo.split(':')[1]?.trim() || passos[stepIndex].titulo,
-                    category: passos[stepIndex].titulo.split(':')[0]?.trim(),
-                    name: selectedOption.nome,
-                    price: selectedOption.preco,
-                    acrescimo: selectedOption.acrescimo
-                };
-            }
-            return null;
-        }).filter(item => item !== null);
-
+    const handleFinalize = (pedidoData) => {
         const novoPedido = {
             id: Date.now(),
-            items: items,
+            items: pedidoData.items,
+            valorTotal: pedidoData.valorTotal, // 🚨 AGORA COM VALOR TOTAL
             dataCriacao: new Date().toLocaleString('pt-BR')
         };
 
@@ -138,7 +121,6 @@ const PaginaCriarSneaker = () => {
         setCurrentStep(passos.length + 1);
     };
 
-    // ✅ FUNÇÃO QUE ESTAVA FALTANDO
     const handleIncluirMaisPedidos = () => {
         setSelections({});
         setCurrentStep(0);
@@ -165,6 +147,7 @@ const PaginaCriarSneaker = () => {
 
         const produtosParaEnvio = pedidos.map((pedido, pedidoIndex) => {
             const configuracoes = {};
+            let valorTotal = 0; // 🚨 CALCULAR O VALOR TOTAL DO PRODUTO
 
             console.log(`🔍 Analisando pedido ${pedidoIndex + 1}:`);
             
@@ -173,7 +156,11 @@ const PaginaCriarSneaker = () => {
                 if (itemDoPedido) {
                     const newKey = stepMap[index];
                     configuracoes[newKey] = itemDoPedido.name;
-                    console.log(`   Passo ${index + 1}: ${itemDoPedido.name}`);
+                    
+                    // 🚨 SOMAR O VALOR DE CADA ITEM
+                    valorTotal += itemDoPedido.acrescimo || 0;
+                    
+                    console.log(`   Passo ${index + 1}: ${itemDoPedido.name} - R$ ${itemDoPedido.acrescimo}`);
                 } else {
                     console.error(`❌ ERRO: Pedido ${pedidoIndex + 1} está faltando o passo ${index + 1}`);
                 }
@@ -187,10 +174,11 @@ const PaginaCriarSneaker = () => {
                 throw new Error(`Pedido ${pedidoIndex + 1} incompleto`);
             }
 
-            console.log(`✅ Pedido ${pedidoIndex + 1} completo com todos os 5 passos`);
+            console.log(`✅ Pedido ${pedidoIndex + 1} completo com todos os 5 passos - Valor Total: R$ ${valorTotal.toFixed(2)}`);
 
             return {
-                configuracoes: configuracoes
+                configuracoes: configuracoes,
+                valor: valorTotal // 🚨 ENVIAR O VALOR PARA O BACKEND
             };
         });
 
@@ -199,10 +187,11 @@ const PaginaCriarSneaker = () => {
             produtos: produtosParaEnvio
         };
         
-        console.log("📦 CONFIRMAÇÃO - Cliente ID no request:", bodyRequisicao.clienteId);
-        console.log("📦 DETALHES DO PEDIDO PARA BACKEND:");
+        console.log("📦 CONFIRMAÇÃO - Dados para backend:");
         console.log("Cliente ID:", user.id);
         console.log("Número de produtos:", produtosParaEnvio.length);
+        console.log("Valores dos produtos:", produtosParaEnvio.map(p => `R$ ${p.valor.toFixed(2)}`));
+        console.log("Total do pedido:", produtosParaEnvio.reduce((sum, p) => sum + p.valor, 0).toFixed(2));
         console.log("JSON completo enviado para o Backend:", JSON.stringify(bodyRequisicao, null, 2));
 
         try {
@@ -227,7 +216,7 @@ const PaginaCriarSneaker = () => {
             const successData = await response.json();
             console.log("✅ Sucesso! Dados retornados:", successData);
             
-            alert(`🎉 Pedido #${successData.pedidoId} recebido e ${successData.produtosEnviados.length} produto(s) enviado(s) para produção!`);
+            alert(`🎉 Pedido #${successData.pedidoId} recebido e ${successData.produtosEnviados.length} produto(s) enviado(s) para produção! Valor: R$ ${produtosParaEnvio.reduce((sum, p) => sum + p.valor, 0).toFixed(2)}`);
             
             setSelections({});
             setPedidos([]);
@@ -240,7 +229,6 @@ const PaginaCriarSneaker = () => {
         }
     };
 
-    // ✅ FUNÇÃO RENDER CORRIGIDA
     const renderCurrentStep = () => {
         if (currentStep < passos.length) {
             return (
@@ -366,7 +354,6 @@ const PaginaCriarSneaker = () => {
                 }
     
                 .card-option {
-                    /* REMOVIDO: background-color: var(--cinza-claro-fundo); */
                     padding: 1.5rem;
                     text-align: center;
                     border-radius: 0.75rem;
@@ -376,35 +363,32 @@ const PaginaCriarSneaker = () => {
                     border: 2px solid var(--laranja-vibrante); 
                     position: relative;
                     overflow: hidden;
-                    color: var(--branco); /* Texto branco por padrão, para fundos escuros/imagens */
+                    color: var(--branco);
                     height: 100%;
                     display: flex;
                     flex-direction: column;
                     justify-content: center;
-                    /* Adicionado: fallback para navegadores sem imagem de fundo */
                     background-color: var(--cinza-claro-fundo);
                 }
 
-                /* NOVO: Overlay para escurecer a imagem e manter o texto legível */
                 .image-overlay {
                     position: absolute;
                     top: 0;
                     left: 0;
                     width: 100%;
                     height: 100%;
-                    background-color: rgba(0, 0, 0, 0.4); /* Escurece 40% */
-                    z-index: 1; /* Abaixo do texto */
+                    background-color: rgba(0, 0, 0, 0.4);
+                    z-index: 1;
                     transition: background-color 0.3s ease;
                 }
                 .card-option:hover .image-overlay {
                     background-color: rgba(0, 0, 0, 0.55);
                 }
 
-                /* NOVO: Ajusta o texto para ficar acima do overlay e garante visibilidade */
                 .card-number, .card-price {
                     position: relative;
-                    z-index: 2; /* Acima do overlay */
-                    color: inherit; /* Usa a cor definida no card-option (branco) */
+                    z-index: 2;
+                    color: inherit;
                     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5); 
                 }
 
@@ -426,11 +410,9 @@ const PaginaCriarSneaker = () => {
                 .card-option.selected {
                     border-width: 3px;
                     border-color: var(--azul-selecao);
-                    /* Permite que a cor de fundo seja visível, mas adiciona um anel visual */
                     box-shadow: 0 0 0 4px rgba(0, 191, 255, 0.5);
                 }
 
-                /* SOBRESCRITA DE CORES PARA CARDS CLAROS (BRANCO/AMARELO) */
                 .card-option[style*="#FFFFFF"] {
                     border-color: #ccc;
                 }
@@ -442,7 +424,6 @@ const PaginaCriarSneaker = () => {
                     text-shadow: none;
                 }
 
-                /* Efeito de seleção em cards de cores escuras: texto branco + anel azul */
                 .card-option.selected[style*="#000000"] .card-number, 
                 .card-option.selected[style*="#000000"] .card-price {
                     color: var(--branco);
@@ -551,7 +532,6 @@ const PaginaCriarSneaker = () => {
                     color: var(--laranja-vibrante);
                 }
 
-                /* ESTILO ESPECÍFICO PARA O VALOR TOTAL (total-price) - COR LARANJA */
                 .total-price {
                     color: var(--laranja-vibrante); 
                     font-weight: bold;
@@ -694,7 +674,6 @@ const PaginaCriarSneaker = () => {
                         gap: 1rem;
                     }
                     
-                    /* Responsividade para o resumo */
                     .summary-item {
                         padding: 1rem;
                     }
@@ -710,7 +689,6 @@ const PaginaCriarSneaker = () => {
                         font-size: 1.1rem;
                     }
 
-                    /* Responsividade para o carrinho com múltiplos pedidos */
                     .pedido-header {
                         flex-direction: column;
                         align-items: flex-start;

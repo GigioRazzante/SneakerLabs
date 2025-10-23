@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom'; 
-import { useAuth } from '../context/AuthContext.jsx'; // 👈 IMPORTAR O CONTEXT
+import { useAuth } from '../context/AuthContext.jsx';
 import Navbar from '../components/Navbar'; 
 
 const MeusPedidos = () => {
     const navigate = useNavigate(); 
-    const { user } = useAuth(); // 👈 PEGAR O USUÁRIO DO CONTEXT
+    const { user } = useAuth();
     
     const [pedidos, setPedidos] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -20,7 +20,6 @@ const MeusPedidos = () => {
 
     useEffect(() => {
         const fetchPedidos = async () => {
-            // 👈 VERIFICAR SE USUÁRIO ESTÁ LOGADO
             if (!user || !user.id) {
                 setError('Usuário não logado');
                 setLoading(false);
@@ -30,7 +29,6 @@ const MeusPedidos = () => {
             setLoading(true);
             setError(null);
             try {
-                // 👈 USAR O ID DO USUÁRIO LOGADO
                 const response = await fetch(`http://localhost:3001/api/orders/cliente/${user.id}`);
 
                 if (!response.ok) {
@@ -39,9 +37,7 @@ const MeusPedidos = () => {
                 }
 
                 const data = await response.json();
-                
-                // O Backend retorna um array de pedidos
-                setPedidos(data.pedidos || []); // 👈 GARANTIR QUE É UM ARRAY
+                setPedidos(data.pedidos || []);
                 
             } catch (err) {
                 console.error('Erro ao buscar pedidos:', err);
@@ -52,7 +48,7 @@ const MeusPedidos = () => {
         };
 
         fetchPedidos();
-    }, [user]); // 👈 ADICIONAR user COMO DEPENDÊNCIA
+    }, [user]);
 
     const formatarData = (dataString) => {
         try {
@@ -67,7 +63,6 @@ const MeusPedidos = () => {
         navigate(`/rastrear-pedido/${pedidoId}`);
     };
 
-    // 👈 REDIRECIONAR SE NÃO ESTIVER LOGADO
     if (!user) {
         return (
             <div style={{ 
@@ -100,7 +95,8 @@ const MeusPedidos = () => {
         <>
             <Navbar />
             
-            <div className="page-container" style={{paddingTop: '6rem'}}> 
+            {/* ✅ REMOVIDO paddingTop: '6rem' */}
+            <div className="page-container"> 
                 <div className="main-content-card" style={{maxWidth: '800px', padding: '2rem 1.5rem'}}>
                     <div className="title-section">
                         <h2 className="title">Histórico de Pedidos</h2>

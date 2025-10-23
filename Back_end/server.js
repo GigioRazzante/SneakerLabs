@@ -105,15 +105,15 @@ const generateBoxPayload = (orderDetails) => {
 };
 
 // =======================================================================
-// ROTA 1: RECEBIMENTO DO CARRINHO (FATIAMENTO E ENVIO) - CORRIGIDA
+// ROTA 1: RECEBIMENTO DO CARRINHO (FATIAMENTO E ENVIO) - CORRIGIDA COM VALOR
 // =======================================================================
 app.post('/api/orders', async (req, res) => {
-    // ✅ REMOVER VALOR PADRÃO - agora é obrigatório receber clienteId do frontend
     const { clienteId, produtos } = req.body;
 
     console.log('=== 📦 INICIANDO PROCESSAMENTO DO PEDIDO ===');
     console.log(`Cliente ID recebido do frontend: ${clienteId}`);
     console.log(`Número de produtos: ${produtos ? produtos.length : 0}`);
+    console.log('Produtos recebidos:', JSON.stringify(produtos, null, 2));
 
     // ✅ VALIDAR SE clienteId FOI ENVIADO
     if (!clienteId) {
@@ -137,23 +137,32 @@ app.post('/api/orders', async (req, res) => {
         }
         console.log(`✅ Cliente ${clienteId} encontrado no banco`);
 
-        // 2. Salvar o Pedido Mestre (Tabela 'pedidos')
+        // 🚨 CALCULAR VALOR TOTAL DO PEDIDO
+        const valorTotalPedido = produtos.reduce((total, produto) => {
+            return total + (produto.valor || 0);
+        }, 0);
+        
+        console.log(`💰 Valor total do pedido: R$ ${valorTotalPedido.toFixed(2)}`);
+
+        // 2. Salvar o Pedido Mestre (Tabela 'pedidos') COM VALOR TOTAL
         console.log(`💾 Salvando pedido mestre para cliente ${clienteId}...`);
         const pedidoMestreResult = await pool.query(
-            'INSERT INTO pedidos (cliente_id, status_geral) VALUES ($1, $2) RETURNING id',
-            [clienteId, 'PENDENTE']
+            'INSERT INTO pedidos (cliente_id, status_geral, valor_total) VALUES ($1, $2, $3) RETURNING id',
+            [clienteId, 'PENDENTE', valorTotalPedido]
         );
         const pedidoId = pedidoMestreResult.rows[0].id;
-        console.log(`✅ Pedido mestre criado: ID ${pedidoId}`);
+        console.log(`✅ Pedido mestre criado: ID ${pedidoId} - Valor: R$ ${valorTotalPedido.toFixed(2)}`);
         
         const produtosEnviados = [];
 
         // 3. FATIAMENTO E ENVIO (Iterar sobre cada produto do carrinho)
         for (const [index, produto] of produtos.entries()) {
             const orderDetails = produto.configuracoes;
+            const valorUnitario = produto.valor || 0; // 🚨 CAPTURAR VALOR DO PRODUTO
 
             console.log(`\n📋 Processando produto ${index + 1}/${produtos.length}:`);
             console.log('Configurações recebidas:', orderDetails);
+            console.log(`💰 Valor do produto: R$ ${valorUnitario.toFixed(2)}`);
 
             // Validar que todos os campos obrigatórios estão presentes
             const camposObrigatorios = ['passoUmDeCinco', 'passoDoisDeCinco', 'passoTresDeCinco', 'passoQuatroDeCinco', 'passoCincoDeCinco'];
@@ -167,13 +176,13 @@ app.post('/api/orders', async (req, res) => {
             console.log(`✅ Todos os campos presentes:`, camposObrigatorios.map(campo => `${campo}: ${orderDetails[campo]}`));
 
             try {
-                // 3.1. Salvar o Produto Individual (Tabela 'produtos_do_pedido')
+                // 3.1. Salvar o Produto Individual (Tabela 'produtos_do_pedido') COM VALOR
                 console.log(`💾 Tentando salvar produto no banco...`);
                 
                 const produtoSalvoResult = await pool.query(
                     `INSERT INTO produtos_do_pedido (
-                        pedido_id, estilo, material, solado, cor, detalhes, status_producao
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+                        pedido_id, estilo, material, solado, cor, detalhes, status_producao, valor_unitario
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
                     [
                         pedidoId, 
                         orderDetails.passoUmDeCinco, 
@@ -181,13 +190,15 @@ app.post('/api/orders', async (req, res) => {
                         orderDetails.passoTresDeCinco,
                         orderDetails.passoQuatroDeCinco,
                         orderDetails.passoCincoDeCinco,
-                        'FILA' // Status inicial
+                        'FILA', // Status inicial
+                        valorUnitario // 🚨 SALVAR VALOR UNITÁRIO
                     ]
                 );
                 
                 const produtoDbId = produtoSalvoResult.rows[0].id;
-                console.log(`✅ Produto salvo com ID: ${produtoDbId}`);
+                console.log(`✅ Produto salvo com ID: ${produtoDbId} - Valor: R$ ${valorUnitario.toFixed(2)}`);
 
+                // ... resto do código permanece igual para envio à produção
                 // 3.2. Traduzir e Enviar para Produção
                 console.log(`🔄 Traduzindo para payload da caixa...`);
                 const boxProductionPayload = generateBoxPayload(orderDetails);
@@ -201,7 +212,6 @@ app.post('/api/orders', async (req, res) => {
                 });
 
                 if (!productionResponse.ok) {
-                    // Em caso de falha de envio, atualiza o status do produto
                     await pool.query('UPDATE produtos_do_pedido SET status_producao = $1 WHERE id = $2', ['FALHA_ENVIO', produtoDbId]);
                     throw new Error(`Erro ao enviar produto ${produtoDbId}: ${productionResponse.statusText}`);
                 }
@@ -219,21 +229,22 @@ app.post('/api/orders', async (req, res) => {
                 produtosEnviados.push({ 
                     produtoDbId, 
                     rastreioId,
+                    valor: valorUnitario,
                     status: 'ENVIADO'
                 });
 
             } catch (produtoError) {
                 console.error(`❌ Erro ao processar produto ${index + 1}:`, produtoError);
-                console.error('Stack trace do produto:', produtoError.stack);
-                throw produtoError; // Propaga o erro para interromper o processamento
+                throw produtoError;
             }
         }
 
         // 4. Resposta de sucesso para o Frontend
-        console.log(`🎉 Pedido #${pedidoId} processado com sucesso! ${produtosEnviados.length} produtos enviados.`);
+        console.log(`🎉 Pedido #${pedidoId} processado com sucesso! ${produtosEnviados.length} produtos enviados. Valor total: R$ ${valorTotalPedido.toFixed(2)}`);
         res.status(200).json({
             message: `Pedido #${pedidoId} recebido e ${produtosEnviados.length} produtos enviados para produção.`,
             pedidoId: pedidoId,
+            valorTotal: valorTotalPedido,
             produtosEnviados: produtosEnviados,
         });
 
@@ -241,7 +252,6 @@ app.post('/api/orders', async (req, res) => {
         console.error('❌ ERRO DETALHADO ao processar o carrinho:');
         console.error('Mensagem:', err.message);
         console.error('Stack trace completo:', err.stack);
-        console.error('Código do erro (se PostgreSQL):', err.code);
         
         res.status(500).json({ error: 'Erro ao processar o carrinho. Por favor, tente novamente.' });
     }
@@ -305,54 +315,74 @@ app.post('/api/callback', async (req, res) => {
     }
 });
 
-
 // =======================================================================
-// ROTA 3: BUSCA DE STATUS DO PEDIDO (Para o Frontend Rastrear)
+// ROTA 3: BUSCA DE STATUS DO PEDIDO (Para o Frontend Rastrear) - CORRIGIDA
 // =======================================================================
 app.get('/api/orders/:id/status', async (req, res) => {
-    const pedidoId = req.params.id;
+    const pedidoId = req.params.id;
+    
+    // 🚨 CORREÇÃO: Verificar tanto x-client-id quanto client-id
+    const clienteId = req.headers['x-client-id'] || req.headers['client-id'];
 
-    try {
-        // 1. Obter o status geral do pedido e a data de criação
-        const pedidoResult = await pool.query(
-            'SELECT status_geral, data_criacao FROM pedidos WHERE id = $1',
-            [pedidoId]
-        );
+    console.log(`🔍 Buscando pedido ${pedidoId} para cliente: ${clienteId}`); // DEBUG
 
-        if (pedidoResult.rows.length === 0) {
-            return res.status(404).json({ message: "Pedido não encontrado." });
-        }
-        
-        const { status_geral, data_criacao } = pedidoResult.rows[0];
+    try {
+        // 🚨 VERIFICAÇÃO DE AUTORIZAÇÃO
+        if (!clienteId) {
+            console.log('❌ Cliente ID não fornecido nos headers');
+            return res.status(401).json({ message: "Identificação do cliente necessária." });
+        }
 
-        // 2. Obter o status, slot e estilo/material de cada produto fatiado
-        const produtosResult = await pool.query(
-            'SELECT estilo, material, status_producao, slot_expedicao, id_rastreio_maquina FROM produtos_do_pedido WHERE pedido_id = $1',
-            [pedidoId]
-        );
+        // 1. Obter o pedido
+        const pedidoResult = await pool.query(
+            'SELECT status_geral, data_criacao, cliente_id FROM pedidos WHERE id = $1',
+            [pedidoId]
+        );
 
-        res.status(200).json({
-            pedidoId: pedidoId,
-            statusGeral: status_geral,
-            dataCriacao: data_criacao, // Adicionado para exibição na tela de Rastreio
-            produtos: produtosResult.rows.map(row => ({
-                configuracao: `${row.estilo} / ${row.material} / ...`, // Simplificado para exibição
-                status: row.status_producao,
-                slotExpedicao: row.slot_expedicao,
-                rastreioId: row.id_rastreio_maquina // Adicionado para exibição
-            }))
-        });
+        if (pedidoResult.rows.length === 0) {
+            console.log(`❌ Pedido ${pedidoId} não encontrado`);
+            return res.status(404).json({ message: "Pedido não encontrado." });
+        }
+        
+        const { status_geral, data_criacao, cliente_id } = pedidoResult.rows[0];
+        
+        console.log(`📊 Pedido encontrado: cliente_id=${cliente_id}, solicitante=${clienteId}`); // DEBUG
+        
+        // 🚨 VERIFICAÇÃO CRÍTICA
+        if (parseInt(cliente_id) !== parseInt(clienteId)) {
+            console.log(`❌ Acesso negado: pedido pertence ao cliente ${cliente_id}, solicitante é ${clienteId}`);
+            return res.status(403).json({ 
+                message: "Acesso negado. Este pedido não pertence ao seu usuário." 
+            });
+        }
 
-    } catch (err) {
-        console.error('Erro ao buscar status do pedido:', err.message);
-        res.status(500).json({ error: 'Erro ao buscar status do pedido.' });
-    }
+        // 2. Obter produtos do pedido
+        const produtosResult = await pool.query(
+            'SELECT estilo, material, status_producao, slot_expedicao, id_rastreio_maquina FROM produtos_do_pedido WHERE pedido_id = $1',
+            [pedidoId]
+        );
+
+        console.log(`✅ Pedido ${pedidoId} autorizado para cliente ${clienteId}`);
+
+        res.status(200).json({
+            pedidoId: pedidoId,
+            statusGeral: status_geral,
+            dataCriacao: data_criacao,
+            produtos: produtosResult.rows.map(row => ({
+                configuracao: `${row.estilo} / ${row.material}`,
+                status: row.status_producao,
+                slotExpedicao: row.slot_expedicao,
+                rastreioId: row.id_rastreio_maquina
+            }))
+        });
+
+    } catch (err) {
+        console.error('Erro ao buscar status do pedido:', err.message);
+        res.status(500).json({ error: 'Erro ao buscar status do pedido.' });
+    }
 });
-
-
 // =======================================================================
-// =======================================================================
-// ROTA 4: LISTA TODOS OS PEDIDOS DO CLIENTE (Para o Frontend MeusPedidos)
+// ROTA 4: LISTA TODOS OS PEDIDOS DO CLIENTE (Para o Frontend MeusPedidos) - CORRIGIDA
 // =======================================================================
 app.get('/api/orders/cliente/:clienteId', async (req, res) => {
     const { clienteId } = req.params;
@@ -360,13 +390,14 @@ app.get('/api/orders/cliente/:clienteId', async (req, res) => {
     try {
         console.log(`📦 Buscando pedidos para cliente ID: ${clienteId}`);
         
+        // 🚨 CORREÇÃO: Usar o valor_total real da tabela pedidos em vez de calcular
         const queryPedidos = `
             SELECT 
                 p.id AS pedido_id, 
                 p.data_criacao, 
                 p.status_geral,
-                COUNT(pd.id) AS total_produtos,
-                (COUNT(pd.id) * 150.00) AS valor_total 
+                p.valor_total,
+                COUNT(pd.id) AS total_produtos
             FROM 
                 pedidos p
             LEFT JOIN 
@@ -374,7 +405,7 @@ app.get('/api/orders/cliente/:clienteId', async (req, res) => {
             WHERE 
                 p.cliente_id = $1
             GROUP BY
-                p.id, p.data_criacao, p.status_geral
+                p.id, p.data_criacao, p.status_geral, p.valor_total
             ORDER BY 
                 p.data_criacao DESC;
         `;
@@ -385,7 +416,7 @@ app.get('/api/orders/cliente/:clienteId', async (req, res) => {
         
         const pedidosFormatados = resultado.rows.map(pedido => ({
             ...pedido,
-            valor_total: parseFloat(pedido.valor_total),
+            valor_total: pedido.valor_total ? parseFloat(pedido.valor_total) : 0,
             total_produtos: parseInt(pedido.total_produtos, 10)
         }));
 
