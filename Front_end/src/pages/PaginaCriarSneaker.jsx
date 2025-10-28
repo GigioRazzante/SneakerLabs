@@ -109,13 +109,20 @@ const PaginaCriarSneaker = () => {
     };
 
     const handleFinalize = (pedidoData) => {
+        console.log('📦 [PaginaCriarSneaker] Dados recebidos do ResumoPedido:', pedidoData);
+        
+        // 🚨 CORREÇÃO: Garantir estrutura correta mesmo se pedidoData for undefined
+        const dadosRecebidos = pedidoData || { items: [], valorTotal: 0 };
+        
         const novoPedido = {
             id: Date.now(),
-            items: pedidoData.items,
-            valorTotal: pedidoData.valorTotal, // 🚨 AGORA COM VALOR TOTAL
+            items: dadosRecebidos.items || [],
+            valorTotal: dadosRecebidos.valorTotal || 0,
             dataCriacao: new Date().toLocaleString('pt-BR')
         };
-
+    
+        console.log('✅ [PaginaCriarSneaker] Novo pedido criado:', novoPedido);
+        
         setPedidos([...pedidos, novoPedido]);
         setSelections({});
         setCurrentStep(passos.length + 1);
@@ -128,44 +135,105 @@ const PaginaCriarSneaker = () => {
 
     const handleConfirmarPedidos = async () => {
         if (pedidos.length === 0) return;
-
+    
         if (!user || !user.id) {
             alert('Erro: Usuário não identificado. Faça login novamente.');
             return;
         }
-
+    
         console.log("🔐 USUÁRIO LOGADO:", user);
         console.log("📝 Enviando pedido como cliente ID:", user.id);
-
+    
+        // 🚨 DEBUG CRÍTICO: Verificar estrutura completa dos pedidos
+        console.log('🔍 [DEBUG] Estrutura completa dos pedidos:', JSON.stringify(pedidos, null, 2));
+        
+        pedidos.forEach((pedido, index) => {
+            console.log(`📊 Pedido ${index}:`, {
+                id: pedido.id,
+                hasItems: !!pedido.items,
+                itemsIsArray: Array.isArray(pedido.items),
+                itemsLength: pedido.items?.length,
+                itemsStructure: pedido.items?.map(item => ({
+                    step: item?.step,
+                    name: item?.name,
+                    hasAcrescimo: !!item?.acrescimo
+                }))
+            });
+        });
+    
         const stepMap = {
             0: "passoUmDeCinco",
-            1: "passoDoisDeCinco",
+            1: "passoDoisDeCinco", 
             2: "passoTresDeCinco",
             3: "passoQuatroDeCinco",
             4: "passoCincoDeCinco",
         };
-
-        const produtosParaEnvio = pedidos.map((pedido, pedidoIndex) => {
-            const configuracoes = {};
-            let valorTotal = 0; // 🚨 CALCULAR O VALOR TOTAL DO PRODUTO
-
-            console.log(`🔍 Analisando pedido ${pedidoIndex + 1}:`);
+    
+        // 🚨 CORREÇÃO: Filtrar apenas pedidos válidos
+        const pedidosValidos = pedidos.filter(pedido => {
+            const isValid = pedido && 
+                           Array.isArray(pedido.items) && 
+                           pedido.items.length === 5; // 🚨 DEVE TER EXATOS 5 PASSOS
             
+            if (!isValid) {
+                console.error(`❌ Pedido ${pedido.id} inválido:`, {
+                    itemsLength: pedido.items?.length,
+                    items: pedido.items
+                });
+            }
+            return isValid;
+        });
+    
+        if (pedidosValidos.length === 0) {
+            alert('❌ Nenhum pedido válido para confirmar. Todos os pedidos devem ter 5 opções selecionadas.');
+            return;
+        }
+    
+        console.log(`✅ ${pedidosValidos.length} de ${pedidos.length} pedidos são válidos`);
+    
+        const produtosParaEnvio = pedidosValidos.map((pedido, pedidoIndex) => {
+            const configuracoes = {};
+            let valorTotal = 0;
+    
+            console.log(`🔍 Processando pedido válido ${pedidoIndex + 1}:`, pedido);
+            
+            // 🚨 CORREÇÃO: Validação EXTRA segura
+            if (!pedido.items || !Array.isArray(pedido.items) || pedido.items.length !== 5) {
+                console.error(`❌ ERRO CRÍTICO: Pedido ${pedidoIndex + 1} inválido mesmo após filtro`);
+                throw new Error(`Pedido ${pedidoIndex + 1} inválido - deve ter 5 itens`);
+            }
+    
             passos.forEach((passo, index) => {
-                const itemDoPedido = pedido.items.find(item => item.step === index + 1);
+                // 🚨 CORREÇÃO: Find com validação COMPLETA
+                const itemDoPedido = pedido.items.find(item => {
+                    if (!item) {
+                        console.error(`❌ Item null/undefined no pedido ${pedidoIndex + 1}`);
+                        return false;
+                    }
+                    if (item.step === undefined || item.name === undefined) {
+                        console.error(`❌ Item sem step/name no pedido ${pedidoIndex + 1}:`, item);
+                        return false;
+                    }
+                    return item.step === index + 1;
+                });
+                
                 if (itemDoPedido) {
                     const newKey = stepMap[index];
                     configuracoes[newKey] = itemDoPedido.name;
-                    
-                    // 🚨 SOMAR O VALOR DE CADA ITEM
                     valorTotal += itemDoPedido.acrescimo || 0;
-                    
-                    console.log(`   Passo ${index + 1}: ${itemDoPedido.name} - R$ ${itemDoPedido.acrescimo}`);
+                    console.log(`   ✅ Passo ${index + 1}: ${itemDoPedido.name} - R$ ${itemDoPedido.acrescimo}`);
                 } else {
-                    console.error(`❌ ERRO: Pedido ${pedidoIndex + 1} está faltando o passo ${index + 1}`);
+                    // 🚨 CORREÇÃO: Log detalhado do erro
+                    console.error(`❌ ERRO: Pedido ${pedidoIndex + 1} faltando passo ${index + 1}`);
+                    console.error('Itens disponíveis:', pedido.items.map(item => ({
+                        step: item?.step, 
+                        name: item?.name,
+                        acrescimo: item?.acrescimo
+                    })));
+                    throw new Error(`Pedido ${pedidoIndex + 1} incompleto - falta passo ${index + 1}`);
                 }
             });
-
+    
             const passosPreenchidos = Object.keys(configuracoes);
             if (passosPreenchidos.length !== 5) {
                 const erroMsg = `❌ Erro: O pedido ${pedidoIndex + 1} está incompleto. Faltam ${5 - passosPreenchidos.length} opções.`;
@@ -173,15 +241,14 @@ const PaginaCriarSneaker = () => {
                 alert(erroMsg);
                 throw new Error(`Pedido ${pedidoIndex + 1} incompleto`);
             }
-
-            console.log(`✅ Pedido ${pedidoIndex + 1} completo com todos os 5 passos - Valor Total: R$ ${valorTotal.toFixed(2)}`);
-
+    
+            console.log(`✅ Pedido ${pedidoIndex + 1} completo - Valor: R$ ${valorTotal.toFixed(2)}`);
+    
             return {
                 configuracoes: configuracoes,
-                valor: valorTotal // 🚨 ENVIAR O VALOR PARA O BACKEND
+                valor: valorTotal
             };
         });
-
         const bodyRequisicao = {
             clienteId: user.id,
             produtos: produtosParaEnvio

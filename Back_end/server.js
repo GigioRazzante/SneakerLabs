@@ -316,7 +316,7 @@ app.post('/api/callback', async (req, res) => {
 });
 
 // =======================================================================
-// ROTA 3: BUSCA DE STATUS DO PEDIDO (Para o Frontend Rastrear) - CORRIGIDA
+// ROTA 3: BUSCA DE STATUS DO PEDIDO (Para o Frontend Rastrear) - COM LOGS
 // =======================================================================
 app.get('/api/orders/:id/status', async (req, res) => {
     const pedidoId = req.params.id;
@@ -324,7 +324,7 @@ app.get('/api/orders/:id/status', async (req, res) => {
     // 🚨 CORREÇÃO: Verificar tanto x-client-id quanto client-id
     const clienteId = req.headers['x-client-id'] || req.headers['client-id'];
 
-    console.log(`🔍 Buscando pedido ${pedidoId} para cliente: ${clienteId}`); // DEBUG
+    console.log(`🔍 [RASTREIO] Buscando status do pedido ${pedidoId} para cliente: ${clienteId}`);
 
     try {
         // 🚨 VERIFICAÇÃO DE AUTORIZAÇÃO
@@ -346,7 +346,7 @@ app.get('/api/orders/:id/status', async (req, res) => {
         
         const { status_geral, data_criacao, cliente_id } = pedidoResult.rows[0];
         
-        console.log(`📊 Pedido encontrado: cliente_id=${cliente_id}, solicitante=${clienteId}`); // DEBUG
+        console.log(`📊 [RASTREIO] Pedido encontrado: cliente_id=${cliente_id}, solicitante=${clienteId}`);
         
         // 🚨 VERIFICAÇÃO CRÍTICA
         if (parseInt(cliente_id) !== parseInt(clienteId)) {
@@ -362,7 +362,19 @@ app.get('/api/orders/:id/status', async (req, res) => {
             [pedidoId]
         );
 
-        console.log(`✅ Pedido ${pedidoId} autorizado para cliente ${clienteId}`);
+        // 🚨 LOG CRÍTICO - ESTE É O QUE PRECISAMOS VER
+        console.log(`📊 [RASTREIO] Dados retornados para pedido ${pedidoId}:`, {
+            statusGeral: status_geral,
+            produtos: produtosResult.rows.map(p => ({
+                estilo: p.estilo,
+                material: p.material,
+                status_producao: p.status_producao,
+                slot_expedicao: p.slot_expedicao,
+                id_rastreio_maquina: p.id_rastreio_maquina
+            }))
+        });
+
+        console.log(`✅ [RASTREIO] Pedido ${pedidoId} autorizado para cliente ${clienteId}`);
 
         res.status(200).json({
             pedidoId: pedidoId,
@@ -377,7 +389,7 @@ app.get('/api/orders/:id/status', async (req, res) => {
         });
 
     } catch (err) {
-        console.error('Erro ao buscar status do pedido:', err.message);
+        console.error('❌ [RASTREIO] Erro ao buscar status do pedido:', err.message);
         res.status(500).json({ error: 'Erro ao buscar status do pedido.' });
     }
 });

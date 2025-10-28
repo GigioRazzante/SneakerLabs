@@ -25,6 +25,17 @@ const ResumoPedido = ({ selections, passos, onFinalize }) => {
     // Ordenar os itens pelo passo
     items.sort((a, b) => a.step - b.step);
 
+    // 🚨 CORREÇÃO: Função para enviar dados completos
+    const handleFinalizar = () => {
+        const pedidoData = {
+            items: items,
+            valorTotal: total
+        };
+        
+        console.log('📤 [ResumoPedido] Enviando dados para finalização:', pedidoData);
+        onFinalize(pedidoData);
+    };
+
     return (
         <div className="card-container">
             <div className="card-header-bar"></div>
@@ -60,7 +71,7 @@ const ResumoPedido = ({ selections, passos, onFinalize }) => {
             <div className="next-button-container">
                 <button
                     className="next-button"
-                    onClick={onFinalize}
+                    onClick={handleFinalizar} // 🚨 CORREÇÃO: Usar a nova função
                 >
                     Enviar Pedido para Produção
                 </button>
