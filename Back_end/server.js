@@ -445,49 +445,43 @@ app.get('/api/orders/cliente/:clienteId', async (req, res) => {
     }
 });
 // =======================================================================
-// ROTA 5: CADASTRO DE CLIENTE (Adicionado para resolver o 404)
+// ROTA 5: CADASTRO DE CLIENTE
 // =======================================================================
 app.post('/api/auth/register', async (req, res) => {
-    // Campos que esperamos do frontend (os nomes devem corresponder aos do PaginaCadastro.jsx)
-    const { email, senha, nome_usuario, data_nascimento, telefone } = req.body;
+    const { email, senha, nome_usuario, data_nascimento, telefone } = req.body;
 
-    // 1. Validação simples
-    if (!email || !senha || !nome_usuario || !data_nascimento || !telefone) {
-        return res.status(400).json({ error: "Todos os campos de cadastro são obrigatórios." });
-    }
+    // 1. Validação simples
+    if (!email || !senha || !nome_usuario || !data_nascimento || !telefone) {
+        return res.status(400).json({ error: "Todos os campos de cadastro são obrigatórios." });
+    }
 
-    // 2. Lógica para inserção no banco de dados
-    try {
-        // ATENÇÃO: Em um ambiente de produção real, é OBRIGATÓRIO usar hash de senha (ex: bcrypt)!
-        
-        // Insere o novo cliente no banco e usa 'RETURNING id' para pegar o ID gerado pelo BD
-        const result = await pool.query(
-            `INSERT INTO clientes (email, senha, nome_usuario, data_nascimento, telefone)
-             VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-            [email, senha, nome_usuario, data_nascimento, telefone]
-        );
+    try {
+        // 2. Lógica para inserção no banco de dados
+        const result = await pool.query(
+            `INSERT INTO clientes (email, senha, nome_usuario, data_nascimento, telefone)
+             VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+            [email, senha, nome_usuario, data_nascimento, telefone]
+        );
 
-        const clienteId = result.rows[0].id;
-        
-        // 3. Resposta de sucesso (Status 201 - Created)
-        res.status(201).json({ 
-            message: "Cadastro realizado com sucesso!",
-            clienteId: clienteId 
-        });
+        const clienteId = result.rows[0].id;
+        
+        // 3. Resposta de sucesso
+        res.status(201).json({ 
+            message: "Cadastro realizado com sucesso!",
+            clienteId: clienteId 
+        });
 
-    } catch (err) {
-        console.error('Erro ao cadastrar cliente:', err);
-        
-        // Verifica se é um erro de duplicidade (assumindo que 'email' tem UNIQUE constraint no BD)
-        if (err.code === '23505') { // Código de erro do Postgres para violação de unique constraint
-            return res.status(409).json({ error: "Este e-mail já está cadastrado. Tente fazer login." });
-        }
+    } catch (err) {
+        console.error('Erro ao cadastrar cliente:', err);
+        
+        // Verifica se é um erro de duplicidade
+        if (err.code === '23505') {
+            return res.status(409).json({ error: "Este e-mail já está cadastrado. Tente fazer login." });
+        }
 
-        // Erro genérico do servidor
-        res.status(500).json({ error: "Erro interno do servidor ao registrar o cliente." });
-    }
+        res.status(500).json({ error: "Erro interno do servidor ao registrar o cliente." });
+    }
 });
-
 // =======================================================================
 // ROTA 6: LOGIN DE CLIENTE
 // =======================================================================
