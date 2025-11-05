@@ -13,6 +13,36 @@ const VIEWS = {
     TRACKING: 'tracking'
 };
 
+// 🚨 NOVA FUNÇÃO: Converter data do formato ISO para YYYY-MM-DD
+const formatDateForInput = (dateString) => {
+    if (!dateString) return '';
+    
+    try {
+        // Se já estiver no formato YYYY-MM-DD, retorna direto
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+            return dateString;
+        }
+        
+        // Converte de ISO (2003-03-30T03:00:00.000Z) para YYYY-MM-DD
+        const date = new Date(dateString);
+        
+        // Verifica se a data é válida
+        if (isNaN(date.getTime())) {
+            console.warn('Data inválida recebida:', dateString);
+            return '';
+        }
+        
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        
+        return `${year}-${month}-${day}`;
+    } catch (error) {
+        console.error('Erro ao formatar data:', error, 'Data recebida:', dateString);
+        return '';
+    }
+};
+
 const AlterarDadosUsuario = () => {
     // 2. USAR O CONTEXT EM VEZ DE LOCALSTORAGE DIRETO
     const { user, updateUser, loading: authLoading } = useAuth();
@@ -36,10 +66,16 @@ const AlterarDadosUsuario = () => {
     // 4. EFFECT PARA CARREGAR DADOS DO USUÁRIO DO CONTEXT
     useEffect(() => {
         if (user) {
+            console.log('📅 Dados do usuário recebidos:', {
+                data_nascimento: user.data_nascimento,
+                tipo: typeof user.data_nascimento
+            });
+            
             setUserData({
                 email: user.email || '',
                 username: user.nome_usuario || '',
-                birthdate: user.data_nascimento || '',
+                // 🚨 CORREÇÃO: Formatar a data para o input type="date"
+                birthdate: formatDateForInput(user.data_nascimento),
                 phone: user.telefone || '',
                 profileColor: '#FF9D00',
             });
@@ -138,6 +174,10 @@ const AlterarDadosUsuario = () => {
                                     className="form-input" 
                                     required 
                                 />
+                                {/* 🚨 DEBUG: Mostrar o valor atual da data */}
+                                <p className="help-text">
+                                    Valor atual: {userData.birthdate || 'Não definido'}
+                                </p>
                             </div>
 
                             {/* Telefone */}
@@ -227,6 +267,12 @@ const AlterarDadosUsuario = () => {
             // Preparar dados para enviar
             const { email, profileColor, ...dataToUpdate } = userData;
             
+            console.log('📤 Enviando dados para atualização:', {
+                nome_usuario: dataToUpdate.username,
+                data_nascimento: dataToUpdate.birthdate, // Já está no formato correto
+                telefone: dataToUpdate.phone
+            });
+
             const response = await fetch(`http://localhost:3001/api/cliente/${user.id}`, {
                 method: 'PUT',
                 headers: {
