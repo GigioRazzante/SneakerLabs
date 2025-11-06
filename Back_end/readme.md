@@ -1,140 +1,90 @@
-📝 README Atualizado - Backend SneakLab
-🚀 Backend SneakLab - Sistema de Personalização de Tênis
-Sistema backend completo para a plataforma SneakLab, responsável por processar pedidos personalizados de tênis, gerenciar produção e fornecer rastreamento em tempo real.
+comando de criação das tabelas no SQL 
+-- Tabela de clientes
+CREATE TABLE clientes (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    senha VARCHAR(255) NOT NULL,
+    nome_usuario VARCHAR(100) NOT NULL,
+    data_nascimento DATE NOT NULL,
+    telefone VARCHAR(20) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-📋 Funcionalidades Implementadas
-✅ SPRINT 01 - Concluída
-Cadastro e Autenticação de Usuários
+-- Tabela de pedidos (mestre)
+CREATE TABLE pedidos (
+    id SERIAL PRIMARY KEY,
+    cliente_id INTEGER REFERENCES clientes(id),
+    status_geral VARCHAR(50) DEFAULT 'PENDENTE',
+    valor_total DECIMAL(10,2) DEFAULT 0,
+    data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-Processamento de Pedidos Personalizados
+-- Tabela de produtos do pedido
+CREATE TABLE produtos_do_pedido (
+    id SERIAL PRIMARY KEY,
+    pedido_id INTEGER REFERENCES pedidos(id),
+    estilo VARCHAR(50),
+    material VARCHAR(50),
+    solado VARCHAR(50),
+    cor VARCHAR(50),
+    detalhes VARCHAR(100),
+    status_producao VARCHAR(50) DEFAULT 'FILA',
+    valor_unitario DECIMAL(10,2) DEFAULT 0,
+    id_rastreio_maquina VARCHAR(100),
+    slot_expedicao VARCHAR(10)
+);
 
-Integração com Sistema de Produção
+-- Tabela de slots de expedição
+CREATE TABLE slots_expedicao (
+    id SERIAL PRIMARY KEY,
+    status VARCHAR(20) DEFAULT 'LIVRE' CHECK (status IN ('LIVRE', 'OCUPADO')),
+    pedido_id INTEGER REFERENCES pedidos(id),
+    data_ocupacao TIMESTAMP,
+    data_liberacao TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-Cálculo Automático de Preços
+-- Tabela de estoque da máquina
+CREATE TABLE estoque_maquina (
+    id SERIAL PRIMARY KEY,
+    tipo VARCHAR(50) NOT NULL,
+    codigo VARCHAR(50) UNIQUE NOT NULL,
+    nome VARCHAR(100) NOT NULL,
+    quantidade INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-✅ SPRINT 02 - Concluída 🎉
-Processamento de Múltiplos Produtos por Pedido
+-- Inserir dados iniciais dos slots
+INSERT INTO slots_expedicao (status) VALUES 
+('LIVRE'), ('LIVRE'), ('LIVRE'), ('LIVRE'), ('LIVRE');
 
-Sistema de Callbacks para Rastreamento
+-- Inserir dados iniciais do estoque
+INSERT INTO estoque_maquina (tipo, codigo, nome, quantidade) VALUES
+-- LÂMINAS (cores)
+('lamina', 'L1', 'Lâmina Branco', 50),
+('lamina', 'L2', 'Lâmina Preto', 50),
+('lamina', 'L3', 'Lâmina Azul', 50),
+('lamina', 'L4', 'Lâmina Vermelho', 50),
+('lamina', 'L5', 'Lâmina Verde', 50),
+('lamina', 'L6', 'Lâmina Amarelo', 50),
 
-Atualização de Status em Tempo Real
+-- BLOCOS (estilos)
+('bloco', 'B1', 'Bloco Casual', 5),
+('bloco', 'B2', 'Bloco Corrida', 5),
+('bloco', 'B3', 'Bloco Skate', 5),
 
-Gestão de Slots de Produção
+-- MATERIAIS
+('material', 'M1', 'Material Couro', 100),
+('material', 'M2', 'Material Camurça', 100),
+('material', 'M3', 'Material Tecido', 100);
 
-Rastreamento Individual por Produto
+-- Criar índices para melhor performance
+CREATE INDEX idx_pedidos_cliente_id ON pedidos(cliente_id);
+CREATE INDEX idx_produtos_pedido_id ON produtos_do_pedido(pedido_id);
+CREATE INDEX idx_produtos_status ON produtos_do_pedido(status_producao);
+CREATE INDEX idx_slots_status ON slots_expedicao(status);
+CREATE INDEX idx_estoque_codigo ON estoque_maquina(codigo);
 
-🏗️ Arquitetura do Sistema
-Banco de Dados PostgreSQL
-text
-clientes (id, email, senha, nome_usuario, data_nascimento, telefone)
-pedidos (id, cliente_id, status_geral, valor_total, data_criacao)
-produtos_do_pedido (id, pedido_id, estilo, material, solado, cor, detalhes, status_producao, valor_unitario, id_rastreio_maquina, slot_expedicao)
-🔌 Rotas da API
-1. 🛒 Gestão de Pedidos
-POST /api/orders - Criar pedido com múltiplos produtos
-
-GET /api/orders/:id/status - Rastrear status do pedido
-
-GET /api/orders/cliente/:clienteId - Listar pedidos do cliente
-
-2. 🔄 Sistema de Callbacks
-POST /api/callback - Receber atualizações da máquina de produção
-
-3. 👤 Autenticação e Usuários
-POST /api/auth/register - Cadastrar novo usuário
-
-POST /api/auth/login - Login de usuário
-
-GET /api/cliente/:id - Buscar dados do cliente
-
-PUT /api/cliente/:id - Atualizar dados do cliente
-
-🎯 Fluxo de Produção
-Processamento de Pedidos:
-Frontend → Envia pedido com múltiplos produtos
-
-Backend → Separa cada produto individualmente
-
-Backend → Envia cada produto para produção com ID único
-
-Máquina → Processa e envia callback quando pronto
-
-Backend → Atualiza status e slot automaticamente
-
-Frontend → Mostra status atualizado em tempo real
-
-Status de Produção:
-FILA - Aguardando processamento
-
-PRONTO - Produção concluída
-
-PENDENTE - Pedido aguardando conclusão
-
-CONCLUIDO - Todos os produtos prontos
-
-🔧 Tecnologias Utilizadas
-Node.js + Express.js
-
-PostgreSQL + pg (Pool de conexões)
-
-CORS para comunicação frontend/backend
-
-node-fetch para integração com máquina de produção
-
-🚦 Status do Sistema
-✅ Funcionalidades Validadas:
-Processamento de pedidos com múltiplos produtos
-
-Sistema de callbacks funcionando
-
-Atualização automática de status
-
-Rastreamento individual por produto
-
-Gestão de slots de produção
-
-🔄 Aguardando Configuração:
-Callbacks automáticos da máquina de produção
-
-Processamento real na linha de produção
-
-📊 Estrutura de Dados
-Payload para Produção:
-json
-{
-  "payload": {
-    "orderId": "SNEAKER-TEMP-123",
-    "sku": "KIT-01",
-    "order": {
-      "codigoProduto": 1,
-      "bloco1": {
-        "cor": 2,
-        "padrao1": "2",
-        "padrao2": "2", 
-        "padrao3": "2",
-        "lamina1": 2,
-        "lamina2": 2,
-        "lamina3": 2
-      }
-    }
-  },
-  "callbackUrl": "http://localhost:3001/api/callback"
-}
-Callback da Máquina:
-json
-{
-  "id": "id_rastreio_maquina",
-  "status": "FINISHED",
-  "slot": "A1"
-}
-🎉 Próximos Passos
-Configuração da máquina para callbacks automáticos
-
-Monitoramento em tempo real da produção
-
-Sistema de notificações para clientes
-
-Dashboard administrativo
-
-📄 Licença
-Este projeto está sob a licença MIT. Veja o arquivo LICENSE para mais detalhes.
+-- Mensagem de confirmação
+SELECT 'Todas as tabelas foram criadas com sucesso!' as status;
