@@ -97,6 +97,10 @@ const createOrder = async (req, res) => {
                 
                 console.log(`🚀 Enviando produto DB ID ${produtoDbId} para produção...`);
 
+                // =============================================
+                // BLOCO ORIGINAL (COMENTADO - API OFFLINE)
+                // =============================================
+                /*
                 const productionResponse = await fetch(PROD_API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -117,12 +121,33 @@ const createOrder = async (req, res) => {
                     'UPDATE produtos_do_pedido SET id_rastreio_maquina = $1 WHERE id = $2',
                     [rastreioId, produtoDbId]
                 );
+                */
+
+                // =============================================
+                // BLOCO SIMULAÇÃO (ATIVO - MODO DESENVOLVIMENTO)
+                // =============================================
+                console.log(`🚀 [MODO DEV] Simulando envio para produção...`);
+                
+                // Simular delay de processamento
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Gerar ID de rastreio simulado
+                const rastreioId = `SIM-${Date.now()}-${produtoDbId}`;
+                console.log(`✅ [MODO DEV] Simulação concluída. Rastreio: ${rastreioId}`);
+                
+                // Atualizar produto como "PRONTO" automaticamente (para teste)
+                await pool.query(
+                    'UPDATE produtos_do_pedido SET status_producao = $1, id_rastreio_maquina = $2 WHERE id = $3',
+                    ['PRONTO', rastreioId, produtoDbId]
+                );
+                
+                console.log(`✅ [MODO DEV] Produto marcado como PRONTO no banco`);
 
                 produtosEnviados.push({ 
                     produtoDbId, 
                     rastreioId,
                     valor: valorUnitario,
-                    status: 'ENVIADO'
+                    status: 'PRONTO'
                 });
 
             } catch (produtoError) {
@@ -131,13 +156,21 @@ const createOrder = async (req, res) => {
             }
         }
 
-        // 5. Resposta de sucesso
-        console.log(`🎉 Pedido #${pedidoId} processado com sucesso! ${produtosEnviados.length} produtos enviados. Valor total: R$ ${valorTotalPedido.toFixed(2)}`);
+        // 5. Atualizar pedido mestre para CONCLUÍDO (já que todos estão PRONTOS em modo dev)
+        await pool.query(
+            'UPDATE pedidos SET status_geral = $1 WHERE id = $2',
+            ['CONCLUIDO', pedidoId]
+        );
+        console.log(`✅ [MODO DEV] Pedido mestre #${pedidoId} marcado como CONCLUIDO`);
+
+        // 6. Resposta de sucesso
+        console.log(`🎉 Pedido #${pedidoId} processado com sucesso! ${produtosEnviados.length} produtos processados. Valor total: R$ ${valorTotalPedido.toFixed(2)}`);
         res.status(200).json({
-            message: `Pedido #${pedidoId} recebido e ${produtosEnviados.length} produtos enviados para produção.`,
+            message: `Pedido #${pedidoId} recebido e ${produtosEnviados.length} produtos processados em modo desenvolvimento.`,
             pedidoId: pedidoId,
             valorTotal: valorTotalPedido,
             produtosEnviados: produtosEnviados,
+            modo: 'DESENVOLVIMENTO'
         });
 
     } catch (err) {

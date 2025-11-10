@@ -1,7 +1,13 @@
-import React from 'react';
+// src/components/CarrinhoPedido.jsx (CORRIGIDO)
+import React, { useState, useEffect } from 'react';
 import ResumoPedidoItem from './ResumoPedidoItem';
 
 const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) => {
+    const [generatedImages, setGeneratedImages] = useState({});
+    const [loadingImages, setLoadingImages] = useState({});
+    const [imagesGenerated, setImagesGenerated] = useState(false);
+    const [imageErrors, setImageErrors] = useState({});
+
     // 🚨 CORREÇÃO: Adicionar validação completa
     console.log('🔍 [CarrinhoPedido] Pedidos recebidos:', pedidos);
     
@@ -23,7 +29,6 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
     const totalGeral = pedidos.reduce((total, pedido) => {
         if (!pedido) return total;
         
-        // Verificar se pedido.items existe e é array
         const itemsValidos = pedido.items && Array.isArray(pedido.items);
         const valorPedido = pedido.valorTotal || 
                            (itemsValidos ? pedido.items.reduce((sum, item) => {
@@ -33,6 +38,162 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
         
         return total + valorPedido;
     }, 0);
+
+    // 🚨 FUNÇÃO PARA CRIAR FALLBACK SVG LOCAL
+    const createLocalFallbackSVG = (sneakerConfig, pedidoIndex) => {
+        const { cor = 'cinza', estilo = 'sneaker', material = 'couro', solado = 'padrão' } = sneakerConfig;
+        
+        const colors = {
+            'preto': '2c3e50', 'branco': 'ecf0f1', 'vermelho': 'e74c3c',
+            'azul': '3498db', 'verde': '2ecc71', 'amarelo': 'f1c40f',
+            'rosa': 'e84393', 'cinza': '7f8c8d', 'laranja': 'e67e22',
+            'marrom': '8b4513', 'roxo': '9b59b6', 'bege': 'f5f5dc'
+        };
+        
+        const bgColor = colors[cor.toLowerCase()] || '7f8c8d';
+        const textColor = ['preto', 'marrom', 'roxo'].includes(cor.toLowerCase()) ? 'ecf0f1' : '2c3e50';
+        
+        const svg = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200">
+                <rect width="300" height="200" fill="#${bgColor}"/>
+                
+                <!-- Tênis simplificado -->
+                <ellipse cx="150" cy="100" rx="80" ry="40" fill="#34495e" opacity="0.9"/>
+                <rect x="100" y="100" width="100" height="30" fill="#2c3e50" opacity="0.8"/>
+                
+                <!-- Ícone de tênis + texto -->
+                <text x="150" y="80" font-family="Arial" font-size="20" fill="#${textColor}" text-anchor="middle">👟</text>
+                <text x="150" y="110" font-family="Arial" font-size="12" fill="#${textColor}" text-anchor="middle" font-weight="bold">
+                    ${estilo}
+                </text>
+                <text x="150" y="130" font-family="Arial" font-size="10" fill="#${textColor}" text-anchor="middle">
+                    ${material} • ${cor}
+                </text>
+                <text x="150" y="150" font-family="Arial" font-size="10" fill="#${textColor}" text-anchor="middle">
+                    Sneaker #${pedidoIndex + 1}
+                </text>
+            </svg>
+        `;
+        
+        return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+    };
+
+    // 🚨 FUNÇÃO PARA EXTRAIR CONFIGURAÇÃO DO SNEAKER (ATUALIZADA)
+    const extractSneakerConfig = (items) => {
+        const config = {
+            estilo: '',
+            material: '',
+            solado: '', 
+            cor: '',
+            detalhes: ''
+        };
+        
+        items.forEach(item => {
+            if (item && item.step && item.name) {
+                if (item.step === 1) config.estilo = item.name;
+                if (item.step === 2) config.material = item.name;
+                if (item.step === 3) config.solado = item.name;
+                if (item.step === 4) config.cor = item.name;
+                if (item.step === 5) config.detalhes = item.name;
+            }
+        });
+        
+        console.log('🔧 Configuração extraída:', config);
+        return config;
+    };
+
+    // 🚨 FUNÇÃO PARA GERAR IMAGEM (AGORA DEFINIDA ANTES DO useEffect)
+    const generateSneakerImage = async (pedidoIndex, sneakerConfig) => {
+        const imageKey = `${pedidoIndex}`;
+        
+        // Verificar se já está carregando ou já tem imagem
+        if (loadingImages[imageKey] || generatedImages[imageKey]) {
+            return;
+        }
+        
+        setLoadingImages(prev => ({ ...prev, [imageKey]: true }));
+        setImageErrors(prev => ({ ...prev, [imageKey]: false }));
+        
+        try {
+            console.log(`🔄 Iniciando geração de imagem para sneaker ${pedidoIndex + 1}`);
+            
+            const response = await fetch('http://localhost:3001/api/images/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    pedidoId: `temp-${Date.now()}-${pedidoIndex}`,
+                    produtoIndex: pedidoIndex,
+                    sneakerConfig: sneakerConfig
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (data.success && data.imageUrl) {
+                setGeneratedImages(prev => ({
+                    ...prev,
+                    [imageKey]: data.imageUrl
+                }));
+                console.log(`✅ Imagem gerada para sneaker ${pedidoIndex + 1}`);
+            } else {
+                console.error(`❌ Falha ao gerar imagem para sneaker ${pedidoIndex + 1}:`, data);
+                // Usar fallback local em caso de erro
+                const fallbackImage = createLocalFallbackSVG(sneakerConfig, pedidoIndex);
+                setGeneratedImages(prev => ({
+                    ...prev,
+                    [imageKey]: fallbackImage
+                }));
+            }
+        } catch (error) {
+            console.error(`Erro ao gerar imagem para sneaker ${pedidoIndex + 1}:`, error);
+            // Usar fallback local em caso de erro
+            const fallbackImage = createLocalFallbackSVG(sneakerConfig, pedidoIndex);
+            setGeneratedImages(prev => ({
+                ...prev,
+                [imageKey]: fallbackImage
+            }));
+        } finally {
+            setLoadingImages(prev => ({ ...prev, [imageKey]: false }));
+        }
+    };
+
+    // 🚨 EFFECT CORRIGIDO: Gerar imagens apenas uma vez quando pedidos mudam
+    useEffect(() => {
+        if (pedidos.length > 0 && !imagesGenerated) {
+            console.log('🎯 Iniciando geração de imagens para todos os sneakers...');
+            
+            pedidos.forEach((pedido, pedidoIndex) => {
+                if (pedido.items && Array.isArray(pedido.items)) {
+                    // Extrair configuração do sneaker do resumo
+                    const sneakerConfig = extractSneakerConfig(pedido.items);
+                    const imageKey = `${pedidoIndex}`;
+                    
+                    // Só gera se não tiver imagem e não estiver carregando
+                    if (!generatedImages[imageKey] && !loadingImages[imageKey]) {
+                        console.log(`🔄 Agendando geração para sneaker ${pedidoIndex + 1}`);
+                        // Usar setTimeout para evitar bloqueio
+                        setTimeout(() => {
+                            generateSneakerImage(pedidoIndex, sneakerConfig);
+                        }, pedidoIndex * 1000); // Delay de 1 segundo entre cada
+                    }
+                }
+            });
+            
+            setImagesGenerated(true);
+        }
+    }, [pedidos, imagesGenerated]);
+
+    // 🚨 EFFECT para resetar quando pedidos mudarem completamente
+    useEffect(() => {
+        setImagesGenerated(false);
+        setGeneratedImages({});
+        setLoadingImages({});
+        setImageErrors({});
+    }, [pedidos.length]);
 
     // 🚨 FUNÇÃO SIMPLIFICADA
     const handleConfirmarPedidos = () => {
@@ -148,22 +309,45 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
                     border-radius: 0.75rem;
                     padding: 2rem;
                     border: 2px dashed #FF9D00;
+                    min-height: 200px;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
                 }
                 
-                .image-placeholder span {
-                    font-size: 4rem;
-                    display: block;
-                    margin-bottom: 0.5rem;
+                .image-placeholder img {
+                    max-width: 100%;
+                    max-height: 200px;
+                    border-radius: 0.5rem;
+                    object-fit: cover;
                 }
                 
-                .image-placeholder p {
-                    margin: 0.5rem 0;
-                    color: #333;
-                    font-weight: 500;
+                .loading-spinner {
+                    display: inline-block;
+                    width: 20px;
+                    height: 20px;
+                    border: 3px solid #f3f3f3;
+                    border-top: 3px solid #FF9D00;
+                    border-radius: 50%;
+                    animation: spin 1s linear infinite;
                 }
                 
-                .image-placeholder small {
+                .loading-text {
+                    margin-top: 10px;
                     color: #666;
+                    text-align: center;
+                }
+                
+                .error-message {
+                    color: #ff4444;
+                    text-align: center;
+                    margin-top: 10px;
+                }
+                
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
                 }
                 
                 .pedido-divider {
@@ -301,10 +485,6 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
                         padding: 1.5rem 1rem;
                     }
                     
-                    .image-placeholder span {
-                        font-size: 3rem;
-                    }
-                    
                     .next-button,
                     .add-more-button {
                         font-size: 0.95rem;
@@ -325,7 +505,6 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
                     {/* Lista de todos os pedidos */}
                     <div className="pedidos-list">
                         {pedidos.map((pedido, pedidoIndex) => {
-                            // 🚨 CORREÇÃO: Validar cada pedido individualmente
                             if (!pedido) {
                                 console.warn(`⚠️ Pedido ${pedidoIndex} é undefined`);
                                 return null;
@@ -338,12 +517,10 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
                                                   return sum + (item.acrescimo || 0);
                                               }, 0) : 0);
 
-                            console.log(`🔍 [CarrinhoPedido] Pedido ${pedidoIndex}:`, {
-                                id: pedido.id,
-                                items: pedido.items,
-                                valorTotal: pedido.valorTotal,
-                                calculado: totalPedido
-                            });
+                            const imageKey = `${pedidoIndex}`;
+                            const imageUrl = generatedImages[imageKey];
+                            const isLoading = loadingImages[imageKey];
+                            const hasError = imageErrors[imageKey];
 
                             return (
                                 <div key={pedido.id || pedidoIndex} className="pedido-item">
@@ -352,16 +529,45 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
                                         <span className="pedido-date">Valor: R$ {totalPedido.toFixed(2)}</span>
                                     </div>
                                     
-                                    {/* Imagem do sneaker (placeholder) */}
+                                    {/* IMAGEM DO SNEAKER - COM FALLBACK SVG LOCAL */}
                                     <div className="sneaker-image">
                                         <div className="image-placeholder">
-                                            <span>👟</span>
-                                            <p>Sneaker Personalizado #{pedidoIndex + 1}</p>
-                                            <small><strong>R$ {totalPedido.toFixed(2)}</strong></small>
+                                            {isLoading ? (
+                                                <div style={{textAlign: 'center'}}>
+                                                    <div className="loading-spinner"></div>
+                                                    <p className="loading-text">Gerando imagem do sneaker...</p>
+                                                    <small>Aguarde alguns segundos</small>
+                                                </div>
+                                            ) : imageUrl ? (
+                                                <img 
+                                                    src={imageUrl} 
+                                                    alt={`Sneaker personalizado ${pedidoIndex + 1}`}
+                                                    onError={(e) => {
+                                                        console.error('❌ Erro ao carregar imagem, usando fallback SVG');
+                                                        // Fallback para SVG local
+                                                        const fallbackImage = createLocalFallbackSVG(
+                                                            extractSneakerConfig(pedido.items), 
+                                                            pedidoIndex
+                                                        );
+                                                        e.target.src = fallbackImage;
+                                                    }}
+                                                    style={{
+                                                        maxWidth: '100%',
+                                                        maxHeight: '200px',
+                                                        borderRadius: '0.5rem',
+                                                        objectFit: 'cover'
+                                                    }}
+                                                />
+                                            ) : (
+                                                <div style={{textAlign: 'center'}}>
+                                                    <div className="loading-spinner"></div>
+                                                    <p className="loading-text">Preparando imagem...</p>
+                                                    <small>Carregando visualização</small>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
-                                    {/* 🚨 CORREÇÃO: Só renderizar ResumoPedidoItem se items existir */}
                                     {itemsValidos ? (
                                         <ResumoPedidoItem 
                                             pedido={pedido} 
@@ -388,7 +594,7 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
                         </div>
                     </div>
 
-                    {/* Botões de ação - AGORA CENTRALIZADOS */}
+                    {/* Botões de ação */}
                     <div className="cart-actions">
                         <div className="confirm-button-container">
                             <button 
