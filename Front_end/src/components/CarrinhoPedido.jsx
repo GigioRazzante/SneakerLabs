@@ -196,13 +196,62 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
     }, [pedidos.length]);
 
     // 🚨 FUNÇÃO SIMPLIFICADA
-    const handleConfirmarPedidos = () => {
-        console.log('✅ [CarrinhoPedido] Chamando onConfirmarPedidos...');
-        console.log('📦 Número de pedidos:', pedidos.length);
-        console.log('💰 Total geral:', totalGeral);
+   // 🚨 FUNÇÃO ATUALIZADA: Confirmar pedidos e salvar imagens definitivas
+const handleConfirmarPedidos = async () => {
+    console.log('✅ [CarrinhoPedido] Confirmando pedidos e salvando imagens...');
+    
+    try {
+        // 1. Primeiro confirme o pedido e AGUARDE o retorno
+        console.log('📦 Confirmando pedido principal...');
         
-        onConfirmarPedidos();
-    };
+        // 🎯 AGORA A FUNÇÃO RETORNA O PEDIDO CRIADO
+        const pedidoCriado = await onConfirmarPedidos();
+        
+        if (!pedidoCriado || !pedidoCriado.id) {
+            console.error('❌ Não foi possível obter o ID do pedido criado');
+            alert('Erro: Não foi possível obter o ID do pedido. As imagens não foram salvas.');
+            return;
+        }
+
+        const pedidoIdReal = pedidoCriado.id;
+        console.log('🆔 ID do pedido criado:', pedidoIdReal);
+
+        // 2. PARA CADA SNEAKER, salve a imagem definitiva
+        console.log('💾 Salvando imagens definitivas para os sneakers...');
+        
+        const saveImagePromises = pedidos.map(async (pedido, pedidoIndex) => {
+            if (pedido.items && Array.isArray(pedido.items)) {
+                const sneakerConfig = extractSneakerConfig(pedido.items);
+                
+                console.log(`💾 Salvando imagem definitiva para sneaker ${pedidoIndex + 1}`);
+                
+                const response = await fetch('http://localhost:3001/api/images/save-to-order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        pedidoId: pedidoIdReal,
+                        produtoIndex: pedidoIndex,
+                        sneakerConfig: sneakerConfig
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Falha ao salvar imagem para sneaker ${pedidoIndex + 1}`);
+                }
+
+                console.log(`✅ Imagem definitiva salva para sneaker ${pedidoIndex + 1}`);
+            }
+        });
+
+        // Aguarde todas as imagens serem salvas
+        await Promise.all(saveImagePromises);
+        console.log('🎉 Todas as imagens foram salvas com sucesso!');
+
+    } catch (error) {
+        console.error('❌ Erro ao salvar imagens:', error);
+        alert('Erro ao salvar imagens dos sneakers. Tente novamente.');
+    }
+};
 
     // 🚨 CORREÇÃO: Se não há pedidos, mostrar mensagem
     if (pedidos.length === 0) {

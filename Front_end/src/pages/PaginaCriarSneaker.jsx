@@ -136,8 +136,8 @@ const PaginaCriarSneaker = () => {
     if (pedidos.length === 0) return;
 
     if (!user || !user.id) {
-      alert('Erro: Usuário não identificado. Faça login novamente.');
-      return;
+        alert('Erro: Usuário não identificado. Faça login novamente.');
+        return null;
     }
 
     console.log("🔐 USUÁRIO LOGADO:", user);
@@ -146,108 +146,108 @@ const PaginaCriarSneaker = () => {
     console.log('🔍 [DEBUG] Estrutura completa dos pedidos:', JSON.stringify(pedidos, null, 2));
     
     pedidos.forEach((pedido, index) => {
-      console.log(`📊 Pedido ${index}:`, {
-        id: pedido.id,
-        hasItems: !!pedido.items,
-        itemsIsArray: Array.isArray(pedido.items),
-        itemsLength: pedido.items?.length,
-        itemsStructure: pedido.items?.map(item => ({
-          step: item?.step,
-          name: item?.name,
-          hasAcrescimo: !!item?.acrescimo
-        }))
-      });
+        console.log(`📊 Pedido ${index}:`, {
+            id: pedido.id,
+            hasItems: !!pedido.items,
+            itemsIsArray: Array.isArray(pedido.items),
+            itemsLength: pedido.items?.length,
+            itemsStructure: pedido.items?.map(item => ({
+                step: item?.step,
+                name: item?.name,
+                hasAcrescimo: !!item?.acrescimo
+            }))
+        });
     });
 
     const stepMap = {
-      0: "passoUmDeCinco",
-      1: "passoDoisDeCinco", 
-      2: "passoTresDeCinco",
-      3: "passoQuatroDeCinco",
-      4: "passoCincoDeCinco",
+        0: "passoUmDeCinco",
+        1: "passoDoisDeCinco", 
+        2: "passoTresDeCinco",
+        3: "passoQuatroDeCinco",
+        4: "passoCincoDeCinco",
     };
 
     // 🚨 CORREÇÃO: Filtrar apenas pedidos válidos
     const pedidosValidos = pedidos.filter(pedido => {
-      const isValid = pedido && 
-                     Array.isArray(pedido.items) && 
-                     pedido.items.length === 5;
-      
-      if (!isValid) {
-        console.error(`❌ Pedido ${pedido.id} inválido:`, {
-          itemsLength: pedido.items?.length,
-          items: pedido.items
-        });
-      }
-      return isValid;
+        const isValid = pedido && 
+                       Array.isArray(pedido.items) && 
+                       pedido.items.length === 5;
+        
+        if (!isValid) {
+            console.error(`❌ Pedido ${pedido.id} inválido:`, {
+                itemsLength: pedido.items?.length,
+                items: pedido.items
+            });
+        }
+        return isValid;
     });
 
     if (pedidosValidos.length === 0) {
-      alert('❌ Nenhum pedido válido para confirmar. Todos os pedidos devem ter 5 opções selecionadas.');
-      return;
+        alert('❌ Nenhum pedido válido para confirmar. Todos os pedidos devem ter 5 opções selecionadas.');
+        return null;
     }
 
     console.log(`✅ ${pedidosValidos.length} de ${pedidos.length} pedidos são válidos`);
 
     const produtosParaEnvio = pedidosValidos.map((pedido, pedidoIndex) => {
-      const configuracoes = {};
-      let valorTotal = 0;
+        const configuracoes = {};
+        let valorTotal = 0;
 
-      console.log(`🔍 Processando pedido válido ${pedidoIndex + 1}:`, pedido);
-      
-      if (!pedido.items || !Array.isArray(pedido.items) || pedido.items.length !== 5) {
-        console.error(`❌ ERRO CRÍTICO: Pedido ${pedidoIndex + 1} inválido mesmo após filtro`);
-        throw new Error(`Pedido ${pedidoIndex + 1} inválido - deve ter 5 itens`);
-      }
-
-      passos.forEach((passo, index) => {
-        const itemDoPedido = pedido.items.find(item => {
-          if (!item) {
-            console.error(`❌ Item null/undefined no pedido ${pedidoIndex + 1}`);
-            return false;
-          }
-          if (item.step === undefined || item.name === undefined) {
-            console.error(`❌ Item sem step/name no pedido ${pedidoIndex + 1}:`, item);
-            return false;
-          }
-          return item.step === index + 1;
-        });
+        console.log(`🔍 Processando pedido válido ${pedidoIndex + 1}:`, pedido);
         
-        if (itemDoPedido) {
-          const newKey = stepMap[index];
-          configuracoes[newKey] = itemDoPedido.name;
-          valorTotal += itemDoPedido.acrescimo || 0;
-          console.log(`   ✅ Passo ${index + 1}: ${itemDoPedido.name} - R$ ${itemDoPedido.acrescimo}`);
-        } else {
-          console.error(`❌ ERRO: Pedido ${pedidoIndex + 1} faltando passo ${index + 1}`);
-          console.error('Itens disponíveis:', pedido.items.map(item => ({
-            step: item?.step, 
-            name: item?.name,
-            acrescimo: item?.acrescimo
-          })));
-          throw new Error(`Pedido ${pedidoIndex + 1} incompleto - falta passo ${index + 1}`);
+        if (!pedido.items || !Array.isArray(pedido.items) || pedido.items.length !== 5) {
+            console.error(`❌ ERRO CRÍTICO: Pedido ${pedidoIndex + 1} inválido mesmo após filtro`);
+            throw new Error(`Pedido ${pedidoIndex + 1} inválido - deve ter 5 itens`);
         }
-      });
 
-      const passosPreenchidos = Object.keys(configuracoes);
-      if (passosPreenchidos.length !== 5) {
-        const erroMsg = `❌ Erro: O pedido ${pedidoIndex + 1} está incompleto. Faltam ${5 - passosPreenchidos.length} opções.`;
-        console.error(erroMsg);
-        alert(erroMsg);
-        throw new Error(`Pedido ${pedidoIndex + 1} incompleto`);
-      }
+        passos.forEach((passo, index) => {
+            const itemDoPedido = pedido.items.find(item => {
+                if (!item) {
+                    console.error(`❌ Item null/undefined no pedido ${pedidoIndex + 1}`);
+                    return false;
+                }
+                if (item.step === undefined || item.name === undefined) {
+                    console.error(`❌ Item sem step/name no pedido ${pedidoIndex + 1}:`, item);
+                    return false;
+                }
+                return item.step === index + 1;
+            });
+            
+            if (itemDoPedido) {
+                const newKey = stepMap[index];
+                configuracoes[newKey] = itemDoPedido.name;
+                valorTotal += itemDoPedido.acrescimo || 0;
+                console.log(`   ✅ Passo ${index + 1}: ${itemDoPedido.name} - R$ ${itemDoPedido.acrescimo}`);
+            } else {
+                console.error(`❌ ERRO: Pedido ${pedidoIndex + 1} faltando passo ${index + 1}`);
+                console.error('Itens disponíveis:', pedido.items.map(item => ({
+                    step: item?.step, 
+                    name: item?.name,
+                    acrescimo: item?.acrescimo
+                })));
+                throw new Error(`Pedido ${pedidoIndex + 1} incompleto - falta passo ${index + 1}`);
+            }
+        });
 
-      console.log(`✅ Pedido ${pedidoIndex + 1} completo - Valor: R$ ${valorTotal.toFixed(2)}`);
+        const passosPreenchidos = Object.keys(configuracoes);
+        if (passosPreenchidos.length !== 5) {
+            const erroMsg = `❌ Erro: O pedido ${pedidoIndex + 1} está incompleto. Faltam ${5 - passosPreenchidos.length} opções.`;
+            console.error(erroMsg);
+            alert(erroMsg);
+            throw new Error(`Pedido ${pedidoIndex + 1} incompleto`);
+        }
 
-      return {
-        configuracoes: configuracoes,
-        valor: valorTotal
-      };
+        console.log(`✅ Pedido ${pedidoIndex + 1} completo - Valor: R$ ${valorTotal.toFixed(2)}`);
+
+        return {
+            configuracoes: configuracoes,
+            valor: valorTotal
+        };
     });
 
     const bodyRequisicao = {
-      clienteId: user.id,
-      produtos: produtosParaEnvio
+        clienteId: user.id,
+        produtos: produtosParaEnvio
     };
     
     console.log("📦 CONFIRMAÇÃO - Dados para backend:");
@@ -258,39 +258,50 @@ const PaginaCriarSneaker = () => {
     console.log("JSON completo enviado para o Backend:", JSON.stringify(bodyRequisicao, null, 2));
 
     try {
-      console.log("🚀 Enviando requisição para /api/orders...");
-      
-      const response = await fetch('http://localhost:3001/api/orders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(bodyRequisicao),
-      });
+        console.log("🚀 Enviando requisição para /api/orders...");
+        
+        const response = await fetch('http://localhost:3001/api/orders', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(bodyRequisicao),
+        });
 
-      console.log("📨 Resposta do servidor - Status:", response.status);
+        console.log("📨 Resposta do servidor - Status:", response.status);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("❌ Erro do servidor:", errorData);
-        throw new Error(errorData.error || `Erro HTTP ${response.status}: Falha ao enviar pedido.`);
-      }
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error("❌ Erro do servidor:", errorData);
+            throw new Error(errorData.error || `Erro HTTP ${response.status}: Falha ao enviar pedido.`);
+        }
 
-      const successData = await response.json();
-      console.log("✅ Sucesso! Dados retornados:", successData);
-      
-      alert(`🎉 Pedido #${successData.pedidoId} recebido e ${successData.produtosEnviados.length} produto(s) enviado(s) para produção! Valor: R$ ${produtosParaEnvio.reduce((sum, p) => sum + p.valor, 0).toFixed(2)}`);
-      
-      setSelections({});
-      setPedidos([]);
-      setCurrentStep(0);
-      
+        const successData = await response.json();
+        console.log("✅ Sucesso! Dados retornados:", successData);
+        
+        alert(`🎉 Pedido #${successData.pedidoId} recebido e ${successData.produtosEnviados.length} produto(s) enviado(s) para produção! Valor: R$ ${produtosParaEnvio.reduce((sum, p) => sum + p.valor, 0).toFixed(2)}`);
+        
+        // 🎯 AGORA RETORNAMOS OS DADOS DO PEDIDO CRIADO
+        const pedidoCriado = {
+            id: successData.pedidoId,
+            produtos: successData.produtosEnviados,
+            valorTotal: produtosParaEnvio.reduce((sum, p) => sum + p.valor, 0)
+        };
+        
+        setSelections({});
+        setPedidos([]);
+        setCurrentStep(0);
+        
+        // 🎯 RETORNE O PEDIDO CRIADO
+        return pedidoCriado;
+        
     } catch (error) {
-      console.error('❌ Erro na requisição POST /api/orders:', error);
-      console.error('Stack trace:', error.stack);
-      alert(`Ocorreu um erro ao enviar os pedidos: ${error.message}`);
+        console.error('❌ Erro na requisição POST /api/orders:', error);
+        console.error('Stack trace:', error.stack);
+        alert(`Ocorreu um erro ao enviar os pedidos: ${error.message}`);
+        return null;
     }
-  };
+};
 
   const renderCurrentStep = () => {
     if (currentStep < passos.length) {

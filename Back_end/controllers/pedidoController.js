@@ -69,12 +69,13 @@ const createOrder = async (req, res) => {
             }
 
             try {
-                // 4.1. Salvar produto individual
+                // 4.1. Salvar produto individual - CORRIGIDO para nova estrutura
                 console.log(`💾 Tentando salvar produto no banco...`);
                 
                 const produtoSalvoResult = await pool.query(
                     `INSERT INTO produtos_do_pedido (
-                        pedido_id, estilo, material, solado, cor, detalhes, status_producao, valor_unitario
+                        pedido_id, passo_um, passo_dois, passo_tres, passo_quatro, passo_cinco, 
+                        status_producao, valor
                     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
                     [
                         pedidoId, 
@@ -98,32 +99,6 @@ const createOrder = async (req, res) => {
                 console.log(`🚀 Enviando produto DB ID ${produtoDbId} para produção...`);
 
                 // =============================================
-                // BLOCO ORIGINAL (COMENTADO - API OFFLINE)
-                // =============================================
-                /*
-                const productionResponse = await fetch(PROD_API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(boxProductionPayload),
-                });
-
-                if (!productionResponse.ok) {
-                    await pool.query('UPDATE produtos_do_pedido SET status_producao = $1 WHERE id = $2', ['FALHA_ENVIO', produtoDbId]);
-                    throw new Error(`Erro ao enviar produto ${produtoDbId}: ${productionResponse.statusText}`);
-                }
-
-                const productionData = await productionResponse.json();
-                const rastreioId = productionData.id;
-                console.log(`✅ Produto enviado para produção. Rastreio ID: ${rastreioId}`);
-
-                // 4.3. Salvar ID de rastreio
-                await pool.query(
-                    'UPDATE produtos_do_pedido SET id_rastreio_maquina = $1 WHERE id = $2',
-                    [rastreioId, produtoDbId]
-                );
-                */
-
-                // =============================================
                 // BLOCO SIMULAÇÃO (ATIVO - MODO DESENVOLVIMENTO)
                 // =============================================
                 console.log(`🚀 [MODO DEV] Simulando envio para produção...`);
@@ -137,7 +112,7 @@ const createOrder = async (req, res) => {
                 
                 // Atualizar produto como "PRONTO" automaticamente (para teste)
                 await pool.query(
-                    'UPDATE produtos_do_pedido SET status_producao = $1, id_rastreio_maquina = $2 WHERE id = $3',
+                    'UPDATE produtos_do_pedido SET status_producao = $1, codigo_rastreio = $2 WHERE id = $3',
                     ['PRONTO', rastreioId, produtoDbId]
                 );
                 
@@ -217,9 +192,13 @@ const getOrderStatus = async (req, res) => {
             });
         }
 
-        // 2. Obter produtos do pedido
+        // 2. Obter produtos do pedido - CORRIGIDO para nova estrutura
         const produtosResult = await pool.query(
-            'SELECT estilo, material, status_producao, slot_expedicao, id_rastreio_maquina FROM produtos_do_pedido WHERE pedido_id = $1',
+            `SELECT 
+                passo_um, passo_dois, passo_tres, passo_quatro, passo_cinco,
+                status_producao, codigo_rastreio, imagem_gerada
+             FROM produtos_do_pedido 
+             WHERE pedido_id = $1`,
             [pedidoId]
         );
 
@@ -230,10 +209,10 @@ const getOrderStatus = async (req, res) => {
             statusGeral: status_geral,
             dataCriacao: data_criacao,
             produtos: produtosResult.rows.map(row => ({
-                configuracao: `${row.estilo} / ${row.material}`,
+                configuracao: `${row.passo_um} / ${row.passo_dois} / ${row.passo_tres} / ${row.passo_quatro} / ${row.passo_cinco}`,
                 status: row.status_producao,
-                slotExpedicao: row.slot_expedicao,
-                rastreioId: row.id_rastreio_maquina
+                rastreioId: row.codigo_rastreio,
+                imagemGerada: row.imagem_gerada
             }))
         });
 
