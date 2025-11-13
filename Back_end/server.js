@@ -1,13 +1,13 @@
-// server.js - ATUALIZADO PARA STABLE DIFFUSION E SERVIÇO DE IMAGENS
+// server.js - ATUALIZADO PARA FAL.AI E SERVIÇO DE IMAGENS
 import dotenv from 'dotenv';
 
 // CARREGAR DOTENV PRIMEIRO, ANTES DE QUALQUER OUTRO IMPORT
 dotenv.config();
 
 // DEBUG imediatamente após carregar
-console.log('🔑 DEBUG Variáveis de ambiente (imediatamente):');
-console.log('STABILITY_AI_API_KEY existe?', !!process.env.STABILITY_AI_API_KEY);
-console.log('STABILITY_AI_API_KEY comprimento:', process.env.STABILITY_AI_API_KEY ? process.env.STABILITY_AI_API_KEY.length : 'não existe');
+console.log('🔑 DEBUG Variáveis de ambiente:');
+console.log('FAL_AI_KEY existe?', !!process.env.FAL_AI_KEY);
+console.log('SERVER_PORT:', process.env.SERVER_PORT);
 
 import express from 'express';
 import cors from 'cors';
@@ -21,7 +21,7 @@ import pedidoRoutes from './routes/pedidoRoutes.js';
 import producaoRoutes from './routes/producaoRoutes.js';
 import entregaRoutes from './routes/entregaRoutes.js';
 
-// ROTA DE IMAGENS (agora com Stable Diffusion)
+// ROTA DE IMAGENS (agora com Fal.ai)
 import imageRoutes from './routes/imageRoutes.js';
 
 const app = express();
@@ -45,22 +45,8 @@ app.use('/api/orders', pedidoRoutes);
 app.use('/api', producaoRoutes);
 app.use('/api/entrega', entregaRoutes);
 
-// ROTA DE IMAGENS - Stable Diffusion
+// ROTA DE IMAGENS - Fal.ai (TODAS as rotas de imagem estão no imageRoutes)
 app.use('/api/images', imageRoutes);
-
-// 🎯 **NOVA ROTA: Servir imagens específicas dos sneakers**
-app.get('/api/images/sneaker/:pedidoId/:produtoId', async (req, res) => {
-    try {
-        const { pedidoId, produtoId } = req.params;
-        
-        // Importação dinâmica para evitar circular dependency
-        const { serveSneakerImage } = await import('./controllers/imageGenerationController.js');
-        serveSneakerImage(req, res);
-    } catch (error) {
-        console.error('❌ Erro ao servir imagem:', error);
-        res.status(500).json({ error: 'Erro ao carregar imagem' });
-    }
-});
 
 // Rota de health check ATUALIZADA
 app.get('/api/health', (req, res) => {
@@ -74,11 +60,25 @@ app.get('/api/health', (req, res) => {
             pedidos: true,
             producao: true,
             entrega: true,
-            stable_diffusion: true,
-            image_serving: true, // 🆕 Novo recurso
-            stability_ai_api_key: process.env.STABILITY_AI_API_KEY ? '✅ Configurada' : '❌ Não encontrada'
+            image_generation: true,
+            image_serving: true,
+            fal_ai: process.env.FAL_AI_KEY ? '✅ Configurada' : '❌ Não encontrada'
         },
-        environment: process.env.NODE_ENV || 'development'
+        environment: process.env.NODE_ENV || 'development',
+        routes: {
+            health: 'GET /api/health',
+            images: {
+                generate: 'POST /api/images/generate',
+                save: 'POST /api/images/save-to-order',
+                serve: 'GET /api/images/sneaker/:pedidoId/:produtoId'
+            },
+            orders: {
+                create: 'POST /api/orders',
+                status: 'GET /api/orders/:id',
+                client: 'GET /api/orders/client/:clienteId'
+            },
+            debug: 'GET /api/debug/uploads (apenas desenvolvimento)'
+        }
     });
 });
 
@@ -93,13 +93,16 @@ if (process.env.NODE_ENV === 'development') {
                 const files = await fs.readdir(uploadsPath, { recursive: true });
                 res.json({ 
                     uploadsPath,
-                    files: files.filter(f => f.endsWith('.png') || f.endsWith('.jpg') || f.endsWith('.svg'))
+                    totalFiles: files.length,
+                    imageFiles: files.filter(f => f.endsWith('.png') || f.endsWith('.jpg') || f.endsWith('.svg')),
+                    allFiles: files
                 });
             } catch (error) {
                 res.json({ 
                     uploadsPath,
                     error: 'Pasta uploads não existe ou está vazia',
-                    message: error.message 
+                    message: error.message,
+                    suggestion: 'A pasta será criada automaticamente quando a primeira imagem for gerada'
                 });
             }
         } catch (error) {
@@ -108,19 +111,46 @@ if (process.env.NODE_ENV === 'development') {
     });
 }
 
+// Rota de fallback para 404
+app.use('*', (req, res) => {
+    res.status(404).json({
+        error: 'Rota não encontrada',
+        availableRoutes: {
+            health: 'GET /api/health',
+            images: {
+                generate: 'POST /api/images/generate',
+                save: 'POST /api/images/save-to-order', 
+                serve: 'GET /api/images/sneaker/:pedidoId/:produtoId'
+            },
+            orders: {
+                create: 'POST /api/orders',
+                status: 'GET /api/orders/:id',
+                client: 'GET /api/orders/client/:clienteId'
+            },
+            debug: 'GET /api/debug/uploads (apenas desenvolvimento)'
+        }
+    });
+});
+
 app.listen(PORT, () => {
-    console.log('='.repeat(50));
-    console.log(`🚀 Backend SneakerLabs inicializado`);
-    console.log('='.repeat(50));
+    console.log('='.repeat(60));
+    console.log(`🚀 Backend SneakerLabs inicializado com sucesso!`);
+    console.log('='.repeat(60));
     console.log(`📍 Porta: ${PORT}`);
     console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
     console.log(`🗄️  Banco: ${process.env.DB_NAME || 'SneakerLabs DB'}`);
-    console.log(`🎨 Stable Diffusion: ${process.env.STABILITY_AI_API_KEY ? '✅ API Key Configurada' : '❌ API Key Não Encontrada'}`);
-    console.log(`📁 Servindo arquivos: ✅ Pasta uploads`);
-    console.log('='.repeat(50));
+    console.log(`🎨 Fal.ai: ${process.env.FAL_AI_KEY ? '✅ API Key Configurada' : '❌ API Key Não Encontrada'}`);
+    console.log(`📁 Servindo arquivos: ✅ Pasta uploads configurada`);
+    console.log('='.repeat(60));
     console.log(`🔍 Health Check: http://localhost:${PORT}/api/health`);
-    console.log(`🎨 Image Generation: http://localhost:${PORT}/api/images/generate`);
-    console.log(`📦 API Orders: http://localhost:${PORT}/api/orders`);
-    console.log(`📁 Uploads Debug: http://localhost:${PORT}/api/debug/uploads`);
-    console.log('='.repeat(50));
+    console.log(`🎨 Image Routes:`);
+    console.log(`   ├── Generate: POST http://localhost:${PORT}/api/images/generate`);
+    console.log(`   ├── Save: POST http://localhost:${PORT}/api/images/save-to-order`);
+    console.log(`   └── Serve: GET http://localhost:${PORT}/api/images/sneaker/1/1`);
+    console.log(`📦 Order Routes:`);
+    console.log(`   ├── Create: POST http://localhost:${PORT}/api/orders`);
+    console.log(`   ├── Status: GET http://localhost:${PORT}/api/orders/1`);
+    console.log(`   └── Client: GET http://localhost:${PORT}/api/orders/client/1`);
+    console.log(`🐛 Debug: GET http://localhost:${PORT}/api/debug/uploads`);
+    console.log('='.repeat(60));
 });

@@ -1,9 +1,10 @@
-// controllers/imageGenerationController.js - VERSÃO COMPLETA E CORRIGIDA
-import stableDiffusionService from '../services/stableDiffusionService.js';
-import fallbackImageService from '../services/fallbackImageService.js';
+// controllers/imageGenerationController.js - CORRIGIDO
+import imageGenerationService from '../services/imageGenerationService.js';  // ← 'i' minúsculo
 import pool from '../config/database.js';
 import fs from 'fs/promises';
 import path from 'path';
+
+// ... resto do código permanece igual
 
 // 🎯 FUNÇÃO: Gerar imagem temporária para preview
 const generateSneakerImage = async (req, res) => {
@@ -20,29 +21,30 @@ const generateSneakerImage = async (req, res) => {
       });
     }
 
-    // 🎯 GERAR IMAGEM (apenas para preview)
-    console.log('🔄 Gerando imagem para preview...');
-    let imageUrl = await stableDiffusionService.generateSneakerImage(sneakerConfig);
-    
-    // Se falhar, usar fallback SVG
-    if (!imageUrl) {
-      console.log('🔄 Stable Diffusion falhou, usando fallback SVG...');
-      imageUrl = await fallbackImageService.generateSneakerImage(sneakerConfig);
-    }
+    // 🎯 USA SERVIÇO UNIFICADO (Fal.ai → SVG Fallback)
+    console.log('🔄 Iniciando geração de imagem...');
+    const imageUrl = await imageGenerationService.generateSneakerImage(sneakerConfig);
     
     if (imageUrl) {
       console.log(`✅ Imagem de preview gerada com sucesso`);
+      
+      // Determinar a fonte
+      let source = 'unknown';
+      if (imageUrl.includes('fal-ai')) source = 'fal_ai';
+      else if (imageUrl.includes('data:image/svg')) source = 'svg_fallback';
+      else if (imageUrl.includes('data:image/png')) source = 'stable_diffusion';
       
       res.json({
         success: true,
         imageUrl: imageUrl,
         pedidoId: pedidoId,
         produtoIndex: produtoIndex,
-        source: imageUrl.includes('data:image/svg') ? 'svg_fallback' : 'stable_diffusion'
+        source: source,
+        message: `Imagem gerada via ${source}`
       });
       
     } else {
-      console.log('❌ Falha ao gerar imagem');
+      console.log('❌ Falha ao gerar imagem com todos os provedores');
       res.status(500).json({
         success: false,
         error: 'Não foi possível gerar a imagem'
@@ -58,42 +60,61 @@ const generateSneakerImage = async (req, res) => {
   }
 };
 
-// 🎯 FUNÇÃO: Salvar imagem no filesystem
-const saveImageToDisk = async (base64Image, pedidoId, produtoId) => {
+// 🎯 FUNÇÃO: Salvar imagem no filesystem (ATUALIZADA para URLs externas)
+const saveImageToDisk = async (imageData, pedidoId, produtoId) => {
     try {
-        // Remove o prefixo data:image/... se existir
-        const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, '');
-        const buffer = Buffer.from(base64Data, 'base64');
-        
-        // Cria diretório se não existir
-        const uploadDir = path.join(process.cwd(), 'uploads', 'sneakers', pedidoId.toString());
-        await fs.mkdir(uploadDir, { recursive: true });
-        
-        // Nome do arquivo
-        const fileName = `produto_${produtoId}_${Date.now()}.png`;
-        const filePath = path.join(uploadDir, fileName);
-        
-        // Salva arquivo
-        await fs.writeFile(filePath, buffer);
-        
-        // Retorna dados otimizados
-        return {
-            url: `/uploads/sneakers/${pedidoId}/${fileName}`,
-            fileName: fileName,
-            filePath: filePath
-        };
+      let buffer;
+      let fileName;
+      
+      // Se for URL externa (do Fal.ai), baixa a imagem
+      if (imageData.startsWith('http')) {
+        console.log('📥 Baixando imagem do Fal.ai...');
+        const response = await fetch(imageData);
+        if (!response.ok) {
+          throw new Error(`Erro ao baixar imagem: ${response.status}`);
+        }
+        buffer = await response.buffer();
+        fileName = `produto_${produtoId}_${Date.now()}.jpg`;
+      } 
+      // Se for base64 (SVG ou Stable Diffusion)
+      else if (imageData.startsWith('data:image')) {
+        const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
+        buffer = Buffer.from(base64Data, 'base64');
+        const extension = imageData.includes('svg') ? 'svg' : 'png';
+        fileName = `produto_${produtoId}_${Date.now()}.${extension}`;
+      } 
+      else {
+        throw new Error('Formato de imagem não suportado');
+      }
+      
+      // Cria diretório se não existir
+      const uploadDir = path.join(process.cwd(), 'uploads', 'sneakers', pedidoId.toString());
+      await fs.mkdir(uploadDir, { recursive: true });
+      
+      const filePath = path.join(uploadDir, fileName);
+      
+      // Salva arquivo
+      await fs.writeFile(filePath, buffer);
+      
+      console.log(`💾 Imagem salva em: ${filePath}`);
+      
+      return {
+        url: `/uploads/sneakers/${pedidoId}/${fileName}`,
+        fileName: fileName,
+        filePath: filePath
+      };
     } catch (error) {
-        console.error('❌ Erro ao salvar imagem no disco:', error);
-        return null;
+      console.error('❌ Erro ao salvar imagem no disco:', error);
+      return null;
     }
 };
 
-// 🎯 FUNÇÃO: Salvar imagem definitiva no pedido
+// 🎯 FUNÇÃO: Salvar imagem definitiva no pedido (ATUALIZADA)
 const saveSneakerImageToOrder = async (req, res) => {
     const { pedidoId, produtoIndex, sneakerConfig } = req.body;
 
     try {
-        console.log(`💾 Salvando imagem OTIMIZADA para pedido ${pedidoId}, produto índice ${produtoIndex}`);
+        console.log(`💾 Salvando imagem DEFINITIVA para pedido ${pedidoId}, produto índice ${produtoIndex}`);
         
         // Validar configuração
         if (!sneakerConfig || Object.keys(sneakerConfig).length === 0) {
@@ -103,17 +124,12 @@ const saveSneakerImageToOrder = async (req, res) => {
             });
         }
 
-        // 🎯 GERAR IMAGEM
-        console.log('🔄 Gerando imagem...');
-        let imageBase64 = await stableDiffusionService.generateSneakerImage(sneakerConfig);
+        // 🎯 USA SERVIÇO UNIFICADO
+        console.log('🔄 Gerando imagem definitiva...');
+        const imageData = await imageGenerationService.generateSneakerImage(sneakerConfig);
         
-        if (!imageBase64) {
-            console.log('🔄 Stable Diffusion falhou, usando fallback SVG...');
-            imageBase64 = await fallbackImageService.generateSneakerImage(sneakerConfig);
-        }
-        
-        if (!imageBase64) {
-            console.log('❌ Falha ao gerar imagem');
+        if (!imageData) {
+            console.log('❌ Falha ao gerar imagem com todos os provedores');
             return res.status(500).json({
                 success: false,
                 error: 'Não foi possível gerar a imagem'
@@ -137,13 +153,13 @@ const saveSneakerImageToOrder = async (req, res) => {
         console.log(`✅ Produto encontrado: ID ${produtoId}`);
 
         // 🎯 SALVAR IMAGEM NO FILESYSTEM
-        const imageData = await saveImageToDisk(imageBase64, pedidoId, produtoId);
+        const savedImageData = await saveImageToDisk(imageData, pedidoId, produtoId);
         
-        if (!imageData) {
+        if (!savedImageData) {
             throw new Error('Falha ao salvar imagem no servidor');
         }
 
-        // 🎯 SALVAR APENAS METADADOS NO BANCO (LEVE)
+        // 🎯 SALVAR METADADOS NO BANCO
         await pool.query(
             `UPDATE produtos_do_pedido 
              SET imagem_url = $1, 
@@ -153,26 +169,26 @@ const saveSneakerImageToOrder = async (req, res) => {
                  updated_at = CURRENT_TIMESTAMP
              WHERE id = $5`,
             [
-                imageData.url,
-                imageData.fileName,
-                imageData.filePath,
+                savedImageData.url,
+                savedImageData.fileName,
+                savedImageData.filePath,
                 JSON.stringify(sneakerConfig),
                 produtoId
             ]
         );
         
-        console.log('💾 Metadados da imagem salvos no banco (sistema otimizado)');
+        console.log('💾 Imagem salva no banco de dados');
         
         res.json({
             success: true,
-            imageUrl: imageData.url,
+            imageUrl: savedImageData.url,
             pedidoId: pedidoId,
             produtoId: produtoId,
             produtoIndex: produtoIndex
         });
         
     } catch (error) {
-        console.error('❌ Erro ao salvar imagem otimizada:', error);
+        console.error('❌ Erro ao salvar imagem:', error);
         res.status(500).json({
             success: false,
             error: 'Erro interno: ' + error.message
@@ -180,7 +196,7 @@ const saveSneakerImageToOrder = async (req, res) => {
     }
 };
 
-// 🎯 FUNÇÃO: Servir imagens dos sneakers
+// 🎯 FUNÇÃO: Servir imagens dos sneakers (PERMANECE A MESMA)
 const serveSneakerImage = async (req, res) => {
     const { pedidoId, produtoId } = req.params;
     
@@ -243,7 +259,6 @@ const serveSneakerImage = async (req, res) => {
     }
 };
 
-// 🎯 EXPORTAR TODAS AS FUNÇÕES CORRETAMENTE
 export { 
     generateSneakerImage, 
     saveSneakerImageToOrder, 
