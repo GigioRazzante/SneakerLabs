@@ -1,15 +1,17 @@
 import express from 'express';
 import { createOrder, getOrderStatus, getClientOrders } from '../controllers/pedidoController.js';
+// REMOVER estas importações se existirem:
+// import { editarProduto, removerProduto } from '../controllers/produtoController.js';
 
 const router = express.Router();
 
-// POST /api/orders
+// Rotas EXISTENTES
 router.post('/', createOrder);
-
-// GET /api/orders/:id/status
 router.get('/:id/status', getOrderStatus);
-
-// GET /api/orders/cliente/:clienteId
 router.get('/cliente/:clienteId', getClientOrders);
+
+// REMOVER estas rotas se existirem (vão para produtoRoutes):
+// router.put('/produto/:produtoId', editarProduto);
+// router.delete('/produto/:produtoId', removerProduto);
 
 export default router;

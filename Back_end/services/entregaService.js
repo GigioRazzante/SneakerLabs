@@ -1,3 +1,4 @@
+// services/entregaService.js - ATUALIZADO
 import pool from '../config/database.js';
 import slotExpedicaoService from './slotExpedicaoService.js';
 
@@ -6,33 +7,30 @@ class EntregaService {
     try {
       console.log(`🚚 Confirmando entrega do pedido ${pedidoId}`);
 
-      const pedidoResult = await pool.query(
-        'SELECT status_geral FROM pedidos WHERE id = $1',
-        [pedidoId]
-      );
-
-      if (pedidoResult.rows.length === 0) {
-        throw new Error('Pedido não encontrado');
+      // Tenta liberar slot, mas não falha se não encontrar
+      let slotLiberado = null;
+      try {
+        slotLiberado = await slotExpedicaoService.liberarSlot(pedidoId);
+        console.log(`✅ Slot liberado para pedido ${pedidoId}`);
+      } catch (slotError) {
+        console.log(`⚠️ Não foi possível liberar slot: ${slotError.message}`);
+        // Continua o processo mesmo sem liberar slot
       }
 
-      if (pedidoResult.rows[0].status_geral !== 'CONCLUIDO') {
-        throw new Error('Pedido não está concluído para entrega');
-      }
-
-      const slotLiberado = await slotExpedicaoService.liberarSlot(pedidoId);
-      
+      // Atualiza status do pedido para ENTREGUE
       await pool.query(
         'UPDATE pedidos SET status_geral = $1 WHERE id = $2',
         ['ENTREGUE', pedidoId]
       );
 
-      console.log(`✅ Entrega confirmada - Pedido: ${pedidoId}, Slot liberado: ${slotLiberado.id}`);
+      console.log(`✅ Entrega confirmada - Pedido: ${pedidoId}`);
 
       return {
         success: true,
-        message: 'Entrega confirmada e slot liberado',
-        pedidoId: pedidoId,
-        slotLiberado: slotLiberado
+        message: slotLiberado 
+          ? 'Entrega confirmada e slot liberado' 
+          : 'Entrega confirmada (slot não estava alocado)',
+        pedidoId: pedidoId
       };
     } catch (error) {
       console.error(`❌ Erro ao confirmar entrega: ${error.message}`);

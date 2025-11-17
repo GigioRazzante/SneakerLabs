@@ -1,3 +1,4 @@
+// components/Navbar.jsx - ATUALIZADO
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Navbar.css';
@@ -34,6 +35,9 @@ const Navbar = () => {
           </li>
           <li>
             <Link to="/criar-sneaker" className="nav-link">Criar Sneaker</Link>
+          </li>
+          <li>
+            <Link to="/estoque" className="nav-link">Estoque</Link> {/* NOVA ABA */}
           </li>
           <li>
             <Link to="/perfil" className="nav-link">Perfil</Link>

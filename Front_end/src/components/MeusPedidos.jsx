@@ -16,6 +16,7 @@ const MeusPedidos = () => {
         CONCLUIDO: '#22C55E',
         PENDENTE: '#FF9D00',
         CANCELADO: '#DC3545',
+        ENTREGUE: '#6F42C1',
     };
 
     useEffect(() => {
@@ -63,6 +64,41 @@ const MeusPedidos = () => {
         navigate(`/rastrear-pedido/${pedidoId}`);
     };
 
+    // 🎯 FUNÇÃO PARA CONFIRMAR ENTREGA
+    const handleConfirmarEntrega = async (pedidoId) => {
+        if (!pedidoId) return;
+
+        try {
+            const response = await fetch(`http://localhost:3001/api/entrega/confirmar`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    pedidoId: pedidoId
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Erro ao confirmar entrega');
+            }
+
+            const data = await response.json();
+            alert('✅ Entrega confirmada com sucesso! O slot foi liberado.');
+            
+            // Atualizar status localmente
+            setPedidos(prev => prev.map(pedido => 
+                pedido.pedido_id === pedidoId 
+                    ? { ...pedido, status_geral: 'ENTREGUE' }
+                    : pedido
+            ));
+
+        } catch (error) {
+            console.error('❌ Erro ao confirmar entrega:', error);
+            alert('Erro ao confirmar entrega: ' + error.message);
+        }
+    };
+
     if (!user) {
         return (
             <div style={{ 
@@ -95,7 +131,6 @@ const MeusPedidos = () => {
         <>
             <Navbar />
             
-            {/* ✅ REMOVIDO paddingTop: '6rem' */}
             <div className="page-container"> 
                 <div className="main-content-card" style={{maxWidth: '800px', padding: '2rem 1.5rem'}}>
                     <div className="title-section">
@@ -140,12 +175,24 @@ const MeusPedidos = () => {
                                     <p>Valor Total: <strong className="total-price">R$ {pedido.valor_total ? pedido.valor_total.toFixed(2).replace('.', ',') : 'N/A'}</strong></p>
                                 </div>
                                 
-                                <button 
-                                    className="rastrear-button"
-                                    onClick={() => handleRastrearPedido(pedido.pedido_id)}
-                                >
-                                    Rastrear Detalhes »
-                                </button>
+                                <div className="pedido-actions">
+                                    <button 
+                                        className="rastrear-button"
+                                        onClick={() => handleRastrearPedido(pedido.pedido_id)}
+                                    >
+                                        Rastrear Detalhes »
+                                    </button>
+                                    
+                                    {/* 🎯 BOTÃO DE CONFIRMAR ENTREGA - Só mostrar se pedido estiver CONCLUIDO */}
+                                    {pedido.status_geral === 'CONCLUIDO' && (
+                                        <button 
+                                            className="confirmar-entrega-button"
+                                            onClick={() => handleConfirmarEntrega(pedido.pedido_id)}
+                                        >
+                                            ✅ Confirmar Entrega
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -208,21 +255,85 @@ const MeusPedidos = () => {
                     display: flex;
                     justify-content: space-between;
                 }
+                
+                /* 🎯 CONTAINER PARA OS BOTÕES */
+                .pedido-actions {
+                    display: flex;
+                    gap: 0.75rem;
+                    margin-top: 1rem;
+                    flex-wrap: wrap;
+                }
+                
                 .rastrear-button {
-                    display: block;
-                    width: 100%;
+                    flex: 1;
                     background-color: var(--azul-selecao, #00BFFF);
                     color: white;
                     font-weight: 600;
                     padding: 0.75rem;
-                    margin-top: 1rem;
                     border: none;
                     border-radius: 0.5rem;
                     cursor: pointer;
                     transition: background-color 0.3s;
+                    min-width: 150px;
                 }
                 .rastrear-button:hover {
                     background-color: #0099cc;
+                }
+                
+                /* 🎯 BOTÃO DE CONFIRMAR ENTREGA */
+                .confirmar-entrega-button {
+                    flex: 1;
+                    background-color: #28a745;
+                    color: white;
+                    font-weight: 600;
+                    padding: 0.75rem;
+                    border: none;
+                    border-radius: 0.5rem;
+                    cursor: pointer;
+                    transition: background-color 0.3s;
+                    min-width: 150px;
+                }
+                .confirmar-entrega-button:hover {
+                    background-color: #218838;
+                }
+                
+                /* RESPONSIVIDADE */
+                @media (max-width: 768px) {
+                    .pedido-actions {
+                        flex-direction: column;
+                    }
+                    
+                    .rastrear-button,
+                    .confirmar-entrega-button {
+                        width: 100%;
+                    }
+                    
+                    .pedido-header-info {
+                        flex-direction: column;
+                        align-items: flex-start;
+                        gap: 0.5rem;
+                    }
+                    
+                    .pedido-details p {
+                        flex-direction: column;
+                        gap: 0.25rem;
+                    }
+                }
+                
+                @media (max-width: 480px) {
+                    .pedido-card {
+                        padding: 1rem;
+                    }
+                    
+                    .pedido-id {
+                        font-size: 1.1rem;
+                    }
+                    
+                    .rastrear-button,
+                    .confirmar-entrega-button {
+                        padding: 0.6rem;
+                        font-size: 0.9rem;
+                    }
                 }
             `}</style>
         </>

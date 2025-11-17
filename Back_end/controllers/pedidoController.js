@@ -157,6 +157,7 @@ const createOrder = async (req, res) => {
     }
 };
 
+// controllers/pedidoController.js - ATUALIZAR
 const getOrderStatus = async (req, res) => {
     const pedidoId = req.params.id;
     const clienteId = req.headers['x-client-id'] || req.headers['client-id'];
@@ -192,11 +193,13 @@ const getOrderStatus = async (req, res) => {
             });
         }
 
-        // 2. Obter produtos do pedido - CORRIGIDO para nova estrutura
+        // 2. Obter produtos do pedido - QUERY CORRIGIDA (removida coluna imagem_gerada)
         const produtosResult = await pool.query(
             `SELECT 
+                id,
                 passo_um, passo_dois, passo_tres, passo_quatro, passo_cinco,
-                status_producao, codigo_rastreio, imagem_gerada
+                status_producao, codigo_rastreio, slot_expedicao,
+                imagem_url, imagem_nome_arquivo
              FROM produtos_do_pedido 
              WHERE pedido_id = $1`,
             [pedidoId]
@@ -204,20 +207,27 @@ const getOrderStatus = async (req, res) => {
 
         console.log(`✅ [RASTREIO] Pedido ${pedidoId} autorizado para cliente ${clienteId}`);
 
+        // Formatar resposta
+        const produtosFormatados = produtosResult.rows.map(row => ({
+            id: row.id,
+            configuracao: `${row.passo_um} / ${row.passo_dois} / ${row.passo_tres} / ${row.passo_quatro} / ${row.passo_cinco}`,
+            status: row.status_producao,
+            rastreioId: row.codigo_rastreio,
+            slotExpedicao: row.slot_expedicao,
+            imagemUrl: row.imagem_url,
+            temImagem: !!row.imagem_url
+        }));
+
         res.status(200).json({
-            pedidoId: pedidoId,
+            pedidoId: parseInt(pedidoId),
             statusGeral: status_geral,
             dataCriacao: data_criacao,
-            produtos: produtosResult.rows.map(row => ({
-                configuracao: `${row.passo_um} / ${row.passo_dois} / ${row.passo_tres} / ${row.passo_quatro} / ${row.passo_cinco}`,
-                status: row.status_producao,
-                rastreioId: row.codigo_rastreio,
-                imagemGerada: row.imagem_gerada
-            }))
+            produtos: produtosFormatados
         });
 
     } catch (err) {
         console.error('❌ [RASTREIO] Erro ao buscar status do pedido:', err.message);
+        console.error('Stack trace:', err.stack);
         res.status(500).json({ error: 'Erro ao buscar status do pedido.' });
     }
 };

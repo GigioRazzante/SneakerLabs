@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar'; 
+import Footer from '../components/Footer';
 import { useAuth } from '../context/AuthContext.jsx';
+import EditarProdutoModal from '../components/EditarProdutoModal';
+import ConfirmarRemocaoModal from '../components/ConfirmarRemocaoModal';
 
 const BACKEND_URL = 'http://localhost:3001'; 
 
@@ -33,6 +36,8 @@ const formatStatus = (status) => {
             return { text: 'Produto Montado', color: '#20C997' };
         case 'FALHA_ENVIO':
             return { text: 'Falha no Envio', color: '#DC3545' };
+        case 'ENTREGUE':
+            return { text: 'Entregue', color: '#6F42C1' };
         default:
             return { text: status, color: '#6C757D' };
     }
@@ -55,6 +60,11 @@ function RastrearPedido() {
     const [statusData, setStatusData] = useState(null);
     const [loading, setLoading] = useState(!!pedidoIdParam);
     const [error, setError] = useState('');
+    
+    // Estados para modais de edição/remoção
+    const [modalEditarAberto, setModalEditarAberto] = useState(false);
+    const [modalRemoverAberto, setModalRemoverAberto] = useState(false);
+    const [produtoSelecionado, setProdutoSelecionado] = useState(null);
 
     useEffect(() => {
         console.log('🔐 Usuário no RastrearPedido:', user);
@@ -138,6 +148,118 @@ function RastrearPedido() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pedidoIdParam, user]);
 
+    // 🎯 FUNÇÕES PARA EDIÇÃO/REMOÇÃO
+    const abrirModalEditar = (produto, produtoIndex) => {
+        // Extrair configurações do produto para o modal de edição
+        const configParts = produto.configuracao?.split(' / ') || [];
+        const produtoCompleto = {
+            id: produto.id || `produto-${produtoIndex}`,
+            passo_um: configParts[0]?.trim() || '',
+            passo_dois: configParts[1]?.trim() || '',
+            passo_tres: configParts[2]?.trim() || '',
+            passo_quatro: configParts[3]?.trim() || '',
+            passo_cinco: configParts[4]?.trim() || '',
+            status: produto.status,
+            rastreioId: produto.rastreioId
+        };
+        
+        setProdutoSelecionado(produtoCompleto);
+        setModalEditarAberto(true);
+    };
+
+    const abrirModalRemover = (produto, produtoIndex) => {
+        const configParts = produto.configuracao?.split(' / ') || [];
+        const produtoCompleto = {
+            id: produto.id || `produto-${produtoIndex}`,
+            passo_um: configParts[0]?.trim() || '',
+            passo_dois: configParts[1]?.trim() || '',
+            passo_quatro: configParts[3]?.trim() || '',
+            status: produto.status
+        };
+        
+        setProdutoSelecionado(produtoCompleto);
+        setModalRemoverAberto(true);
+    };
+
+    // 🎯 FUNÇÃO CHAMADA APÓS EDIÇÃO BEM-SUCEDIDA
+    const handleProdutoEditado = (produtoAtualizado, novoValorTotal) => {
+        console.log('✅ Produto editado com sucesso:', produtoAtualizado);
+        
+        // Atualizar a lista de produtos localmente
+        if (statusData && statusData.produtos) {
+            setStatusData(prev => ({
+                ...prev,
+                produtos: prev.produtos.map(p => 
+                    p.id === produtoAtualizado.id ? { 
+                        ...p, 
+                        configuracao: `${produtoAtualizado.passo_um} / ${produtoAtualizado.passo_dois} / ${produtoAtualizado.passo_tres} / ${produtoAtualizado.passo_quatro} / ${produtoAtualizado.passo_cinco}`
+                    } : p
+                )
+            }));
+        }
+        
+        setModalEditarAberto(false);
+        // Recarregar dados para garantir sincronização
+        handleSearch();
+    };
+
+    // 🎯 FUNÇÃO CHAMADA APÓS REMOÇÃO BEM-SUCEDIDA
+    const handleProdutoRemovido = (resultado) => {
+        console.log('✅ Produto removido com sucesso:', resultado);
+        
+        // Remover produto da lista localmente
+        if (statusData && statusData.produtos) {
+            const novosProdutos = statusData.produtos.filter(p => p.id !== produtoSelecionado.id);
+            
+            setStatusData(prev => ({
+                ...prev,
+                produtos: novosProdutos
+            }));
+            
+            // Se não há mais produtos, mostrar mensagem
+            if (novosProdutos.length === 0) {
+                alert('Todos os produtos foram removidos. O pedido foi cancelado.');
+                navigate('/meus-pedidos');
+            }
+        }
+        
+        setModalRemoverAberto(false);
+    };
+
+    // 🎯 FUNÇÃO PARA CONFIRMAR ENTREGA (PARTE 4)
+    const handleConfirmarEntrega = async () => {
+        if (!statusData || !statusData.pedidoId) return;
+
+        try {
+            const response = await fetch(`${BACKEND_URL}/api/entrega/confirmar`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    pedidoId: statusData.pedidoId
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Erro ao confirmar entrega');
+            }
+
+            const data = await response.json();
+            alert('✅ Entrega confirmada com sucesso! O slot foi liberado.');
+            
+            // Atualizar status localmente
+            setStatusData(prev => ({
+                ...prev,
+                statusGeral: 'ENTREGUE'
+            }));
+
+        } catch (error) {
+            console.error('❌ Erro ao confirmar entrega:', error);
+            alert('Erro ao confirmar entrega: ' + error.message);
+        }
+    };
+
     if (!user) {
         return (
             <div style={{ 
@@ -172,6 +294,8 @@ function RastrearPedido() {
             
             <div className="page-container">
                 <div className="main-content-card">
+                    <div className="card-header-bar"></div>
+                    
                     <div className="title-section">
                         <h2 className="title">🚚 Acompanhar Pedido</h2>
                         <p className="subtitle">Digite o ID do pedido para rastrear o status de produção.</p>
@@ -199,7 +323,7 @@ function RastrearPedido() {
                                 disabled={loading}
                                 className="search-button"
                             >
-                                {loading ? 'Buscando...' : 'Buscar Pedido'}
+                                {loading ? '🔍 Buscando...' : '🔍 Buscar Pedido'}
                             </button>
                         </div>
                     </form>
@@ -226,57 +350,157 @@ function RastrearPedido() {
                                 </div>
                             </div>
 
-                            <h4 className="produtos-title">Itens de Produção ({statusData.produtos.length})</h4>
+                            <h4 className="produtos-title">Itens de Produção ({statusData.produtos?.length || 0})</h4>
                             
                             <div className="produtos-lista">
-                                {statusData.produtos.map((produto, index) => (
-                                    <div key={index} className="produto-item">
-                                        <div className="produto-header">
-                                            <span className="produto-nome">{getProdutoTitle(produto.configuracao)}</span>
-                                            <span 
-                                                className="produto-status-badge"
-                                                style={{ backgroundColor: formatStatus(produto.status).color }}
-                                            >
-                                                {formatStatus(produto.status).text}
-                                            </span>
+                                {statusData.produtos && statusData.produtos.length > 0 ? (
+                                    statusData.produtos.map((produto, index) => (
+                                        <div key={index} className="produto-item">
+                                            <div className="produto-header">
+                                                <span className="produto-nome">{getProdutoTitle(produto.configuracao)}</span>
+                                                <span 
+                                                    className="produto-status-badge"
+                                                    style={{ backgroundColor: formatStatus(produto.status).color }}
+                                                >
+                                                    {formatStatus(produto.status).text}
+                                                </span>
+                                            </div>
+                                            
+                                            // No seu componente RastrearPedido.jsx - ATUALIZAR
+<div className="produto-detalhes">
+    <p><strong>Rastreio ID:</strong> {produto.rastreioId || 'Aguardando geração'}</p>
+    {/* ATUALIZAR ESTA LINHA: */}
+    <p><strong>Slot de Expedição:</strong> {produto.slotExpedicao || 'Não alocado'}</p>
+</div>
+
+                                            {/* 🎯 BOTÕES DE EDIÇÃO/REMOÇÃO - Só mostrar se pedido não estiver concluído/entregue */}
+                                            {statusData.statusGeral !== 'CONCLUIDO' && statusData.statusGeral !== 'ENTREGUE' && (
+                                                <div className="produto-actions">
+                                                    <button 
+                                                        className="edit-button"
+                                                        onClick={() => abrirModalEditar(produto, index)}
+                                                    >
+                                                        ✏️ Editar
+                                                    </button>
+                                                    <button 
+                                                        className="delete-button"
+                                                        onClick={() => abrirModalRemover(produto, index)}
+                                                    >
+                                                        🗑️ Remover
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
-                                        
-                                        <div className="produto-detalhes">
-                                            <p><strong>Rastreio ID:</strong> {produto.rastreioId || 'Aguardando geração'}</p>
-                                            <p><strong>Slot de Expedição:</strong> {produto.slotExpedicao || 'Na linha de produção'}</p>
-                                        </div>
-                                    </div>
-                                ))}
+                                    ))
+                                ) : (
+                                    <p className="no-products">Nenhum produto encontrado neste pedido.</p>
+                                )}
+                            </div>
+
+                            {/* 🎯 BOTÃO DE CONFIRMAR ENTREGA (PARTE 4) */}
+                            {statusData.statusGeral === 'CONCLUIDO' && (
+                                <div className="entrega-section">
+                                    <button 
+                                        className="confirmar-entrega-button"
+                                        onClick={handleConfirmarEntrega}
+                                    >
+                                        ✅ Confirmar Entrega e Liberar Slot
+                                    </button>
+                                    <p className="entrega-info">
+                                        Ao confirmar a entrega, o slot de expedição será liberado para novos pedidos.
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Botão para voltar */}
+                            <div className="action-buttons">
+                            <button 
+    className="back-button"
+    onClick={() => navigate('/meus-pedidos')}
+>
+    ← Voltar para Meus Pedidos
+</button>
+                                
+                                <button 
+                                    className="rastrear-button"
+                                    onClick={() => navigate(`/rastrear-pedido/${statusData.pedidoId}`)}
+                                >
+                                    🔄 Atualizar Status
+                                </button>
                             </div>
                         </div>
                     )}
                 </div>
             </div>
+
+            <Footer />
+
+            {/* 🎯 MODAIS DE EDIÇÃO/REMOÇÃO */}
+            {modalEditarAberto && produtoSelecionado && (
+                <EditarProdutoModal
+                    produto={produtoSelecionado}
+                    pedidoId={statusData?.pedidoId}
+                    onSave={handleProdutoEditado}
+                    onClose={() => setModalEditarAberto(false)}
+                />
+            )}
+
+            {modalRemoverAberto && produtoSelecionado && (
+                <ConfirmarRemocaoModal
+                    produto={produtoSelecionado}
+                    onConfirm={handleProdutoRemovido}
+                    onCancel={() => setModalRemoverAberto(false)}
+                />
+            )}
             
-           
-           
             <style>{`
-                /* ESTILOS RESPONSIVOS */
-                .page-container {
-                    padding-top: 5rem;
-                    padding-bottom: 2rem;
+                /* ESTILOS GLOBAIS */
+                :root {
+                    --laranja-vibrante: #FF9D00;
+                    --preto: #000000;
+                    --navbar-height: 5rem;
+                }
+                
+                html { overflow-x: hidden; }
+                body, html, #root {
+                    margin: 0;
+                    padding: 0;
                     width: 100%;
                     min-height: 100vh;
+                    overflow-x: hidden;
+                }
+
+                .page-container {
+                    padding-top: var(--navbar-height); 
+                    padding-bottom: 2rem;
+                    width: 100%; 
+                    min-height: 100vh;
                     display: flex;
-                    justify-content: center;
-                    align-items: flex-start;
+                    justify-content: center; 
+                    align-items: flex-start; 
                     box-sizing: border-box;
                 }
 
                 .main-content-card {
-                    width: 95%;
+                    width: 95%; 
                     max-width: 900px;
                     background-color: white;
-                    border-radius: 1.5rem;
-                    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+                    border-radius: 1.5rem; 
+                    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15); 
                     padding: 2.5rem;
-                    margin: 1.5rem 0;
+                    margin: 1.5rem 0; 
                     position: relative;
+                }
+
+                .card-header-bar {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 1.5rem;
+                    background-color: #FF9D00;
+                    border-top-left-radius: 1.5rem;
+                    border-top-right-radius: 1.5rem;
                 }
 
                 .title-section {
@@ -477,6 +701,126 @@ function RastrearPedido() {
                     justify-content: space-between;
                 }
 
+                /* 🎯 BOTÕES DE AÇÃO DOS PRODUTOS */
+                .produto-actions {
+                    display: flex;
+                    gap: 0.5rem;
+                    margin-top: 1rem;
+                    padding-top: 0.75rem;
+                    border-top: 1px solid #f8f9fa;
+                }
+
+                .edit-button {
+                    background: #007bff;
+                    color: white;
+                    border: none;
+                    padding: 0.5rem 1rem;
+                    border-radius: 0.5rem;
+                    font-size: 0.9rem;
+                    cursor: pointer;
+                    transition: background 0.3s;
+                    flex: 1;
+                }
+
+                .edit-button:hover {
+                    background: #0056b3;
+                }
+
+                .delete-button {
+                    background: #dc3545;
+                    color: white;
+                    border: none;
+                    padding: 0.5rem 1rem;
+                    border-radius: 0.5rem;
+                    font-size: 0.9rem;
+                    cursor: pointer;
+                    transition: background 0.3s;
+                    flex: 1;
+                }
+
+                .delete-button:hover {
+                    background: #c82333;
+                }
+
+                /* 🎯 SEÇÃO DE ENTREGA */
+                .entrega-section {
+                    margin-top: 2rem;
+                    padding: 1.5rem;
+                    background: #e8f5e8;
+                    border-radius: 0.75rem;
+                    border: 2px solid #28a745;
+                    text-align: center;
+                }
+
+                .confirmar-entrega-button {
+                    background: #28a745;
+                    color: white;
+                    border: none;
+                    padding: 1rem 2rem;
+                    border-radius: 0.75rem;
+                    font-size: 1.1rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: background 0.3s;
+                    margin-bottom: 1rem;
+                }
+
+                .confirmar-entrega-button:hover {
+                    background: #218838;
+                }
+
+                .entrega-info {
+                    color: #155724;
+                    font-size: 0.9rem;
+                    margin: 0;
+                }
+
+                /* BOTÕES DE AÇÃO GERAIS */
+                .action-buttons {
+                    display: flex;
+                    gap: 1rem;
+                    margin-top: 2rem;
+                    justify-content: center;
+                    flex-wrap: wrap;
+                }
+
+                .back-button {
+                    background: #6c757d;
+                    color: white;
+                    border: none;
+                    padding: 0.75rem 1.5rem;
+                    border-radius: 0.5rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: background 0.3s;
+                }
+
+                .back-button:hover {
+                    background: #545b62;
+                }
+
+                .rastrear-button {
+                    background: #FF9D00;
+                    color: white;
+                    border: none;
+                    padding: 0.75rem 1.5rem;
+                    border-radius: 0.5rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: background 0.3s;
+                }
+
+                .rastrear-button:hover {
+                    background: #e68a00;
+                }
+
+                .no-products {
+                    text-align: center;
+                    color: #666;
+                    font-style: italic;
+                    padding: 2rem;
+                }
+
                 /* RESPONSIVIDADE */
                 @media (max-width: 768px) {
                     .page-container {
@@ -525,6 +869,21 @@ function RastrearPedido() {
                     .user-info-card {
                         max-width: 100%;
                     }
+
+                    .produto-actions {
+                        flex-direction: column;
+                    }
+
+                    .action-buttons {
+                        flex-direction: column;
+                        align-items: center;
+                    }
+
+                    .back-button,
+                    .rastrear-button {
+                        width: 100%;
+                        max-width: 300px;
+                    }
                 }
 
                 @media (max-width: 480px) {
@@ -552,6 +911,11 @@ function RastrearPedido() {
                     .produto-status-badge {
                         font-size: 0.7rem;
                         padding: 0.3rem 0.6rem;
+                    }
+
+                    .confirmar-entrega-button {
+                        padding: 0.75rem 1rem;
+                        font-size: 1rem;
                     }
                 }
             `}</style>
