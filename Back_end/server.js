@@ -43,9 +43,8 @@ app.use('/api', producaoRoutes);
 app.use('/api/entrega', entregaRoutes);
 app.use('/api/images', imageRoutes);
 
-// 🚨 COMENTE AS NOVAS ROTAS TEMPORARIAMENTE
-// app.use('/api/estoque', estoqueRoutes);
-// app.use('/api/produtos', produtoRoutes);
+app.use('/api/estoque', estoqueRoutes);
+app.use('/api/produtos', produtoRoutes);
 
 // Rota de health check ATUALIZADA
 app.get('/api/health', (req, res) => {
@@ -61,8 +60,8 @@ app.get('/api/health', (req, res) => {
             entrega: true,
             image_generation: true,
             image_serving: true,
-            // estoque: false,  // 🚨 COMENTADO TEMPORARIAMENTE
-            // produtos: false, // 🚨 COMENTADO TEMPORARIAMENTE
+            estoque: false,  // 🚨 COMENTADO TEMPORARIAMENTE
+            produtos: false, // 🚨 COMENTADO TEMPORARIAMENTE
             fal_ai: process.env.FAL_AI_KEY ? '✅ Configurada' : '❌ Não encontrada'
         },
         environment: process.env.NODE_ENV || 'development'
@@ -120,17 +119,17 @@ app.use('*', (req, res) => {
                 save: 'POST /api/images/save-to-order', 
                 serve: 'GET /api/images/sneaker/:pedidoId/:produtoId'
             },
-            // 🚨 COMENTE AS NOVAS ROTAS TEMPORARIAMENTE
-            // estoque: {
-            //     listar: 'GET /api/estoque/listar',
-            //     repor: 'POST /api/estoque/repor/:id',
-            //     editar: 'PUT /api/estoque/editar/:id',
-            //     remover: 'DELETE /api/estoque/remover/:id'
-            // },
-            // produtos: {
-            //     editar: 'PUT /api/produtos/editar/:produtoId',
-            //     remover: 'DELETE /api/produtos/remover/:produtoId'
-            // },
+        
+            estoque: {
+                listar: 'GET /api/estoque/listar',
+                repor: 'POST /api/estoque/repor/:id',
+                editar: 'PUT /api/estoque/editar/:id',
+                remover: 'DELETE /api/estoque/remover/:id'
+            },
+            produtos: {
+                editar: 'PUT /api/produtos/editar/:produtoId',
+                remover: 'DELETE /api/produtos/remover/:produtoId'
+            },
             entrega: {
                 confirmar: 'POST /api/entrega/confirmar',
                 slots: 'GET /api/entrega/slots/disponiveis',

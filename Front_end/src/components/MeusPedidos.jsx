@@ -30,7 +30,8 @@ const MeusPedidos = () => {
             setLoading(true);
             setError(null);
             try {
-                const response = await fetch(`http://localhost:3001/api/orders/cliente/${user.id}`);
+                // 🎯 MUDANÇA: Usar rota detalhada
+                const response = await fetch(`http://localhost:3001/api/orders/cliente/${user.id}/detalhado`);
 
                 if (!response.ok) {
                     const errorData = await response.json();
@@ -60,8 +61,18 @@ const MeusPedidos = () => {
         }
     };
 
-    const handleRastrearPedido = (pedidoId) => {
-        navigate(`/rastrear-pedido/${pedidoId}`);
+    // 🎯 MUDANÇA: Agora navega para código de rastreio
+    const handleRastrearPedido = (pedido) => {
+        // Usa o primeiro código de rastreio disponível
+        const codigoRastreio = pedido.codigos_rastreio && pedido.codigos_rastreio.length > 0 
+            ? pedido.codigos_rastreio[0] 
+            : null;
+            
+        if (codigoRastreio) {
+            navigate(`/rastrear-pedido/${codigoRastreio}`);
+        } else {
+            alert('Este pedido ainda não tem código de rastreio disponível.');
+        }
     };
 
     // 🎯 FUNÇÃO PARA CONFIRMAR ENTREGA
@@ -173,12 +184,32 @@ const MeusPedidos = () => {
                                     <p>Data do Pedido: <strong>{formatarData(pedido.data_criacao)}</strong></p>
                                     <p>Total de Itens: <strong>{pedido.total_produtos}</strong></p>
                                     <p>Valor Total: <strong className="total-price">R$ {pedido.valor_total ? pedido.valor_total.toFixed(2).replace('.', ',') : 'N/A'}</strong></p>
+                                    
+                                    {/* 🎯 NOVO: Mostrar códigos de rastreio */}
+                                    {pedido.codigos_rastreio && pedido.codigos_rastreio.length > 0 && (
+                                        <p>
+                                            Códigos de Rastreio: {' '}
+                                            <strong>
+                                                {pedido.codigos_rastreio.map((codigo, index) => (
+                                                    <span key={index} style={{ 
+                                                        backgroundColor: '#e9ecef', 
+                                                        padding: '2px 6px', 
+                                                        borderRadius: '4px', 
+                                                        fontSize: '0.8rem',
+                                                        marginLeft: '4px'
+                                                    }}>
+                                                        {codigo}
+                                                    </span>
+                                                ))}
+                                            </strong>
+                                        </p>
+                                    )}
                                 </div>
                                 
                                 <div className="pedido-actions">
                                     <button 
                                         className="rastrear-button"
-                                        onClick={() => handleRastrearPedido(pedido.pedido_id)}
+                                        onClick={() => handleRastrearPedido(pedido)} 
                                     >
                                         Rastrear Detalhes »
                                     </button>
@@ -254,6 +285,7 @@ const MeusPedidos = () => {
                     color: #555;
                     display: flex;
                     justify-content: space-between;
+                    align-items: center;
                 }
                 
                 /* 🎯 CONTAINER PARA OS BOTÕES */
@@ -316,6 +348,7 @@ const MeusPedidos = () => {
                     
                     .pedido-details p {
                         flex-direction: column;
+                        align-items: flex-start;
                         gap: 0.25rem;
                     }
                 }

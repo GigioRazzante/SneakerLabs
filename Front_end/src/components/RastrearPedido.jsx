@@ -52,13 +52,13 @@ const getProdutoTitle = (config) => {
 };
 
 function RastrearPedido() {
-    const { pedidoId: pedidoIdParam } = useParams();
+    const { codigoRastreio: codigoRastreioParam } = useParams(); // 🎯 MUDANÇA: agora usa código de rastreio
     const { user } = useAuth();
     const navigate = useNavigate();
     
-    const [pedidoIdInput, setPedidoIdInput] = useState(pedidoIdParam || '');
+    const [codigoRastreioInput, setCodigoRastreioInput] = useState(codigoRastreioParam || ''); // 🎯 MUDANÇA
     const [statusData, setStatusData] = useState(null);
-    const [loading, setLoading] = useState(!!pedidoIdParam);
+    const [loading, setLoading] = useState(!!codigoRastreioParam);
     const [error, setError] = useState('');
     
     // Estados para modais de edição/remoção
@@ -68,23 +68,21 @@ function RastrearPedido() {
 
     useEffect(() => {
         console.log('🔐 Usuário no RastrearPedido:', user);
-        console.log('📦 Pedido ID da URL:', pedidoIdParam);
-    }, [user, pedidoIdParam]);
+        console.log('📦 Código de Rastreio da URL:', codigoRastreioParam);
+    }, [user, codigoRastreioParam]);
 
     const handleSearch = async (e) => {
         if (e) {
             e.preventDefault();
         }
         
-        const currentPedidoId = e ? pedidoIdInput : pedidoIdParam;
+        const currentCodigoRastreio = e ? codigoRastreioInput : codigoRastreioParam;
 
-        if (!currentPedidoId) {
-            setError('Por favor, digite o ID do Pedido.');
+        if (!currentCodigoRastreio) {
+            setError('Por favor, digite o Código de Rastreio.');
             setStatusData(null);
             return;
         }
-
-        const pedidoId = parseInt(currentPedidoId);
 
         setLoading(true);
         setError('');
@@ -101,9 +99,10 @@ function RastrearPedido() {
                 'x-client-id': user.id.toString()
             };
 
-            console.log(`🔍 Buscando pedido ${pedidoId} para cliente ${user.id}`);
+            console.log(`🔍 Buscando pedido por código: ${currentCodigoRastreio} para cliente ${user.id}`);
 
-            const response = await fetch(`${BACKEND_URL}/api/orders/${pedidoId}/status`, {
+            // 🎯 MUDANÇA: Nova rota sem ID
+            const response = await fetch(`${BACKEND_URL}/api/orders/rastreio/${currentCodigoRastreio}`, {
                 headers: headers
             });
             
@@ -120,7 +119,7 @@ function RastrearPedido() {
             }
             
             if (response.status === 404) {
-                setError(`Pedido #${pedidoId} não encontrado no sistema.`);
+                setError(`Código de rastreio "${currentCodigoRastreio}" não encontrado no sistema.`);
                 return;
             }
 
@@ -141,16 +140,15 @@ function RastrearPedido() {
     };
     
     useEffect(() => {
-        if (pedidoIdParam && user && user.id) {
+        if (codigoRastreioParam && user && user.id) {
             console.log('🔄 Buscando automaticamente...');
             handleSearch();
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [pedidoIdParam, user]);
+    }, [codigoRastreioParam, user]);
 
     // 🎯 FUNÇÕES PARA EDIÇÃO/REMOÇÃO
     const abrirModalEditar = (produto, produtoIndex) => {
-        // Extrair configurações do produto para o modal de edição
         const configParts = produto.configuracao?.split(' / ') || [];
         const produtoCompleto = {
             id: produto.id || `produto-${produtoIndex}`,
@@ -185,7 +183,6 @@ function RastrearPedido() {
     const handleProdutoEditado = (produtoAtualizado, novoValorTotal) => {
         console.log('✅ Produto editado com sucesso:', produtoAtualizado);
         
-        // Atualizar a lista de produtos localmente
         if (statusData && statusData.produtos) {
             setStatusData(prev => ({
                 ...prev,
@@ -199,15 +196,13 @@ function RastrearPedido() {
         }
         
         setModalEditarAberto(false);
-        // Recarregar dados para garantir sincronização
-        handleSearch();
+        handleSearch(); // Recarregar dados
     };
 
     // 🎯 FUNÇÃO CHAMADA APÓS REMOÇÃO BEM-SUCEDIDA
     const handleProdutoRemovido = (resultado) => {
         console.log('✅ Produto removido com sucesso:', resultado);
         
-        // Remover produto da lista localmente
         if (statusData && statusData.produtos) {
             const novosProdutos = statusData.produtos.filter(p => p.id !== produtoSelecionado.id);
             
@@ -216,7 +211,6 @@ function RastrearPedido() {
                 produtos: novosProdutos
             }));
             
-            // Se não há mais produtos, mostrar mensagem
             if (novosProdutos.length === 0) {
                 alert('Todos os produtos foram removidos. O pedido foi cancelado.');
                 navigate('/meus-pedidos');
@@ -226,7 +220,7 @@ function RastrearPedido() {
         setModalRemoverAberto(false);
     };
 
-    // 🎯 FUNÇÃO PARA CONFIRMAR ENTREGA (PARTE 4)
+    // 🎯 FUNÇÃO PARA CONFIRMAR ENTREGA
     const handleConfirmarEntrega = async () => {
         if (!statusData || !statusData.pedidoId) return;
 
@@ -248,7 +242,6 @@ function RastrearPedido() {
             const data = await response.json();
             alert('✅ Entrega confirmada com sucesso! O slot foi liberado.');
             
-            // Atualizar status localmente
             setStatusData(prev => ({
                 ...prev,
                 statusGeral: 'ENTREGUE'
@@ -298,12 +291,12 @@ function RastrearPedido() {
                     
                     <div className="title-section">
                         <h2 className="title">🚚 Acompanhar Pedido</h2>
-                        <p className="subtitle">Digite o ID do pedido para rastrear o status de produção.</p>
+                        <p className="subtitle">Digite o código de rastreio para acompanhar o status de produção.</p> {/* 🎯 MUDANÇA */}
                         
                         {/* Informações do usuário */}
                         <div className="user-info-card">
                             <p><strong>Usuário logado:</strong> {user.nome_usuario} (ID: {user.id})</p>
-                            <p><strong>Pedido a ser rastreado:</strong> {pedidoIdParam || 'Nenhum'}</p>
+                            <p><strong>Código a ser rastreado:</strong> {codigoRastreioParam || 'Nenhum'}</p> {/* 🎯 MUDANÇA */}
                         </div>
                     </div>
 
@@ -311,10 +304,10 @@ function RastrearPedido() {
                     <form onSubmit={handleSearch} className="search-form">
                         <div className="input-group">
                             <input 
-                                type="number"
-                                placeholder="ID do Pedido (ex: 3)" 
-                                value={pedidoIdInput}
-                                onChange={(e) => setPedidoIdInput(e.target.value)}
+                                type="text" 
+                                placeholder="Código de Rastreio (ex: SIM-123456789)" 
+                                value={codigoRastreioInput} 
+                                onChange={(e) => setCodigoRastreioInput(e.target.value)} 
                                 disabled={loading}
                                 className="search-input"
                             />
@@ -323,10 +316,20 @@ function RastrearPedido() {
                                 disabled={loading}
                                 className="search-button"
                             >
-                                {loading ? '🔍 Buscando...' : '🔍 Buscar Pedido'}
+                                {loading ? '🔍 Buscando...' : '🔍 Rastrear Pedido'} 
                             </button>
                         </div>
                     </form>
+
+                    {/* Opções alternativas */}
+                    <div className="search-options">
+                        <button 
+                            onClick={() => navigate('/meus-pedidos')}
+                            className="alternative-button"
+                        >
+                            📋 Ver Meus Pedidos
+                        </button>
+                    </div>
 
                     {/* Mensagem de erro */}
                     {error && (
@@ -347,6 +350,17 @@ function RastrearPedido() {
                                             {formatStatus(statusData.statusGeral).text}
                                         </span>
                                     </p>
+                                    <p><strong>Código de Rastreio:</strong> {statusData.codigoRastreio}</p> {/* 🎯 NOVO */}
+                                    <p><strong>Slot de Expedição:</strong> 
+                                        {statusData.slotExpedicao 
+                                            ? <span className="status-badge" style={{ backgroundColor: '#28A745' }}>
+                                                Slot {statusData.slotExpedicao.id} - {statusData.slotExpedicao.status}
+                                              </span>
+                                            : <span className="status-badge" style={{ backgroundColor: '#6C757D' }}>
+                                                Não alocado
+                                              </span>
+                                        }
+                                    </p>
                                 </div>
                             </div>
 
@@ -366,14 +380,12 @@ function RastrearPedido() {
                                                 </span>
                                             </div>
                                             
-                                            // No seu componente RastrearPedido.jsx - ATUALIZAR
-<div className="produto-detalhes">
-    <p><strong>Rastreio ID:</strong> {produto.rastreioId || 'Aguardando geração'}</p>
-    {/* ATUALIZAR ESTA LINHA: */}
-    <p><strong>Slot de Expedição:</strong> {produto.slotExpedicao || 'Não alocado'}</p>
-</div>
+                                            <div className="produto-detalhes">
+                                                <p><strong>Rastreio ID:</strong> {produto.rastreioId || 'Aguardando geração'}</p>
+                                                <p><strong>Status:</strong> {formatStatus(produto.status).text}</p>
+                                            </div>
 
-                                            {/* 🎯 BOTÕES DE EDIÇÃO/REMOÇÃO - Só mostrar se pedido não estiver concluído/entregue */}
+                                            {/* 🎯 BOTÕES DE EDIÇÃO/REMOÇÃO */}
                                             {statusData.statusGeral !== 'CONCLUIDO' && statusData.statusGeral !== 'ENTREGUE' && (
                                                 <div className="produto-actions">
                                                     <button 
@@ -397,7 +409,7 @@ function RastrearPedido() {
                                 )}
                             </div>
 
-                            {/* 🎯 BOTÃO DE CONFIRMAR ENTREGA (PARTE 4) */}
+                            {/* 🎯 BOTÃO DE CONFIRMAR ENTREGA */}
                             {statusData.statusGeral === 'CONCLUIDO' && (
                                 <div className="entrega-section">
                                     <button 
@@ -414,16 +426,16 @@ function RastrearPedido() {
 
                             {/* Botão para voltar */}
                             <div className="action-buttons">
-                            <button 
-    className="back-button"
-    onClick={() => navigate('/meus-pedidos')}
->
-    ← Voltar para Meus Pedidos
-</button>
+                                <button 
+                                    className="back-button"
+                                    onClick={() => navigate('/meus-pedidos')}
+                                >
+                                    ← Voltar para Meus Pedidos
+                                </button>
                                 
                                 <button 
                                     className="rastrear-button"
-                                    onClick={() => navigate(`/rastrear-pedido/${statusData.pedidoId}`)}
+                                    onClick={() => navigate(`/rastrear-pedido/${statusData.codigoRastreio}`)} 
                                 >
                                     🔄 Atualizar Status
                                 </button>
@@ -540,7 +552,26 @@ function RastrearPedido() {
 
                 /* FORMULÁRIO DE BUSCA */
                 .search-form {
+                    margin-bottom: 1rem;
+                }
+
+                .search-options {
                     margin-bottom: 2rem;
+                    text-align: center;
+                }
+
+                .alternative-button {
+                    background: #6c757d;
+                    color: white;
+                    border: none;
+                    padding: 0.5rem 1rem;
+                    border-radius: 0.5rem;
+                    cursor: pointer;
+                    font-size: 0.9rem;
+                }
+
+                .alternative-button:hover {
+                    background: #545b62;
                 }
 
                 .input-group {
