@@ -1,4 +1,4 @@
-// components/Navbar.jsx - ATUALIZADO COM SISTEMA DE TEMAS
+// components/Navbar.jsx - ATUALIZADO COM RUBIK GLITCH
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -37,12 +37,66 @@ const Navbar = () => {
 
   return (
     <>
+      <style>
+        {`
+          @import url('https://fonts.googleapis.com/css2?family=Rubik+Glitch&display=swap');
+          
+          .logo-text-creative {
+            font-family: 'Rubik Glitch', system-ui;
+            font-size: 2.4rem;
+            font-weight: 400;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, #000 0%, #333 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            transition: all 0.3s ease;
+            text-shadow: 3px 3px 0px rgba(0,0,0,0.1);
+          }
+          
+          .logo-text-creative:hover {
+            transform: scale(1.05);
+            text-shadow: 4px 4px 0px rgba(0,0,0,0.15);
+          }
+          
+          .logo-text-colored {
+            font-family: 'Rubik Glitch', system-ui;
+            font-size: 2.4rem;
+            font-weight: 400;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+            text-shadow: 3px 3px 0px rgba(0,0,0,0.1);
+          }
+          
+          .logo-text-colored:hover {
+            transform: scale(1.05);
+            text-shadow: 4px 4px 0px rgba(0,0,0,0.15);
+          }
+          
+          /* Ajuste para mobile */
+          @media (max-width: 768px) {
+            .logo-text-creative,
+            .logo-text-colored {
+              font-size: 2rem;
+              letter-spacing: 1px;
+            }
+          }
+          
+          @media (max-width: 480px) {
+            .logo-text-creative,
+            .logo-text-colored {
+              font-size: 1.8rem;
+            }
+          }
+        `}
+      </style>
+
       <nav className="navbar">
         <div className="navbar-left">
           <Link to="/home" className="navbar-logo-link" onClick={closeMobileMenu}>
-            <span className="logo-text-black">Sneak</span>
+            <span className="logo-text-creative">Sneak</span>
             <span 
-              className="logo-text-orange"
+              className="logo-text-colored"
               style={{ color: primaryColor }} // 🎨 COR DINÂMICA
             >
               Lab
