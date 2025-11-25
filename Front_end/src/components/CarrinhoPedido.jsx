@@ -1,8 +1,9 @@
-// src/components/CarrinhoPedido.jsx (CORRIGIDO)
 import React, { useState, useEffect } from 'react';
+import { useTheme } from '../context/ThemeContext.jsx'; // 🎨 NOVO IMPORT
 import ResumoPedidoItem from './ResumoPedidoItem';
 
 const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) => {
+    const { primaryColor } = useTheme(); // 🎨 HOOK DO TEMA
     const [generatedImages, setGeneratedImages] = useState({});
     const [loadingImages, setLoadingImages] = useState({});
     const [imagesGenerated, setImagesGenerated] = useState(false);
@@ -195,63 +196,62 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
         setImageErrors({});
     }, [pedidos.length]);
 
-    // 🚨 FUNÇÃO SIMPLIFICADA
-   // 🚨 FUNÇÃO ATUALIZADA: Confirmar pedidos e salvar imagens definitivas
-const handleConfirmarPedidos = async () => {
-    console.log('✅ [CarrinhoPedido] Confirmando pedidos e salvando imagens...');
-    
-    try {
-        // 1. Primeiro confirme o pedido e AGUARDE o retorno
-        console.log('📦 Confirmando pedido principal...');
+    // 🚨 FUNÇÃO ATUALIZADA: Confirmar pedidos e salvar imagens definitivas
+    const handleConfirmarPedidos = async () => {
+        console.log('✅ [CarrinhoPedido] Confirmando pedidos e salvando imagens...');
         
-        // 🎯 AGORA A FUNÇÃO RETORNA O PEDIDO CRIADO
-        const pedidoCriado = await onConfirmarPedidos();
-        
-        if (!pedidoCriado || !pedidoCriado.id) {
-            console.error('❌ Não foi possível obter o ID do pedido criado');
-            alert('Erro: Não foi possível obter o ID do pedido. As imagens não foram salvas.');
-            return;
-        }
-
-        const pedidoIdReal = pedidoCriado.id;
-        console.log('🆔 ID do pedido criado:', pedidoIdReal);
-
-        // 2. PARA CADA SNEAKER, salve a imagem definitiva
-        console.log('💾 Salvando imagens definitivas para os sneakers...');
-        
-        const saveImagePromises = pedidos.map(async (pedido, pedidoIndex) => {
-            if (pedido.items && Array.isArray(pedido.items)) {
-                const sneakerConfig = extractSneakerConfig(pedido.items);
-                
-                console.log(`💾 Salvando imagem definitiva para sneaker ${pedidoIndex + 1}`);
-                
-                const response = await fetch('http://localhost:3001/api/images/save-to-order', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        pedidoId: pedidoIdReal,
-                        produtoIndex: pedidoIndex,
-                        sneakerConfig: sneakerConfig
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Falha ao salvar imagem para sneaker ${pedidoIndex + 1}`);
-                }
-
-                console.log(`✅ Imagem definitiva salva para sneaker ${pedidoIndex + 1}`);
+        try {
+            // 1. Primeiro confirme o pedido e AGUARDE o retorno
+            console.log('📦 Confirmando pedido principal...');
+            
+            // 🎯 AGORA A FUNÇÃO RETORNA O PEDIDO CRIADO
+            const pedidoCriado = await onConfirmarPedidos();
+            
+            if (!pedidoCriado || !pedidoCriado.id) {
+                console.error('❌ Não foi possível obter o ID do pedido criado');
+                alert('Erro: Não foi possível obter o ID do pedido. As imagens não foram salvas.');
+                return;
             }
-        });
 
-        // Aguarde todas as imagens serem salvas
-        await Promise.all(saveImagePromises);
-        console.log('🎉 Todas as imagens foram salvas com sucesso!');
+            const pedidoIdReal = pedidoCriado.id;
+            console.log('🆔 ID do pedido criado:', pedidoIdReal);
 
-    } catch (error) {
-        console.error('❌ Erro ao salvar imagens:', error);
-        alert('Erro ao salvar imagens dos sneakers. Tente novamente.');
-    }
-};
+            // 2. PARA CADA SNEAKER, salve a imagem definitiva
+            console.log('💾 Salvando imagens definitivas para os sneakers...');
+            
+            const saveImagePromises = pedidos.map(async (pedido, pedidoIndex) => {
+                if (pedido.items && Array.isArray(pedido.items)) {
+                    const sneakerConfig = extractSneakerConfig(pedido.items);
+                    
+                    console.log(`💾 Salvando imagem definitiva para sneaker ${pedidoIndex + 1}`);
+                    
+                    const response = await fetch('http://localhost:3001/api/images/save-to-order', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            pedidoId: pedidoIdReal,
+                            produtoIndex: pedidoIndex,
+                            sneakerConfig: sneakerConfig
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Falha ao salvar imagem para sneaker ${pedidoIndex + 1}`);
+                    }
+
+                    console.log(`✅ Imagem definitiva salva para sneaker ${pedidoIndex + 1}`);
+                }
+            });
+
+            // Aguarde todas as imagens serem salvas
+            await Promise.all(saveImagePromises);
+            console.log('🎉 Todas as imagens foram salvas com sucesso!');
+
+        } catch (error) {
+            console.error('❌ Erro ao salvar imagens:', error);
+            alert('Erro ao salvar imagens dos sneakers. Tente novamente.');
+        }
+    };
 
     // 🚨 CORREÇÃO: Se não há pedidos, mostrar mensagem
     if (pedidos.length === 0) {
@@ -288,9 +288,10 @@ const handleConfirmarPedidos = async () => {
                     left: 0;
                     width: 100%;
                     height: 1.5rem;
-                    background-color: #FF9D00;
+                    background-color: var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
                     border-top-left-radius: 1.5rem;
                     border-top-right-radius: 1.5rem;
+                    transition: background-color 0.3s ease; /* 🎨 TRANSITION SUAVE */
                 }
                 
                 .title-section {
@@ -302,7 +303,8 @@ const handleConfirmarPedidos = async () => {
                 .title {
                     font-size: 2.2rem;
                     font-weight: bold;
-                    color: #FF9D00;
+                    color: var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
+                    transition: color 0.3s ease; /* 🎨 TRANSITION SUAVE */
                 }
                 
                 .subtitle {
@@ -325,7 +327,8 @@ const handleConfirmarPedidos = async () => {
                     background: white;
                     border-radius: 1rem;
                     padding: 1.5rem;
-                    border: 2px solid #FF9D00;
+                    border: 2px solid var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
+                    transition: border-color 0.3s ease; /* 🎨 TRANSITION SUAVE */
                 }
                 
                 .pedido-header {
@@ -334,13 +337,15 @@ const handleConfirmarPedidos = async () => {
                     align-items: center;
                     margin-bottom: 1rem;
                     padding-bottom: 0.5rem;
-                    border-bottom: 2px solid #FF9D00;
+                    border-bottom: 2px solid var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
+                    transition: border-color 0.3s ease; /* 🎨 TRANSITION SUAVE */
                 }
                 
                 .pedido-title {
-                    color: #FF9D00;
+                    color: var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
                     margin: 0;
                     font-size: 1.3rem;
+                    transition: color 0.3s ease; /* 🎨 TRANSITION SUAVE */
                 }
                 
                 .pedido-date {
@@ -357,12 +362,13 @@ const handleConfirmarPedidos = async () => {
                     background-color: #F5F5F5;
                     border-radius: 0.75rem;
                     padding: 2rem;
-                    border: 2px dashed #FF9D00;
+                    border: 2px dashed var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
                     min-height: 200px;
                     display: flex;
                     flex-direction: column;
                     align-items: center;
                     justify-content: center;
+                    transition: border-color 0.3s ease; /* 🎨 TRANSITION SUAVE */
                 }
                 
                 .image-placeholder img {
@@ -377,9 +383,10 @@ const handleConfirmarPedidos = async () => {
                     width: 20px;
                     height: 20px;
                     border: 3px solid #f3f3f3;
-                    border-top: 3px solid #FF9D00;
+                    border-top: 3px solid var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
                     border-radius: 50%;
                     animation: spin 1s linear infinite;
+                    transition: border-top-color 0.3s ease; /* 🎨 TRANSITION SUAVE */
                 }
                 
                 .loading-text {
@@ -401,16 +408,18 @@ const handleConfirmarPedidos = async () => {
                 
                 .pedido-divider {
                     border: none;
-                    border-top: 2px dashed #FF9D00;
+                    border-top: 2px dashed var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
                     margin: 2rem 0;
+                    transition: border-color 0.3s ease; /* 🎨 TRANSITION SUAVE */
                 }
                 
                 .total-geral {
-                    background-color: #fff8e1;
-                    border: 2px solid #FF9D00;
+                    background-color: var(--primary-light, #fff8e1); /* 🎨 VARIÁVEL CSS */
+                    border: 2px solid var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
                     border-radius: 1rem;
                     padding: 1.5rem;
                     margin-top: 2rem;
+                    transition: all 0.3s ease; /* 🎨 TRANSITION SUAVE */
                 }
                 
                 .total-geral-content {
@@ -426,7 +435,8 @@ const handleConfirmarPedidos = async () => {
                 }
                 
                 .total-geral-value {
-                    color: #FF9D00;
+                    color: var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
+                    transition: color 0.3s ease; /* 🎨 TRANSITION SUAVE */
                 }
                 
                 .cart-actions {
@@ -449,42 +459,57 @@ const handleConfirmarPedidos = async () => {
                 .next-button {
                     width: 100%;
                     max-width: 400px;
-                    background-color: #22C55E;
+                    background: linear-gradient(135deg, var(--primary-color, #22C55E) 0%, var(--primary-hover, #1A9C4B) 100%); /* 🎨 GRADIENT DINÂMICO */
                     color: white;
                     font-weight: 600;
                     padding: 0.8rem;
                     border-radius: 9999px;
                     border: none;
-                    transition: background-color 0.3s;
+                    transition: all 0.3s ease; /* 🎨 TRANSITION SUAVE */
                     font-size: 1.1rem;
                     cursor: pointer;
+                    box-shadow: 0 4px 12px rgba(var(--primary-color-rgb, 34, 197, 94), 0.3); /* 🎨 SHADOW DINÂMICO */
                 }
                 
-                .next-button:hover {
-                    background-color: #1A9C4B;
+                .next-button:hover:not(:disabled) {
+                    background: linear-gradient(135deg, var(--primary-hover, #1A9C4B) 0%, var(--primary-hover-dark, #15803D) 100%); /* 🎨 GRADIENT HOVER DINÂMICO */
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 16px rgba(var(--primary-color-rgb, 34, 197, 94), 0.4); /* 🎨 SHADOW HOVER DINÂMICO */
                 }
                 
                 .next-button:disabled {
-                    background-color: #ccc;
+                    background: #ccc;
                     cursor: not-allowed;
+                    transform: none;
+                    box-shadow: none;
                 }
                 
                 .add-more-button {
                     width: 100%;
                     max-width: 400px;
-                    background-color: #FF9D00;
+                    background: linear-gradient(135deg, var(--primary-color, #FF9D00) 0%, var(--primary-hover, #e68a00) 100%); /* 🎨 GRADIENT DINÂMICO */
                     color: white;
                     font-weight: 600;
                     padding: 0.8rem;
                     border-radius: 9999px;
                     border: none;
-                    transition: background-color 0.3s;
+                    transition: all 0.3s ease; /* 🎨 TRANSITION SUAVE */
                     font-size: 1.1rem;
                     cursor: pointer;
+                    box-shadow: 0 4px 12px rgba(var(--primary-color-rgb, 255, 157, 0), 0.3); /* 🎨 SHADOW DINÂMICO */
                 }
                 
                 .add-more-button:hover {
-                    background-color: #e68a00;
+                    background: linear-gradient(135deg, var(--primary-hover, #e68a00) 0%, var(--primary-hover-dark, #cc7700) 100%); /* 🎨 GRADIENT HOVER DINÂMICO */
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 16px rgba(var(--primary-color-rgb, 255, 157, 0), 0.4); /* 🎨 SHADOW HOVER DINÂMICO */
+                }
+                
+                /* 🎨 ESTILOS PARA ACESSIBILIDADE */
+                .next-button:focus,
+                .add-more-button:focus {
+                    outline: 2px solid white;
+                    outline-offset: 2px;
                 }
                 
                 @media (max-width: 768px) {
@@ -520,7 +545,7 @@ const handleConfirmarPedidos = async () => {
                     .next-button,
                     .add-more-button {
                         max-width: 100%;
-                    font-size: 1rem;
+                        font-size: 1rem;
                         padding: 0.7rem;
                     }
                 }

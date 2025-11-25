@@ -1,6 +1,9 @@
 import React from 'react';
+import { useTheme } from '../context/ThemeContext.jsx'; // 🎨 NOVO IMPORT
 
 const ResumoPedido = ({ selections, passos, onFinalize }) => {
+    const { primaryColor } = useTheme(); // 🎨 HOOK DO TEMA
+    
     // Cálculo do valor total e criação dos itens
     let total = 0;
     const items = Object.keys(selections).map(stepId => {
@@ -49,9 +52,10 @@ const ResumoPedido = ({ selections, passos, onFinalize }) => {
                     left: 0;
                     width: 100%;
                     height: 1.5rem;
-                    background-color: #FF9D00;
+                    background-color: var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
                     border-top-left-radius: 1.5rem;
                     border-top-right-radius: 1.5rem;
+                    transition: background-color 0.3s ease; /* 🎨 TRANSITION SUAVE */
                 }
                 
                 .title-section {
@@ -63,7 +67,8 @@ const ResumoPedido = ({ selections, passos, onFinalize }) => {
                 .title {
                     font-size: 2.2rem;
                     font-weight: bold;
-                    color: #FF9D00;
+                    color: var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
+                    transition: color 0.3s ease; /* 🎨 TRANSITION SUAVE */
                 }
                 
                 .subtitle {
@@ -83,8 +88,9 @@ const ResumoPedido = ({ selections, passos, onFinalize }) => {
                     background-color: #F5F5F5;
                     border-radius: 0.75rem;
                     padding: 1.5rem;
-                    border-left: 4px solid #FF9D00;
+                    border-left: 4px solid var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
                     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                    transition: border-color 0.3s ease; /* 🎨 TRANSITION SUAVE */
                 }
                 
                 .summary-item-header {
@@ -98,8 +104,9 @@ const ResumoPedido = ({ selections, passos, onFinalize }) => {
                 
                 .summary-step {
                     font-weight: bold;
-                    color: #FF9D00;
+                    color: var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
                     font-size: 0.9rem;
+                    transition: color 0.3s ease; /* 🎨 TRANSITION SUAVE */
                 }
                 
                 .summary-category {
@@ -127,8 +134,8 @@ const ResumoPedido = ({ selections, passos, onFinalize }) => {
                 }
                 
                 .summary-total {
-                    background-color: #fff8e1;
-                    border: 2px solid #FF9D00;
+                    background-color: var(--primary-light, #fff8e1); /* 🎨 VARIÁVEL CSS */
+                    border: 2px solid var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
                     border-radius: 0.75rem;
                     padding: 1.5rem;
                     margin-top: 2rem;
@@ -137,6 +144,7 @@ const ResumoPedido = ({ selections, passos, onFinalize }) => {
                     align-items: center;
                     font-weight: bold;
                     font-size: 1.2rem;
+                    transition: all 0.3s ease; /* 🎨 TRANSITION SUAVE */
                 }
                 
                 .total-label {
@@ -144,7 +152,8 @@ const ResumoPedido = ({ selections, passos, onFinalize }) => {
                 }
                 
                 .total-value {
-                    color: #FF9D00;
+                    color: var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
+                    transition: color 0.3s ease; /* 🎨 TRANSITION SUAVE */
                 }
                 
                 .next-button-container {
@@ -156,19 +165,32 @@ const ResumoPedido = ({ selections, passos, onFinalize }) => {
                 .next-button {
                     width: 100%;
                     max-width: 300px;
-                    background-color: #22C55E;
+                    background: linear-gradient(135deg, var(--primary-color, #22C55E) 0%, var(--primary-hover, #1A9C4B) 100%); /* 🎨 GRADIENT DINÂMICO */
                     color: white;
                     font-weight: 600;
                     padding: 0.8rem;
                     border-radius: 9999px;
                     border: none;
-                    transition: background-color 0.3s;
+                    transition: all 0.3s ease; /* 🎨 TRANSITION SUAVE */
                     font-size: 1.1rem;
                     cursor: pointer;
+                    box-shadow: 0 4px 12px rgba(var(--primary-color-rgb, 34, 197, 94), 0.3); /* 🎨 SHADOW DINÂMICO */
                 }
                 
                 .next-button:hover {
-                    background-color: #1A9C4B;
+                    background: linear-gradient(135deg, var(--primary-hover, #1A9C4B) 0%, var(--primary-hover-dark, #15803D) 100%); /* 🎨 GRADIENT HOVER DINÂMICO */
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 16px rgba(var(--primary-color-rgb, 34, 197, 94), 0.4); /* 🎨 SHADOW HOVER DINÂMICO */
+                }
+                
+                .next-button:active {
+                    transform: translateY(0);
+                }
+                
+                /* 🎨 ESTILOS PARA ACESSIBILIDADE */
+                .next-button:focus {
+                    outline: 2px solid white;
+                    outline-offset: 2px;
                 }
                 
                 @media (max-width: 768px) {
@@ -190,6 +212,10 @@ const ResumoPedido = ({ selections, passos, onFinalize }) => {
                     .title {
                         font-size: 1.8rem;
                     }
+                    
+                    .next-button {
+                        max-width: 100%;
+                    }
                 }
                 
                 @media (max-width: 480px) {
@@ -202,6 +228,11 @@ const ResumoPedido = ({ selections, passos, onFinalize }) => {
                         flex-direction: column;
                         align-items: flex-start;
                         gap: 0.25rem;
+                    }
+                    
+                    .next-button {
+                        padding: 1rem;
+                        font-size: 1rem;
                     }
                 }
             `}</style>

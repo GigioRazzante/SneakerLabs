@@ -147,15 +147,15 @@ const PaginaCriarSneaker = () => {
     
     pedidos.forEach((pedido, index) => {
         console.log(`📊 Pedido ${index}:`, {
-            id: pedido.id,
-            hasItems: !!pedido.items,
-            itemsIsArray: Array.isArray(pedido.items),
-            itemsLength: pedido.items?.length,
-            itemsStructure: pedido.items?.map(item => ({
-                step: item?.step,
-                name: item?.name,
-                hasAcrescimo: !!item?.acrescimo
-            }))
+          id: pedido.id,
+          hasItems: !!pedido.items,
+          itemsIsArray: Array.isArray(pedido.items),
+          itemsLength: pedido.items?.length,
+          itemsStructure: pedido.items?.map(item => ({
+            step: item?.step,
+            name: item?.name,
+            hasAcrescimo: !!item?.acrescimo
+          }))
         });
     });
 
@@ -170,8 +170,8 @@ const PaginaCriarSneaker = () => {
     // 🚨 CORREÇÃO: Filtrar apenas pedidos válidos
     const pedidosValidos = pedidos.filter(pedido => {
         const isValid = pedido && 
-                       Array.isArray(pedido.items) && 
-                       pedido.items.length === 5;
+                        Array.isArray(pedido.items) && 
+                        pedido.items.length === 5;
         
         if (!isValid) {
             console.error(`❌ Pedido ${pedido.id} inválido:`, {
@@ -217,7 +217,7 @@ const PaginaCriarSneaker = () => {
                 const newKey = stepMap[index];
                 configuracoes[newKey] = itemDoPedido.name;
                 valorTotal += itemDoPedido.acrescimo || 0;
-                console.log(`   ✅ Passo ${index + 1}: ${itemDoPedido.name} - R$ ${itemDoPedido.acrescimo}`);
+                console.log(`   ✅ Passo ${index + 1}: ${itemDoPedido.name} - R$ ${itemDoPedido.acrescimo}`);
             } else {
                 console.error(`❌ ERRO: Pedido ${pedidoIndex + 1} faltando passo ${index + 1}`);
                 console.error('Itens disponíveis:', pedido.items.map(item => ({
@@ -381,8 +381,22 @@ const PaginaCriarSneaker = () => {
           box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15); 
           padding: 2.5rem;
           margin: 1.5rem 0; 
+          /* 🎯 CORREÇÃO CRÍTICA 1: Habilita o posicionamento absoluto dentro do card */
           position: relative;
         }
+
+        /* 🎯 CORREÇÃO CRÍTICA 2: Adiciona o CSS da barra no contêiner pai */
+        .card-header-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 1.5rem; /* Altura ajustada */
+            background-color: var(--laranja-vibrante);
+            border-top-left-radius: 1.5rem;
+            border-top-right-radius: 1.5rem;
+        }
+
 
         .next-button {
           width: 100%;
@@ -428,6 +442,7 @@ const PaginaCriarSneaker = () => {
 
       <div className="page-container">
         <div className="main-content-card">
+          {/* 🎯 DIV DO HEADER BAR: Ela já estava aqui, agora o CSS funciona */}
           <div className="card-header-bar"></div>
           {renderCurrentStep()}
         </div>

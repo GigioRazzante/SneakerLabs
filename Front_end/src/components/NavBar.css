@@ -1,5 +1,5 @@
 /*
- * Navbar.css
+ * Navbar.css - ATUALIZADO COM SISTEMA DE TEMAS
  * Estilos para o componente de navegação principal.
  */
 
@@ -31,9 +31,11 @@
 }
 
 .logo-text-orange {
-  color: #FF9D00;
+  /* 🎨 AGORA USA VARIÁVEL CSS - será sobrescrita inline */
+  color: var(--primary-color, #FF9D00);
   font-size: 1.5rem;
   font-weight: bold;
+  transition: color 0.3s ease;
 }
 
 /* Botão Hamburger - Visível apenas em mobile */
@@ -76,26 +78,26 @@
   text-decoration: none;
   color: #555;
   font-weight: 500;
-  transition: color 0.3s;
+  transition: all 0.3s ease;
   padding: 0.5rem 0;
   position: relative;
   white-space: nowrap;
 }
 
 .nav-link:hover {
-  color: #FF9D00;
+  color: var(--primary-color, #FF9D00); /* 🎨 COR DINÂMICA */
 }
 
-/* .nav-link::after {
+.nav-link::after {
   content: '';
   position: absolute;
   bottom: 0;
   left: 0;
   width: 0;
   height: 2px;
-  background-color: #FF9D00;
+  background-color: var(--primary-color, #FF9D00); /* 🎨 COR DINÂMICA */
   transition: width 0.3s ease;
-} */
+}
 
 .nav-link:hover::after {
   width: 100%;
@@ -124,7 +126,8 @@
   color: white;
   font-weight: bold;
   font-size: 1.1rem;
-  border: 2px solid #FF9D00;
+  /* 🎨 BORDA DINÂMICA - será sobrescrita inline */
+  border: 2px solid var(--primary-color, #FF9D00);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
   cursor: pointer;
@@ -137,8 +140,9 @@
 
 .nav-button {
   background-color: transparent;
-  color: #FF9D00; 
-  border: 1px solid #FF9D00; 
+  /* 🎨 CORES DINÂMICAS - serão sobrescritas inline */
+  color: var(--primary-color, #FF9D00);
+  border: 1px solid var(--primary-color, #FF9D00);
   padding: 8px 16px;
   border-radius: 5px;
   cursor: pointer;
@@ -148,7 +152,7 @@
 }
 
 .nav-button:hover {
-  background-color: #FF9D00;
+  background-color: var(--primary-color, #FF9D00); /* 🎨 COR DINÂMICA */
   color: #fff;
 }
 
@@ -208,6 +212,7 @@
     opacity: 0;
     visibility: hidden;
     gap: 1.5rem;
+    z-index: 1001;
   }
 
   .navbar-right--open {
@@ -331,11 +336,30 @@
 .nav-link:focus,
 .nav-button:focus,
 .hamburger-menu:focus {
-  outline: 2px solid #FF9D00;
+  outline: 2px solid var(--primary-color, #FF9D00); /* 🎨 COR DINÂMICA */
   outline-offset: 2px;
 }
 
 /* Prevenir scroll quando menu mobile está aberto */
 body.menu-open {
   overflow: hidden;
+}
+
+/* 🎨 ESTADOS ATIVOS PARA LINKS */
+.nav-link.active {
+  color: var(--primary-color, #FF9D00);
+  font-weight: 600;
+}
+
+.nav-link.active::after {
+  width: 100%;
+}
+
+/* 🎨 TRANSITIONS PARA MUDANÇAS DE COR SUAVES */
+.navbar,
+.nav-link,
+.nav-button,
+.user-avatar,
+.logo-text-orange {
+  transition: all 0.3s ease;
 }

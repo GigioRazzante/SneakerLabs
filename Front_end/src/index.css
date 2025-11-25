@@ -1,3 +1,4 @@
+/* src/index.css - ATUALIZADO COM SISTEMA DE TEMAS */
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -11,6 +12,12 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* 🎨 VARIÁVEIS CSS DINÂMICAS - SERÃO SOBRESCRITAS PELO THEME CONTEXT */
+  --primary-color: #FF9D00; /* Cor padrão (laranja) */
+  --primary-hover: #e68a00; /* Hover padrão */
+  --primary-light: rgba(255, 157, 0, 0.1); /* Light padrão */
+  --primary-text: #000000; /* Texto contrastante */
 }
 
 a {
@@ -31,6 +38,9 @@ body {
   /* ✅ Background padrão SneakLab */
   background: url('./assets/sneakerlabBg.png') no-repeat center center fixed;
   background-size: cover;
+
+  /* 🎨 Transição suave para mudanças de cor */
+  transition: background-color 0.3s ease;
 }
 
 /* ✅ Para páginas sem background (Login/Cadastro/Inicial) */
@@ -106,6 +116,40 @@ html, body {
 }
 .logo.react:hover {
   filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+/* 🎨 CLASSES UTILITÁRIAS PARA CORES DINÂMICAS */
+.primary-bg { background-color: var(--primary-color) !important; }
+.primary-text { color: var(--primary-color) !important; }
+.primary-border { border-color: var(--primary-color) !important; }
+.primary-hover:hover { background-color: var(--primary-hover) !important; }
+
+/* 🎨 ESTILOS PARA ELEMENTOS COMUNS QUE USAM COR PRIMÁRIA */
+.card-header {
+  background-color: var(--primary-color);
+  color: var(--primary-text);
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+}
+
+.text-primary {
+  color: var(--primary-color);
+}
+
+.border-primary {
+  border-color: var(--primary-color);
+}
+
+.bg-primary-light {
+  background-color: var(--primary-light);
 }
 
 @keyframes logo-spin {

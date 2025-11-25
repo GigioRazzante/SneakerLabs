@@ -1,3 +1,4 @@
+// clienteController.js
 import pool from '../config/database.js';
 
 const getCliente = async (req, res) => {
@@ -5,7 +6,7 @@ const getCliente = async (req, res) => {
 
     try {
         const result = await pool.query(
-            `SELECT nome_usuario, email, data_nascimento, telefone 
+            `SELECT nome_usuario, email, data_nascimento, telefone, cor_perfil 
              FROM clientes 
              WHERE id = $1`,
             [clienteId]
@@ -25,19 +26,19 @@ const getCliente = async (req, res) => {
 
 const updateCliente = async (req, res) => {
     const clienteId = req.params.id;
-    const { nome_usuario, data_nascimento, telefone } = req.body;
+    const { nome_usuario, data_nascimento, telefone, cor_perfil } = req.body;
 
     if (!nome_usuario || !data_nascimento || !telefone) {
-        return res.status(400).json({ error: "Todos os campos são obrigatórios." });
+        return res.status(400).json({ error: "Todos os campos obrigatórios são necessários." });
     }
 
     try {
         const result = await pool.query(
             `UPDATE clientes 
-             SET nome_usuario = $1, data_nascimento = $2, telefone = $3 
-             WHERE id = $4 
-             RETURNING id, nome_usuario, email, data_nascimento, telefone`,
-            [nome_usuario, data_nascimento, telefone, clienteId]
+             SET nome_usuario = $1, data_nascimento = $2, telefone = $3, cor_perfil = $4
+             WHERE id = $5 
+             RETURNING id, nome_usuario, email, data_nascimento, telefone, cor_perfil`,
+            [nome_usuario, data_nascimento, telefone, cor_perfil, clienteId]
         );
 
         if (result.rows.length === 0) {

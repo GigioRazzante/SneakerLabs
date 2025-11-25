@@ -1,68 +1,124 @@
-// components/Navbar.jsx - ATUALIZADO
-import React from 'react';
+// components/Navbar.jsx - ATUALIZADO COM SISTEMA DE TEMAS
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext.jsx';
+import { useTheme } from '../context/ThemeContext.jsx';
 import './Navbar.css';
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  const { primaryColor } = useTheme();
+  
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
     console.log('Usuário deslogado!');
-    navigate('/'); 
+    logout();
+    navigate('/');
+    setIsMobileMenuOpen(false);
   };
 
-  // Dados mockados do usuário (substitua pelos dados reais do seu contexto/API)
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+    document.body.classList.toggle('menu-open', !isMobileMenuOpen);
+  };
+
+  const closeMobileMenu = () => {
+    setIsMobileMenu(false);
+    document.body.classList.remove('menu-open');
+  };
+
+  // Dados do usuário real do contexto
   const userData = {
-    username: 'UsuarioSneakerLab',
-    profileColor: '#FF9D00'
+    username: user?.nome_usuario || 'Usuário',
+    profileColor: user?.cor_perfil || primaryColor
   };
 
   return (
-    <nav className="navbar">
-      <div className="navbar-left">
-        <Link to="/home" className="navbar-logo-link">
-          <span className="logo-text-black">Sneak</span>
-          <span className="logo-text-orange">Lab</span>
-        </Link>
-      </div>
-      <div className="navbar-right">
-        <ul className="navbar-links">
-          <li>
-            <Link to="/home" className="nav-link">Início</Link>
-          </li>
-          <li>
-            <Link to="/catalogo" className="nav-link">Catálogo</Link>
-          </li>
-          <li>
-            <Link to="/criar-sneaker" className="nav-link">Criar Sneaker</Link>
-          </li>
-          <li>
-            <Link to="/estoque" className="nav-link">Estoque</Link> {/* NOVA ABA */}
-          </li>
-          <li>
-            <Link to="/perfil" className="nav-link">Perfil</Link>
-          </li>
-        </ul>
-        
-        {/* Container para avatar e botão Sair */}
-        <div className="navbar-user-section">
-          {/* Avatar/Bolinha do usuário */}
-          <Link to="/perfil" className="user-avatar-link">
-            <div 
-              className="user-avatar"
-              style={{ backgroundColor: userData.profileColor }}
+    <>
+      <nav className="navbar">
+        <div className="navbar-left">
+          <Link to="/home" className="navbar-logo-link" onClick={closeMobileMenu}>
+            <span className="logo-text-black">Sneak</span>
+            <span 
+              className="logo-text-orange"
+              style={{ color: primaryColor }} // 🎨 COR DINÂMICA
             >
-              {userData.username.charAt(0).toUpperCase()}
-            </div>
+              Lab
+            </span>
           </Link>
-          
-          {/* Botão Sair */}
-          <button className="nav-button" onClick={handleLogout}>
-            Sair
-          </button>
         </div>
-      </div>
-    </nav>
+
+        {/* Hamburger Menu - Mobile */}
+        <button 
+          className="hamburger-menu"
+          onClick={toggleMobileMenu}
+          aria-label="Menu mobile"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+
+        {/* Navbar Right - Desktop & Mobile */}
+        <div className={`navbar-right ${isMobileMenuOpen ? 'navbar-right--open' : ''}`}>
+          <ul className="navbar-links">
+            <li>
+              <Link to="/home" className="nav-link" onClick={closeMobileMenu}>Início</Link>
+            </li>
+            <li>
+              <Link to="/catalogo" className="nav-link" onClick={closeMobileMenu}>Catálogo</Link>
+            </li>
+            <li>
+              <Link to="/criar-sneaker" className="nav-link" onClick={closeMobileMenu}>Criar Sneaker</Link>
+            </li>
+            <li>
+              <Link to="/estoque" className="nav-link" onClick={closeMobileMenu}>Estoque</Link>
+            </li>
+            <li>
+              <Link to="/perfil" className="nav-link" onClick={closeMobileMenu}>Perfil</Link>
+            </li>
+          </ul>
+          
+          {/* Container para avatar e botão Sair */}
+          <div className="navbar-user-section">
+            {/* Avatar/Bolinha do usuário */}
+            <Link to="/perfil" className="user-avatar-link" onClick={closeMobileMenu}>
+              <div 
+                className="user-avatar"
+                style={{ 
+                  backgroundColor: userData.profileColor, // 🎨 COR DINÂMICA
+                  borderColor: primaryColor // 🎨 COR DINÂMICA
+                }}
+              >
+                {userData.username.charAt(0).toUpperCase()}
+              </div>
+            </Link>
+            
+            {/* Botão Sair */}
+            <button 
+              className="nav-button" 
+              onClick={handleLogout}
+              style={{ 
+                borderColor: primaryColor, // 🎨 COR DINÂMICA
+                color: primaryColor // 🎨 COR DINÂMICA
+              }}
+            >
+              Sair
+            </button>
+          </div>
+        </div>
+
+        {/* Overlay para mobile */}
+        {isMobileMenuOpen && (
+          <div 
+            className="menu-overlay" 
+            onClick={closeMobileMenu}
+          />
+        )}
+      </nav>
+    </>
   );
 };
 

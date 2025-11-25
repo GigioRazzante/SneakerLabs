@@ -1,7 +1,8 @@
-// components/EstoqueManager.jsx - CORRIGIDO
 import React, { useState, useEffect } from 'react';
+import { useTheme } from '../context/ThemeContext.jsx'; // 🎨 NOVO IMPORT
 
 const EstoqueManager = () => {
+  const { primaryColor } = useTheme(); // 🎨 HOOK DO TEMA
   const [estoque, setEstoque] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -201,7 +202,7 @@ const EstoqueManager = () => {
           left: 0;
           width: 100%;
           height: 1.5rem;
-          background-color: #FF9D00;
+          background-color: var(--primary-color); /* 🎨 COR DO TEMA */
           border-top-left-radius: 1.5rem;
           border-top-right-radius: 1.5rem;
         }
@@ -214,7 +215,7 @@ const EstoqueManager = () => {
         .title {
           font-size: 2.2rem;
           font-weight: bold;
-          color: #FF9D00;
+          color: var(--primary-color); /* 🎨 COR DO TEMA */
           margin-bottom: 0.5rem;
         }
         
@@ -241,7 +242,7 @@ const EstoqueManager = () => {
         .stat-value {
           font-size: 1.5rem;
           font-weight: bold;
-          color: #FF9D00;
+          color: var(--primary-color); /* 🎨 COR DO TEMA */
         }
         
         .stat-label {
@@ -267,7 +268,7 @@ const EstoqueManager = () => {
         }
         
         .estoque-card:hover {
-          border-color: #FF9D00;
+          border-color: var(--primary-color); /* 🎨 COR DO TEMA */
           transform: translateY(-2px);
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
@@ -345,7 +346,7 @@ const EstoqueManager = () => {
         
         .repor-button {
           width: 100%;
-          background-color: #FF9D00;
+          background-color: var(--primary-color); /* 🎨 COR DO TEMA */
           color: white;
           border: none;
           padding: 0.75rem;
@@ -357,7 +358,7 @@ const EstoqueManager = () => {
         }
         
         .repor-button:hover {
-          background-color: #e68a00;
+          background-color: var(--primary-hover); /* 🎨 COR DO TEMA HOVER */
         }
         
         .repor-button:disabled {
@@ -407,7 +408,7 @@ const EstoqueManager = () => {
         
         .quantidade-input:focus {
           outline: none;
-          border-color: #FF9D00;
+          border-color: var(--primary-color); /* 🎨 COR DO TEMA */
         }
         
         .modal-actions {
@@ -444,7 +445,7 @@ const EstoqueManager = () => {
         }
         
         .retry-button {
-          background-color: #FF9D00;
+          background-color: var(--primary-color); /* 🎨 COR DO TEMA */
           color: white;
           border: none;
           padding: 0.75rem 1.5rem;
@@ -455,7 +456,7 @@ const EstoqueManager = () => {
         }
         
         .loading-spinner {
-          color: #FF9D00;
+          color: var(--primary-color); /* 🎨 COR DO TEMA */
           font-size: 1.1rem;
           font-weight: 500;
         }

@@ -1,7 +1,8 @@
-// src/App.jsx - ATUALIZADO
+// src/App.jsx - ATUALIZADO COM THEME PROVIDER
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext.jsx';
+import { ThemeProvider } from './context/ThemeContext.jsx'; // 🎨 NOVO
 
 import PaginaInicial from './pages/PaginaInicial.jsx';
 import PaginaInicialLog from './pages/PaginaInicialLog.jsx';
@@ -10,7 +11,7 @@ import PaginaCriarSneaker from './pages/PaginaCriarSneaker.jsx';
 import PaginaPerfil from './pages/PaginaPerfil.jsx';
 import PaginaLogin from './pages/PaginaLogin.jsx';
 import PaginaCadastro from './pages/PaginaCadastro.jsx';
-import PaginaEstoque from './pages/PaginaEstoque.jsx'; // NOVA PÁGINA
+import PaginaEstoque from './pages/PaginaEstoque.jsx';
 import MeusPedidos from "./components/MeusPedidos.jsx";
 import RastrearPedido from "./components/RastrearPedido.jsx";
 
@@ -39,26 +40,28 @@ function BackgroundHandler() {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <BackgroundHandler />
-        <Routes>
-          {/* Rota Raiz: Página Inicial DESLOGADA (fundo branco) */}
-          <Route path="/" element={<PaginaInicial />} /> 
-          
-          {/* Rotas de Autenticação (fundo branco) */}
-          <Route path="/login" element={<PaginaLogin />} />
-          <Route path="/cadastro" element={<PaginaCadastro />} />
+      <ThemeProvider> {/* 🎨 ENVOLVE COM THEME PROVIDER */}
+        <Router>
+          <BackgroundHandler />
+          <Routes>
+            {/* Rota Raiz: Página Inicial DESLOGADA (fundo branco) */}
+            <Route path="/" element={<PaginaInicial />} /> 
+            
+            {/* Rotas de Autenticação (fundo branco) */}
+            <Route path="/login" element={<PaginaLogin />} />
+            <Route path="/cadastro" element={<PaginaCadastro />} />
 
-          {/* Rotas Logadas (background da imagem) */}
-          <Route path="/home" element={<PaginaInicialLog />} />
-          <Route path="/catalogo" element={<PaginaCatalogo />} />
-          <Route path="/criar-sneaker" element={<PaginaCriarSneaker />} />
-          <Route path="/estoque" element={<PaginaEstoque />} /> {/* NOVA ROTA */}
-          <Route path="/perfil" element={<PaginaPerfil />} />
-          <Route path="/meus-pedidos" element={<MeusPedidos />} />
-          <Route path="/rastrear-pedido/:pedidoId" element={<RastrearPedido />} />
-        </Routes>
-      </Router>
+            {/* Rotas Logadas (background da imagem) */}
+            <Route path="/home" element={<PaginaInicialLog />} />
+            <Route path="/catalogo" element={<PaginaCatalogo />} />
+            <Route path="/criar-sneaker" element={<PaginaCriarSneaker />} />
+            <Route path="/estoque" element={<PaginaEstoque />} />
+            <Route path="/perfil" element={<PaginaPerfil />} />
+            <Route path="/meus-pedidos" element={<MeusPedidos />} />
+            <Route path="/rastrear-pedido/:codigoRastreio" element={<RastrearPedido />} /> {/* 🎯 CORREÇÃO: agora usa códigoRastreio */}
+          </Routes>
+        </Router>
+      </ThemeProvider>
     </AuthProvider>
   );
 }

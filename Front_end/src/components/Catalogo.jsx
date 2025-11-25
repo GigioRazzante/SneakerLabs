@@ -1,6 +1,5 @@
-// src/components/Catalogo.jsx
-
 import React from 'react';
+import { useTheme } from '../context/ThemeContext.jsx'; // 🎨 NOVO IMPORT
 
 // 1. ✅ IMPORTAÇÃO DAS IMAGENS DE ESTILO
 import estiloCasual from '../assets/estiloCasual.png';
@@ -21,7 +20,6 @@ import soladoAir from '../assets/soladoAir.png';
 import cadarcoNormal from '../assets/cadarcoNormal.png';
 import cadarcoColorido from '../assets/cadarcoColorido.png';
 import semCadarco from '../assets/semCadarco.png';
-
 
 // Dados mockados para o Catálogo
 const categorias = [
@@ -65,12 +63,11 @@ const categorias = [
         itens: [
             // 5. 🚀 ATRIBUIÇÃO DAS IMAGENS DE CADARÇOS
             { id: 16, legenda: "Normal", imgSrc: cadarcoNormal }, 
-            { id: 17, legenda: "Colorido", imgSrc: cadarcoColorido },    
+            { id: 17, legenda: "Colorido", imgSrc: cadarcoColorido },    
             { id: 18, legenda: "Sem Cadarço", imgSrc: semCadarco }, 
         ]
     },
 ];
-
 
 // Sub-componente para renderizar um Card
 const CardCatalogo = ({ item }) => {
@@ -137,26 +134,185 @@ const CardCatalogo = ({ item }) => {
 
 // Componente principal Catalogo
 const Catalogo = () => {
-    return (
-        <div className="catalogo-content">
-            <h1 className="catalogo-titulo">Catálogo</h1>
-            
-            {categorias.map((categoria, index) => (
-                <section key={index} className="catalogo-secao">
-                    <h2 className="secao-titulo">{categoria.nome}</h2>
-                    <div className="catalogo-grid">
-                        {categoria.itens.map(item => (
-                            <CardCatalogo key={item.id} item={item} />
-                        ))}
-                    </div>
-                </section>
-            ))}
+    const { primaryColor } = useTheme(); // 🎨 HOOK DO TEMA
 
-            <p className="catalogo-footer-text">
-                Use este catálogo como inspiração para criar o seu Sneaker único no 
-                <span style={{ color: '#FF9D00', fontWeight: 'bold' }}> Criador de Sneaker</span>!
-            </p>
-        </div>
+    return (
+        <>
+            <style>{`
+                .catalogo-content {
+                    max-width: 1200px;
+                    margin: 0 auto;
+                    padding: 2rem;
+                }
+                
+                .catalogo-titulo {
+                    text-align: center;
+                    font-size: 3rem;
+                    font-weight: bold;
+                    color: var(--primary-color); /* 🎨 COR DO TEMA */
+                    margin-bottom: 3rem;
+                }
+                
+                .catalogo-secao {
+                    margin-bottom: 4rem;
+                }
+                
+                .secao-titulo {
+                    font-size: 2rem;
+                    font-weight: bold;
+                    color: var(--primary-color); /* 🎨 COR DO TEMA */
+                    margin-bottom: 1.5rem;
+                    padding-bottom: 0.5rem;
+                    border-bottom: 3px solid var(--primary-color); /* 🎨 COR DO TEMA */
+                }
+                
+                .catalogo-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                    gap: 1.5rem;
+                }
+                
+                .catalogo-card {
+                    border-radius: 1rem;
+                    padding: 1.5rem;
+                    text-align: center;
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                    transition: all 0.3s ease;
+                    cursor: pointer;
+                    border: 2px solid transparent;
+                }
+                
+                .catalogo-card:hover {
+                    transform: translateY(-5px);
+                    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+                    border-color: var(--primary-color); /* 🎨 COR DO TEMA */
+                }
+                
+                .card-img-placeholder {
+                    width: 100px;
+                    height: 100px;
+                    border-radius: 0.5rem;
+                    margin: 0 auto 1rem;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    overflow: hidden;
+                }
+                
+                .catalogo-card:hover .card-img-placeholder {
+                    transform: scale(1.05);
+                }
+                
+                .card-legenda {
+                    font-weight: 600;
+                    font-size: 1.1rem;
+                    margin: 0;
+                }
+                
+                .catalogo-footer-text {
+                    text-align: center;
+                    font-size: 1.2rem;
+                    color: #555;
+                    margin-top: 4rem;
+                    padding-top: 2rem;
+                    border-top: 2px dashed var(--primary-color); /* 🎨 COR DO TEMA */
+                }
+                
+                .catalogo-footer-text span {
+                    color: var(--primary-color); /* 🎨 COR DO TEMA */
+                    font-weight: bold;
+                }
+                
+                @media (max-width: 768px) {
+                    .catalogo-content {
+                        padding: 1rem;
+                    }
+                    
+                    .catalogo-titulo {
+                        font-size: 2.2rem;
+                        margin-bottom: 2rem;
+                    }
+                    
+                    .secao-titulo {
+                        font-size: 1.6rem;
+                    }
+                    
+                    .catalogo-grid {
+                        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                        gap: 1rem;
+                    }
+                    
+                    .catalogo-card {
+                        padding: 1rem;
+                    }
+                    
+                    .card-img-placeholder {
+                        width: 80px;
+                        height: 80px;
+                    }
+                    
+                    .card-legenda {
+                        font-size: 1rem;
+                    }
+                    
+                    .catalogo-footer-text {
+                        font-size: 1.1rem;
+                        margin-top: 3rem;
+                    }
+                }
+                
+                @media (max-width: 480px) {
+                    .catalogo-titulo {
+                        font-size: 1.8rem;
+                    }
+                    
+                    .secao-titulo {
+                        font-size: 1.4rem;
+                    }
+                    
+                    .catalogo-grid {
+                        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+                    }
+                    
+                    .catalogo-card {
+                        padding: 0.8rem;
+                    }
+                    
+                    .card-img-placeholder {
+                        width: 70px;
+                        height: 70px;
+                    }
+                    
+                    .card-legenda {
+                        font-size: 0.9rem;
+                    }
+                    
+                    .catalogo-footer-text {
+                        font-size: 1rem;
+                    }
+                }
+            `}</style>
+
+            <div className="catalogo-content">
+                <h1 className="catalogo-titulo">Catálogo</h1>
+                
+                {categorias.map((categoria, index) => (
+                    <section key={index} className="catalogo-secao">
+                        <h2 className="secao-titulo">{categoria.nome}</h2>
+                        <div className="catalogo-grid">
+                            {categoria.itens.map(item => (
+                                <CardCatalogo key={item.id} item={item} />
+                            ))}
+                        </div>
+                    </section>
+                ))}
+
+                <p className="catalogo-footer-text">
+                    Use este catálogo como inspiração para criar o seu Sneaker único no 
+                    <span> Criador de Sneaker</span>!
+                </p>
+            </div>
+        </>
     );
 };
 

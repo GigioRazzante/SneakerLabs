@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTheme } from '../context/ThemeContext.jsx'; // 🎨 NOVO IMPORT
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
@@ -8,12 +9,14 @@ import logoCatalogo from '../assets/logoCatalogo.png';
 import logoPerfil from '../assets/logoPerfil.png';
 
 const PaginaInicialLog = () => {
+  const { primaryColor } = useTheme(); // 🎨 HOOK DO TEMA
+
   return (
     <>
       <style>
         {`
         :root {
-          --laranja-vibrante: #FF9D00;
+          --laranja-vibrante: var(--primary-color); /* 🎨 COR DO TEMA */
           --preto: #000000;
           --cinza-escuro: #333;
           --cinza-claro: #f0f2f5;
@@ -100,7 +103,7 @@ const PaginaInicialLog = () => {
           transition: all 0.3s ease-in-out;
           text-decoration: none;
           color: inherit;
-          border: 3px solid var(--laranja-vibrante);
+          border: 3px solid var(--laranja-vibrante); /* 🎨 COR DO TEMA */
           box-sizing: border-box;
           position: relative;
           overflow: hidden;
@@ -148,13 +151,13 @@ const PaginaInicialLog = () => {
         .icon-profile {
           font-size: 5rem;
           margin-bottom: 1.5rem;
-          color: var(--laranja-vibrante);
+          color: var(--laranja-vibrante); /* 🎨 COR DO TEMA */
         }
 
         .card-text {
           font-size: 1.4rem;
           font-weight: 700;
-          color: var(--laranja-vibrante);
+          color: var(--laranja-vibrante); /* 🎨 COR DO TEMA */
         }
 
         .card-logged.bg-sneaker .icon-sneaker,

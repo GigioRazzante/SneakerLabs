@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar'; 
 import Footer from '../components/Footer';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useTheme } from '../context/ThemeContext.jsx'; // 🎨 NOVO IMPORT
 import EditarProdutoModal from '../components/EditarProdutoModal';
 import ConfirmarRemocaoModal from '../components/ConfirmarRemocaoModal';
 
@@ -52,11 +53,12 @@ const getProdutoTitle = (config) => {
 };
 
 function RastrearPedido() {
-    const { codigoRastreio: codigoRastreioParam } = useParams(); // 🎯 MUDANÇA: agora usa código de rastreio
+    const { codigoRastreio: codigoRastreioParam } = useParams();
     const { user } = useAuth();
+    const { primaryColor } = useTheme(); // 🎨 HOOK DO TEMA
     const navigate = useNavigate();
     
-    const [codigoRastreioInput, setCodigoRastreioInput] = useState(codigoRastreioParam || ''); // 🎯 MUDANÇA
+    const [codigoRastreioInput, setCodigoRastreioInput] = useState(codigoRastreioParam || '');
     const [statusData, setStatusData] = useState(null);
     const [loading, setLoading] = useState(!!codigoRastreioParam);
     const [error, setError] = useState('');
@@ -101,7 +103,6 @@ function RastrearPedido() {
 
             console.log(`🔍 Buscando pedido por código: ${currentCodigoRastreio} para cliente ${user.id}`);
 
-            // 🎯 MUDANÇA: Nova rota sem ID
             const response = await fetch(`${BACKEND_URL}/api/orders/rastreio/${currentCodigoRastreio}`, {
                 headers: headers
             });
@@ -268,7 +269,7 @@ function RastrearPedido() {
                     onClick={() => navigate('/login')}
                     style={{
                         padding: '0.75rem 1.5rem',
-                        backgroundColor: '#FF9D00',
+                        backgroundColor: primaryColor, // 🎨 COR DINÂMICA
                         color: 'white',
                         border: 'none',
                         borderRadius: '0.5rem',
@@ -287,16 +288,19 @@ function RastrearPedido() {
             
             <div className="page-container">
                 <div className="main-content-card">
-                    <div className="card-header-bar"></div>
+                    <div 
+                        className="card-header-bar" 
+                        style={{ backgroundColor: primaryColor }} // 🎨 COR DINÂMICA
+                    ></div>
                     
                     <div className="title-section">
                         <h2 className="title">🚚 Acompanhar Pedido</h2>
-                        <p className="subtitle">Digite o código de rastreio para acompanhar o status de produção.</p> {/* 🎯 MUDANÇA */}
+                        <p className="subtitle">Digite o código de rastreio para acompanhar o status de produção.</p>
                         
                         {/* Informações do usuário */}
                         <div className="user-info-card">
                             <p><strong>Usuário logado:</strong> {user.nome_usuario} (ID: {user.id})</p>
-                            <p><strong>Código a ser rastreado:</strong> {codigoRastreioParam || 'Nenhum'}</p> {/* 🎯 MUDANÇA */}
+                            <p><strong>Código a ser rastreado:</strong> {codigoRastreioParam || 'Nenhum'}</p>
                         </div>
                     </div>
 
@@ -315,6 +319,7 @@ function RastrearPedido() {
                                 type="submit" 
                                 disabled={loading}
                                 className="search-button"
+                                style={{ backgroundColor: primaryColor }} // 🎨 COR DINÂMICA
                             >
                                 {loading ? '🔍 Buscando...' : '🔍 Rastrear Pedido'} 
                             </button>
@@ -342,7 +347,7 @@ function RastrearPedido() {
                     {statusData && (
                         <div className="resultado-card">
                             <div className="pedido-geral-info">
-                                <h3>Pedido <span className="pedido-number">#{statusData.pedidoId}</span></h3>
+                                <h3>Pedido <span className="pedido-number" style={{ color: primaryColor }}>#{statusData.pedidoId}</span></h3> {/* 🎨 COR DINÂMICA */}
                                 <div className="pedido-details-grid">
                                     <p><strong>Data do Pedido:</strong> {formatarData(statusData.dataCriacao)}</p>
                                     <p><strong>Status Geral:</strong> 
@@ -350,7 +355,7 @@ function RastrearPedido() {
                                             {formatStatus(statusData.statusGeral).text}
                                         </span>
                                     </p>
-                                    <p><strong>Código de Rastreio:</strong> {statusData.codigoRastreio}</p> {/* 🎯 NOVO */}
+                                    <p><strong>Código de Rastreio:</strong> {statusData.codigoRastreio}</p>
                                     <p><strong>Slot de Expedição:</strong> 
                                         {statusData.slotExpedicao 
                                             ? <span className="status-badge" style={{ backgroundColor: '#28A745' }}>
@@ -435,7 +440,8 @@ function RastrearPedido() {
                                 
                                 <button 
                                     className="rastrear-button"
-                                    onClick={() => navigate(`/rastrear-pedido/${statusData.codigoRastreio}`)} 
+                                    onClick={() => navigate(`/rastrear-pedido/${statusData.codigoRastreio}`)}
+                                    style={{ backgroundColor: primaryColor }} // 🎨 COR DINÂMICA
                                 >
                                     🔄 Atualizar Status
                                 </button>
@@ -444,8 +450,6 @@ function RastrearPedido() {
                     )}
                 </div>
             </div>
-
-            <Footer />
 
             {/* 🎯 MODAIS DE EDIÇÃO/REMOÇÃO */}
             {modalEditarAberto && produtoSelecionado && (
@@ -510,9 +514,10 @@ function RastrearPedido() {
                     left: 0;
                     width: 100%;
                     height: 1.5rem;
-                    background-color: #FF9D00;
+                    background-color: var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
                     border-top-left-radius: 1.5rem;
                     border-top-right-radius: 1.5rem;
+                    transition: background-color 0.3s ease; /* 🎨 TRANSITION SUAVE */
                 }
 
                 .title-section {
@@ -568,6 +573,7 @@ function RastrearPedido() {
                     border-radius: 0.5rem;
                     cursor: pointer;
                     font-size: 0.9rem;
+                    transition: background 0.3s ease; /* 🎨 TRANSITION SUAVE */
                 }
 
                 .alternative-button:hover {
@@ -586,35 +592,37 @@ function RastrearPedido() {
                     border-radius: 0.5rem;
                     border: 1px solid #ddd;
                     font-size: 1rem;
-                    transition: border-color 0.3s;
+                    transition: border-color 0.3s, box-shadow 0.3s;
                 }
 
                 .search-input:focus {
                     outline: none;
-                    border-color: #FF9D00;
-                    box-shadow: 0 0 0 2px rgba(255, 157, 0, 0.1);
+                    border-color: var(--primary-color, #FF9D00); /* 🎨 COR DINÂMICA */
+                    box-shadow: 0 0 0 2px var(--primary-light, rgba(255, 157, 0, 0.1)); /* 🎨 COR LIGHT DINÂMICA */
                 }
 
                 .search-button {
                     padding: 0.75rem 1.5rem;
-                    background-color: #FF9D00;
+                    background-color: var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
                     color: white;
                     border: none;
                     border-radius: 0.5rem;
                     cursor: pointer;
                     font-size: 1rem;
                     font-weight: 600;
-                    transition: background-color 0.3s;
+                    transition: all 0.3s ease; /* 🎨 TRANSITION SUAVE */
                     white-space: nowrap;
                 }
 
                 .search-button:hover:not(:disabled) {
-                    background-color: #e68a00;
+                    background-color: var(--primary-hover, #e68a00); /* 🎨 COR HOVER DINÂMICA */
+                    transform: translateY(-1px);
                 }
 
                 .search-button:disabled {
                     opacity: 0.7;
                     cursor: not-allowed;
+                    transform: none;
                 }
 
                 /* MENSAGENS DE ERRO */
@@ -644,7 +652,8 @@ function RastrearPedido() {
                 }
 
                 .pedido-number {
-                    color: #FF9D00;
+                    color: var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
+                    transition: color 0.3s ease; /* 🎨 TRANSITION SUAVE */
                 }
 
                 .pedido-details-grid {
@@ -674,8 +683,9 @@ function RastrearPedido() {
                     margin-bottom: 1rem;
                     color: #333;
                     font-size: 1.1rem;
-                    border-left: 4px solid #FF9D00;
+                    border-left: 4px solid var(--primary-color, #FF9D00); /* 🎨 COR DINÂMICA */
                     padding-left: 0.75rem;
+                    transition: border-color 0.3s ease; /* 🎨 TRANSITION SUAVE */
                 }
 
                 .produtos-lista {
@@ -831,18 +841,19 @@ function RastrearPedido() {
                 }
 
                 .rastrear-button {
-                    background: #FF9D00;
+                    background: var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
                     color: white;
                     border: none;
                     padding: 0.75rem 1.5rem;
                     border-radius: 0.5rem;
                     font-weight: 600;
                     cursor: pointer;
-                    transition: background 0.3s;
+                    transition: all 0.3s ease; /* 🎨 TRANSITION SUAVE */
                 }
 
                 .rastrear-button:hover {
-                    background: #e68a00;
+                    background: var(--primary-hover, #e68a00); /* 🎨 COR HOVER DINÂMICA */
+                    transform: translateY(-1px);
                 }
 
                 .no-products {
