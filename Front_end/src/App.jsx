@@ -1,8 +1,9 @@
-// src/App.jsx - ATUALIZADO COM THEME PROVIDER
+// src/App.jsx - ATUALIZADO COM THEME PROVIDER E FAVICON MANAGER
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { ThemeProvider } from './context/ThemeContext.jsx'; // 🎨 NOVO
+import FaviconManager from './components/FaviconManager.jsx'; // 🎨 NOVO FAVICON
 
 import PaginaInicial from './pages/PaginaInicial.jsx';
 import PaginaInicialLog from './pages/PaginaInicialLog.jsx';
@@ -42,6 +43,7 @@ function App() {
     <AuthProvider>
       <ThemeProvider> {/* 🎨 ENVOLVE COM THEME PROVIDER */}
         <Router>
+          <FaviconManager /> {/* 🎨 FAVICON PERSONALIZADO */}
           <BackgroundHandler />
           <Routes>
             {/* Rota Raiz: Página Inicial DESLOGADA (fundo branco) */}
