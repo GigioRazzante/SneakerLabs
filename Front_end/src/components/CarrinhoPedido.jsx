@@ -1,20 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { useTheme } from '../context/ThemeContext.jsx'; // 🎨 NOVO IMPORT
+import { useTheme } from '../context/ThemeContext.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import ResumoPedidoItem from './ResumoPedidoItem';
 
 const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) => {
-    const { primaryColor } = useTheme(); // 🎨 HOOK DO TEMA
-    const [generatedImages, setGeneratedImages] = useState({});
-    const [loadingImages, setLoadingImages] = useState({});
-    const [imagesGenerated, setImagesGenerated] = useState(false);
-    const [imageErrors, setImageErrors] = useState({});
+    const { primaryColor } = useTheme();
+    const { user } = useAuth();
+    const [generatedMessages, setGeneratedMessages] = useState({});
+    const [loadingMessages, setLoadingMessages] = useState({});
+    const [messagesGenerated, setMessagesGenerated] = useState(false);
 
-    // 🚨 CORREÇÃO: Adicionar validação completa
-    console.log('🔍 [CarrinhoPedido] Pedidos recebidos:', pedidos);
-    
     // Validar se pedidos existe e é um array
     if (!pedidos || !Array.isArray(pedidos)) {
-        console.error('❌ [CarrinhoPedido] Pedidos é undefined ou não é array:', pedidos);
         return (
             <div className="card-container">
                 <div className="card-header-bar"></div>
@@ -26,7 +23,7 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
         );
     }
 
-    // 🚨 CORREÇÃO: Calcular o total com validação robusta
+    // Calcular total geral
     const totalGeral = pedidos.reduce((total, pedido) => {
         if (!pedido) return total;
         
@@ -40,46 +37,7 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
         return total + valorPedido;
     }, 0);
 
-    // 🚨 FUNÇÃO PARA CRIAR FALLBACK SVG LOCAL
-    const createLocalFallbackSVG = (sneakerConfig, pedidoIndex) => {
-        const { cor = 'cinza', estilo = 'sneaker', material = 'couro', solado = 'padrão' } = sneakerConfig;
-        
-        const colors = {
-            'preto': '2c3e50', 'branco': 'ecf0f1', 'vermelho': 'e74c3c',
-            'azul': '3498db', 'verde': '2ecc71', 'amarelo': 'f1c40f',
-            'rosa': 'e84393', 'cinza': '7f8c8d', 'laranja': 'e67e22',
-            'marrom': '8b4513', 'roxo': '9b59b6', 'bege': 'f5f5dc'
-        };
-        
-        const bgColor = colors[cor.toLowerCase()] || '7f8c8d';
-        const textColor = ['preto', 'marrom', 'roxo'].includes(cor.toLowerCase()) ? 'ecf0f1' : '2c3e50';
-        
-        const svg = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200">
-                <rect width="300" height="200" fill="#${bgColor}"/>
-                
-                <!-- Tênis simplificado -->
-                <ellipse cx="150" cy="100" rx="80" ry="40" fill="#34495e" opacity="0.9"/>
-                <rect x="100" y="100" width="100" height="30" fill="#2c3e50" opacity="0.8"/>
-                
-                <!-- Ícone de tênis + texto -->
-                <text x="150" y="80" font-family="Arial" font-size="20" fill="#${textColor}" text-anchor="middle">👟</text>
-                <text x="150" y="110" font-family="Arial" font-size="12" fill="#${textColor}" text-anchor="middle" font-weight="bold">
-                    ${estilo}
-                </text>
-                <text x="150" y="130" font-family="Arial" font-size="10" fill="#${textColor}" text-anchor="middle">
-                    ${material} • ${cor}
-                </text>
-                <text x="150" y="150" font-family="Arial" font-size="10" fill="#${textColor}" text-anchor="middle">
-                    Sneaker #${pedidoIndex + 1}
-                </text>
-            </svg>
-        `;
-        
-        return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-    };
-
-    // 🚨 FUNÇÃO PARA EXTRAIR CONFIGURAÇÃO DO SNEAKER (ATUALIZADA)
+    // Extrair configuração do sneaker
     const extractSneakerConfig = (items) => {
         const config = {
             estilo: '',
@@ -99,161 +57,138 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
             }
         });
         
-        console.log('🔧 Configuração extraída:', config);
         return config;
     };
 
-    // 🚨 FUNÇÃO PARA GERAR IMAGEM (AGORA DEFINIDA ANTES DO useEffect)
-    const generateSneakerImage = async (pedidoIndex, sneakerConfig) => {
-        const imageKey = `${pedidoIndex}`;
+    // Gerar mensagem personalizada
+    const generateSneakerMessage = async (pedidoIndex, sneakerConfig) => {
+        const messageKey = `${pedidoIndex}`;
         
-        // Verificar se já está carregando ou já tem imagem
-        if (loadingImages[imageKey] || generatedImages[imageKey]) {
+        if (loadingMessages[messageKey] || generatedMessages[messageKey]) {
             return;
         }
         
-        setLoadingImages(prev => ({ ...prev, [imageKey]: true }));
-        setImageErrors(prev => ({ ...prev, [imageKey]: false }));
+        setLoadingMessages(prev => ({ ...prev, [messageKey]: true }));
         
         try {
-            console.log(`🔄 Iniciando geração de imagem para sneaker ${pedidoIndex + 1}`);
-            
-            const response = await fetch('http://localhost:3001/api/images/generate', {
+            const response = await fetch('http://localhost:3001/api/mensagens/gerar-mensagem', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     pedidoId: `temp-${Date.now()}-${pedidoIndex}`,
                     produtoIndex: pedidoIndex,
-                    sneakerConfig: sneakerConfig
+                    sneakerConfig: sneakerConfig,
+                    nomeUsuario: user?.nome_usuario || 'Cliente'
                 })
             });
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            
-            if (data.success && data.imageUrl) {
-                setGeneratedImages(prev => ({
-                    ...prev,
-                    [imageKey]: data.imageUrl
-                }));
-                console.log(`✅ Imagem gerada para sneaker ${pedidoIndex + 1}`);
+            if (response.ok) {
+                const data = await response.json();
+                
+                if (data.sucesso && data.mensagem) {
+                    setGeneratedMessages(prev => ({
+                        ...prev,
+                        [messageKey]: data.mensagem
+                    }));
+                } else {
+                    // Fallback local
+                    const fallbackMessage = createFallbackMessage(sneakerConfig, user?.nome_usuario || 'Cliente');
+                    setGeneratedMessages(prev => ({
+                        ...prev,
+                        [messageKey]: fallbackMessage
+                    }));
+                }
             } else {
-                console.error(`❌ Falha ao gerar imagem para sneaker ${pedidoIndex + 1}:`, data);
-                // Usar fallback local em caso de erro
-                const fallbackImage = createLocalFallbackSVG(sneakerConfig, pedidoIndex);
-                setGeneratedImages(prev => ({
-                    ...prev,
-                    [imageKey]: fallbackImage
-                }));
+                throw new Error('Falha na requisição');
             }
         } catch (error) {
-            console.error(`Erro ao gerar imagem para sneaker ${pedidoIndex + 1}:`, error);
-            // Usar fallback local em caso de erro
-            const fallbackImage = createLocalFallbackSVG(sneakerConfig, pedidoIndex);
-            setGeneratedImages(prev => ({
+            // Fallback local em caso de erro
+            const fallbackMessage = createFallbackMessage(sneakerConfig, user?.nome_usuario || 'Cliente');
+            setGeneratedMessages(prev => ({
                 ...prev,
-                [imageKey]: fallbackImage
+                [messageKey]: fallbackMessage
             }));
         } finally {
-            setLoadingImages(prev => ({ ...prev, [imageKey]: false }));
+            setLoadingMessages(prev => ({ ...prev, [messageKey]: false }));
         }
     };
 
-    // 🚨 EFFECT CORRIGIDO: Gerar imagens apenas uma vez quando pedidos mudam
+    // Mensagem de fallback
+    const createFallbackMessage = (sneakerConfig, nomeUsuario) => {
+        const { estilo, material, cor, solado, detalhes } = sneakerConfig;
+        
+        return `Excelente, ${nomeUsuario}! 🎉
+
+Seu sneaker ${estilo} em ${material} na cor ${cor}, com solado ${solado} e ${detalhes} ficou incrível!
+
+Pedido confirmado e em breve estará em produção. Obrigado por criar conosco no SneakLab! 👟✨`;
+    };
+
+    // Effect para gerar mensagens
     useEffect(() => {
-        if (pedidos.length > 0 && !imagesGenerated) {
-            console.log('🎯 Iniciando geração de imagens para todos os sneakers...');
-            
+        if (pedidos.length > 0 && !messagesGenerated) {
             pedidos.forEach((pedido, pedidoIndex) => {
                 if (pedido.items && Array.isArray(pedido.items)) {
-                    // Extrair configuração do sneaker do resumo
                     const sneakerConfig = extractSneakerConfig(pedido.items);
-                    const imageKey = `${pedidoIndex}`;
+                    const messageKey = `${pedidoIndex}`;
                     
-                    // Só gera se não tiver imagem e não estiver carregando
-                    if (!generatedImages[imageKey] && !loadingImages[imageKey]) {
-                        console.log(`🔄 Agendando geração para sneaker ${pedidoIndex + 1}`);
-                        // Usar setTimeout para evitar bloqueio
+                    if (!generatedMessages[messageKey] && !loadingMessages[messageKey]) {
                         setTimeout(() => {
-                            generateSneakerImage(pedidoIndex, sneakerConfig);
-                        }, pedidoIndex * 1000); // Delay de 1 segundo entre cada
+                            generateSneakerMessage(pedidoIndex, sneakerConfig);
+                        }, pedidoIndex * 1000);
                     }
                 }
             });
             
-            setImagesGenerated(true);
+            setMessagesGenerated(true);
         }
-    }, [pedidos, imagesGenerated]);
+    }, [pedidos, messagesGenerated]);
 
-    // 🚨 EFFECT para resetar quando pedidos mudarem completamente
+    // Effect para resetar quando pedidos mudarem
     useEffect(() => {
-        setImagesGenerated(false);
-        setGeneratedImages({});
-        setLoadingImages({});
-        setImageErrors({});
+        setMessagesGenerated(false);
+        setGeneratedMessages({});
+        setLoadingMessages({});
     }, [pedidos.length]);
 
-    // 🚨 FUNÇÃO ATUALIZADA: Confirmar pedidos e salvar imagens definitivas
+    // Confirmar pedidos
     const handleConfirmarPedidos = async () => {
-        console.log('✅ [CarrinhoPedido] Confirmando pedidos e salvando imagens...');
-        
         try {
-            // 1. Primeiro confirme o pedido e AGUARDE o retorno
-            console.log('📦 Confirmando pedido principal...');
-            
-            // 🎯 AGORA A FUNÇÃO RETORNA O PEDIDO CRIADO
             const pedidoCriado = await onConfirmarPedidos();
             
             if (!pedidoCriado || !pedidoCriado.id) {
-                console.error('❌ Não foi possível obter o ID do pedido criado');
-                alert('Erro: Não foi possível obter o ID do pedido. As imagens não foram salvas.');
+                alert('Erro: Não foi possível obter o ID do pedido.');
                 return;
             }
 
             const pedidoIdReal = pedidoCriado.id;
-            console.log('🆔 ID do pedido criado:', pedidoIdReal);
 
-            // 2. PARA CADA SNEAKER, salve a imagem definitiva
-            console.log('💾 Salvando imagens definitivas para os sneakers...');
-            
-            const saveImagePromises = pedidos.map(async (pedido, pedidoIndex) => {
+            // Salvar mensagens definitivas
+            const saveMessagePromises = pedidos.map(async (pedido, pedidoIndex) => {
                 if (pedido.items && Array.isArray(pedido.items)) {
                     const sneakerConfig = extractSneakerConfig(pedido.items);
                     
-                    console.log(`💾 Salvando imagem definitiva para sneaker ${pedidoIndex + 1}`);
-                    
-                    const response = await fetch('http://localhost:3001/api/images/save-to-order', {
+                    await fetch('http://localhost:3001/api/mensagens/salvar-no-pedido', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             pedidoId: pedidoIdReal,
                             produtoIndex: pedidoIndex,
-                            sneakerConfig: sneakerConfig
+                            sneakerConfig: sneakerConfig,
+                            nomeUsuario: user?.nome_usuario || 'Cliente'
                         })
                     });
-
-                    if (!response.ok) {
-                        throw new Error(`Falha ao salvar imagem para sneaker ${pedidoIndex + 1}`);
-                    }
-
-                    console.log(`✅ Imagem definitiva salva para sneaker ${pedidoIndex + 1}`);
                 }
             });
 
-            // Aguarde todas as imagens serem salvas
-            await Promise.all(saveImagePromises);
-            console.log('🎉 Todas as imagens foram salvas com sucesso!');
+            await Promise.all(saveMessagePromises);
 
         } catch (error) {
-            console.error('❌ Erro ao salvar imagens:', error);
-            alert('Erro ao salvar imagens dos sneakers. Tente novamente.');
+            alert('Erro ao salvar mensagens dos sneakers. Tente novamente.');
         }
     };
 
-    // 🚨 CORREÇÃO: Se não há pedidos, mostrar mensagem
+    // Carrinho vazio
     if (pedidos.length === 0) {
         return (
             <div className="card-container">
@@ -288,10 +223,9 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
                     left: 0;
                     width: 100%;
                     height: 1.5rem;
-                    background-color: var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
+                    background-color: var(--primary-color);
                     border-top-left-radius: 1.5rem;
                     border-top-right-radius: 1.5rem;
-                    transition: background-color 0.3s ease; /* 🎨 TRANSITION SUAVE */
                 }
                 
                 .title-section {
@@ -303,8 +237,7 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
                 .title {
                     font-size: 2.2rem;
                     font-weight: bold;
-                    color: var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
-                    transition: color 0.3s ease; /* 🎨 TRANSITION SUAVE */
+                    color: var(--primary-color);
                 }
                 
                 .subtitle {
@@ -327,8 +260,7 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
                     background: white;
                     border-radius: 1rem;
                     padding: 1.5rem;
-                    border: 2px solid var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
-                    transition: border-color 0.3s ease; /* 🎨 TRANSITION SUAVE */
+                    border: 2px solid var(--primary-color);
                 }
                 
                 .pedido-header {
@@ -337,15 +269,13 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
                     align-items: center;
                     margin-bottom: 1rem;
                     padding-bottom: 0.5rem;
-                    border-bottom: 2px solid var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
-                    transition: border-color 0.3s ease; /* 🎨 TRANSITION SUAVE */
+                    border-bottom: 2px solid var(--primary-color);
                 }
                 
                 .pedido-title {
-                    color: var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
+                    color: var(--primary-color);
                     margin: 0;
                     font-size: 1.3rem;
-                    transition: color 0.3s ease; /* 🎨 TRANSITION SUAVE */
                 }
                 
                 .pedido-date {
@@ -353,29 +283,37 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
                     font-size: 0.9rem;
                 }
                 
-                .sneaker-image {
+                .sneaker-message {
                     text-align: center;
                     margin: 1rem 0;
                 }
                 
-                .image-placeholder {
-                    background-color: #F5F5F5;
+                .message-placeholder {
+                    background: linear-gradient(135deg, var(--primary-light) 0%, #ffffff 100%);
                     border-radius: 0.75rem;
                     padding: 2rem;
-                    border: 2px dashed var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
+                    border: 2px solid var(--primary-color);
                     min-height: 200px;
                     display: flex;
                     flex-direction: column;
                     align-items: center;
                     justify-content: center;
-                    transition: border-color 0.3s ease; /* 🎨 TRANSITION SUAVE */
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
                 }
                 
-                .image-placeholder img {
+                .message-content {
                     max-width: 100%;
-                    max-height: 200px;
-                    border-radius: 0.5rem;
-                    object-fit: cover;
+                    text-align: center;
+                    line-height: 1.6;
+                    color: #333; /* COR FIXA - SEMPRE VISÍVEL */
+                    font-size: 1.1rem;
+                    white-space: pre-line;
+                    font-weight: 500;
+                }
+                
+                .message-highlight {
+                    color: var(--primary-color);
+                    font-weight: 600;
                 }
                 
                 .loading-spinner {
@@ -383,22 +321,15 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
                     width: 20px;
                     height: 20px;
                     border: 3px solid #f3f3f3;
-                    border-top: 3px solid var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
+                    border-top: 3px solid var(--primary-color);
                     border-radius: 50%;
                     animation: spin 1s linear infinite;
-                    transition: border-top-color 0.3s ease; /* 🎨 TRANSITION SUAVE */
                 }
                 
                 .loading-text {
                     margin-top: 10px;
                     color: #666;
                     text-align: center;
-                }
-                
-                .error-message {
-                    color: #ff4444;
-                    text-align: center;
-                    margin-top: 10px;
                 }
                 
                 @keyframes spin {
@@ -408,18 +339,16 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
                 
                 .pedido-divider {
                     border: none;
-                    border-top: 2px dashed var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
+                    border-top: 2px dashed var(--primary-color);
                     margin: 2rem 0;
-                    transition: border-color 0.3s ease; /* 🎨 TRANSITION SUAVE */
                 }
                 
                 .total-geral {
-                    background-color: var(--primary-light, #fff8e1); /* 🎨 VARIÁVEL CSS */
-                    border: 2px solid var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
+                    background-color: var(--primary-light);
+                    border: 2px solid var(--primary-color);
                     border-radius: 1rem;
                     padding: 1.5rem;
                     margin-top: 2rem;
-                    transition: all 0.3s ease; /* 🎨 TRANSITION SUAVE */
                 }
                 
                 .total-geral-content {
@@ -435,8 +364,7 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
                 }
                 
                 .total-geral-value {
-                    color: var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
-                    transition: color 0.3s ease; /* 🎨 TRANSITION SUAVE */
+                    color: var(--primary-color);
                 }
                 
                 .cart-actions {
@@ -459,22 +387,21 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
                 .next-button {
                     width: 100%;
                     max-width: 400px;
-                    background: linear-gradient(135deg, var(--primary-color, #22C55E) 0%, var(--primary-hover, #1A9C4B) 100%); /* 🎨 GRADIENT DINÂMICO */
+                    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
                     color: white;
                     font-weight: 600;
                     padding: 0.8rem;
                     border-radius: 9999px;
                     border: none;
-                    transition: all 0.3s ease; /* 🎨 TRANSITION SUAVE */
+                    transition: all 0.3s ease;
                     font-size: 1.1rem;
                     cursor: pointer;
-                    box-shadow: 0 4px 12px rgba(var(--primary-color-rgb, 34, 197, 94), 0.3); /* 🎨 SHADOW DINÂMICO */
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
                 }
                 
                 .next-button:hover:not(:disabled) {
-                    background: linear-gradient(135deg, var(--primary-hover, #1A9C4B) 0%, var(--primary-hover-dark, #15803D) 100%); /* 🎨 GRADIENT HOVER DINÂMICO */
                     transform: translateY(-2px);
-                    box-shadow: 0 6px 16px rgba(var(--primary-color-rgb, 34, 197, 94), 0.4); /* 🎨 SHADOW HOVER DINÂMICO */
+                    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
                 }
                 
                 .next-button:disabled {
@@ -487,29 +414,21 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
                 .add-more-button {
                     width: 100%;
                     max-width: 400px;
-                    background: linear-gradient(135deg, var(--primary-color, #FF9D00) 0%, var(--primary-hover, #e68a00) 100%); /* 🎨 GRADIENT DINÂMICO */
+                    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
                     color: white;
                     font-weight: 600;
                     padding: 0.8rem;
                     border-radius: 9999px;
                     border: none;
-                    transition: all 0.3s ease; /* 🎨 TRANSITION SUAVE */
+                    transition: all 0.3s ease;
                     font-size: 1.1rem;
                     cursor: pointer;
-                    box-shadow: 0 4px 12px rgba(var(--primary-color-rgb, 255, 157, 0), 0.3); /* 🎨 SHADOW DINÂMICO */
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
                 }
                 
                 .add-more-button:hover {
-                    background: linear-gradient(135deg, var(--primary-hover, #e68a00) 0%, var(--primary-hover-dark, #cc7700) 100%); /* 🎨 GRADIENT HOVER DINÂMICO */
                     transform: translateY(-2px);
-                    box-shadow: 0 6px 16px rgba(var(--primary-color-rgb, 255, 157, 0), 0.4); /* 🎨 SHADOW HOVER DINÂMICO */
-                }
-                
-                /* 🎨 ESTILOS PARA ACESSIBILIDADE */
-                .next-button:focus,
-                .add-more-button:focus {
-                    outline: 2px solid white;
-                    outline-offset: 2px;
+                    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
                 }
                 
                 @media (max-width: 768px) {
@@ -548,6 +467,11 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
                         font-size: 1rem;
                         padding: 0.7rem;
                     }
+                    
+                    .message-content {
+                        font-size: 1rem;
+                        padding: 1rem;
+                    }
                 }
                 
                 @media (max-width: 480px) {
@@ -555,7 +479,7 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
                         font-size: 1.5rem;
                     }
                     
-                    .image-placeholder {
+                    .message-placeholder {
                         padding: 1.5rem 1rem;
                     }
                     
@@ -563,6 +487,10 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
                     .add-more-button {
                         font-size: 0.95rem;
                         padding: 0.6rem;
+                    }
+                    
+                    .message-content {
+                        font-size: 0.9rem;
                     }
                 }
             `}</style>
@@ -576,13 +504,9 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
                 </div>
 
                 <div className="cart-content">
-                    {/* Lista de todos os pedidos */}
                     <div className="pedidos-list">
                         {pedidos.map((pedido, pedidoIndex) => {
-                            if (!pedido) {
-                                console.warn(`⚠️ Pedido ${pedidoIndex} é undefined`);
-                                return null;
-                            }
+                            if (!pedido) return null;
 
                             const itemsValidos = pedido.items && Array.isArray(pedido.items);
                             const totalPedido = pedido.valorTotal || 
@@ -591,10 +515,9 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
                                                   return sum + (item.acrescimo || 0);
                                               }, 0) : 0);
 
-                            const imageKey = `${pedidoIndex}`;
-                            const imageUrl = generatedImages[imageKey];
-                            const isLoading = loadingImages[imageKey];
-                            const hasError = imageErrors[imageKey];
+                            const messageKey = `${pedidoIndex}`;
+                            const message = generatedMessages[messageKey];
+                            const isLoading = loadingMessages[messageKey];
 
                             return (
                                 <div key={pedido.id || pedidoIndex} className="pedido-item">
@@ -603,40 +526,21 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
                                         <span className="pedido-date">Valor: R$ {totalPedido.toFixed(2)}</span>
                                     </div>
                                     
-                                    {/* IMAGEM DO SNEAKER - COM FALLBACK SVG LOCAL */}
-                                    <div className="sneaker-image">
-                                        <div className="image-placeholder">
+                                    <div className="sneaker-message">
+                                        <div className="message-placeholder">
                                             {isLoading ? (
                                                 <div style={{textAlign: 'center'}}>
                                                     <div className="loading-spinner"></div>
-                                                    <p className="loading-text">Gerando imagem do sneaker...</p>
-                                                    <small>Aguarde alguns segundos</small>
+                                                    <p className="loading-text">Gerando mensagem personalizada...</p>
                                                 </div>
-                                            ) : imageUrl ? (
-                                                <img 
-                                                    src={imageUrl} 
-                                                    alt={`Sneaker personalizado ${pedidoIndex + 1}`}
-                                                    onError={(e) => {
-                                                        console.error('❌ Erro ao carregar imagem, usando fallback SVG');
-                                                        // Fallback para SVG local
-                                                        const fallbackImage = createLocalFallbackSVG(
-                                                            extractSneakerConfig(pedido.items), 
-                                                            pedidoIndex
-                                                        );
-                                                        e.target.src = fallbackImage;
-                                                    }}
-                                                    style={{
-                                                        maxWidth: '100%',
-                                                        maxHeight: '200px',
-                                                        borderRadius: '0.5rem',
-                                                        objectFit: 'cover'
-                                                    }}
-                                                />
+                                            ) : message ? (
+                                                <div className="message-content">
+                                                    {message}
+                                                </div>
                                             ) : (
                                                 <div style={{textAlign: 'center'}}>
                                                     <div className="loading-spinner"></div>
-                                                    <p className="loading-text">Preparando imagem...</p>
-                                                    <small>Carregando visualização</small>
+                                                    <p className="loading-text">Preparando mensagem...</p>
                                                 </div>
                                             )}
                                         </div>
@@ -660,7 +564,6 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
                         })}
                     </div>
 
-                    {/* Total Geral */}
                     <div className="total-geral">
                         <div className="total-geral-content">
                             <span className="total-geral-label">Total do Pedido:</span>
@@ -668,7 +571,6 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
                         </div>
                     </div>
 
-                    {/* Botões de ação */}
                     <div className="cart-actions">
                         <div className="confirm-button-container">
                             <button 

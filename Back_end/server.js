@@ -1,4 +1,4 @@
-// server.js - VERSÃO CORRIGIDA
+// server.js - VERSÃO CORRIGIDA COM MENSAGEM AI
 import dotenv from 'dotenv';
 
 // CARREGAR DOTENV PRIMEIRO
@@ -15,7 +15,9 @@ import clienteRoutes from './routes/clienteRoutes.js';
 import pedidoRoutes from './routes/pedidoRoutes.js';
 import producaoRoutes from './routes/producaoRoutes.js';
 import entregaRoutes from './routes/entregaRoutes.js';
-import imageRoutes from './routes/imageRoutes.js';
+
+// 🎯 ATUALIZADO: Substituir imageRoutes por mensagemRoutes
+import mensagemRoutes from './routes/mensagemRoutes.js'; // 🆕 NOVA ROTA
 
 // 🚨 COMENTE AS NOVAS ROTAS TEMPORARIAMENTE
 import estoqueRoutes from './routes/estoqueRoutes.js';
@@ -32,7 +34,7 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// 🎯 Servir arquivos estáticos da pasta uploads
+// 🎯 Servir arquivos estáticos da pasta uploads (manter para compatibilidade)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Configuração das rotas EXISTENTES
@@ -41,8 +43,11 @@ app.use('/api/cliente', clienteRoutes);
 app.use('/api/orders', pedidoRoutes);
 app.use('/api', producaoRoutes);
 app.use('/api/entrega', entregaRoutes);
-app.use('/api/images', imageRoutes);
 
+// 🎯 ATUALIZADO: Substituir imageRoutes por mensagemRoutes
+app.use('/api/mensagens', mensagemRoutes); // 🆕 NOVA ROTA
+
+// 🚨 ROTAS COMENTADAS TEMPORARIAMENTE
 app.use('/api/estoque', estoqueRoutes);
 app.use('/api/produtos', produtoRoutes);
 
@@ -58,11 +63,12 @@ app.get('/api/health', (req, res) => {
             pedidos: true,
             producao: true,
             entrega: true,
-            image_generation: true,
-            image_serving: true,
+            mensagens_ai: true, // 🆕 NOVA FEATURE
+            image_generation: false, // 🗑️ REMOVIDO
+            image_serving: false, // 🗑️ REMOVIDO
             estoque: false,  // 🚨 COMENTADO TEMPORARIAMENTE
             produtos: false, // 🚨 COMENTADO TEMPORARIAMENTE
-            fal_ai: process.env.FAL_AI_KEY ? '✅ Configurada' : '❌ Não encontrada'
+            gemini_ai: process.env.GEMINI_API_KEY ? '✅ Configurada' : '❌ Não encontrada' // 🆕 ATUALIZADO
         },
         environment: process.env.NODE_ENV || 'development'
     });
@@ -95,7 +101,7 @@ if (process.env.NODE_ENV === 'development') {
     });
 }
 
-// Rota de fallback para 404
+// Rota de fallback para 404 ATUALIZADA
 app.use('*', (req, res) => {
     res.status(404).json({
         error: 'Rota não encontrada',
@@ -114,12 +120,12 @@ app.use('*', (req, res) => {
                 status: 'GET /api/orders/:id/status',
                 client: 'GET /api/orders/cliente/:clienteId'
             },
-            images: {
-                generate: 'POST /api/images/generate',
-                save: 'POST /api/images/save-to-order', 
-                serve: 'GET /api/images/sneaker/:pedidoId/:produtoId'
+            // 🎯 ATUALIZADO: Substituir images por mensagens
+            mensagens: {
+                gerar: 'POST /api/mensagens/gerar-mensagem',
+                salvar: 'POST /api/mensagens/salvar-no-pedido', 
+                obter: 'GET /api/mensagens/:pedidoId/:produtoId'
             },
-        
             estoque: {
                 listar: 'GET /api/estoque/listar',
                 repor: 'POST /api/estoque/repor/:id',
@@ -146,4 +152,6 @@ app.listen(PORT, () => {
     console.log(`🚀 Backend SneakerLabs inicializado na porta ${PORT}`);
     console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
     console.log(`🔗 Health Check: http://localhost:${PORT}/api/health`);
+    console.log(`🤖 Nova Feature: Mensagens AI via Gemini`);
+    console.log(`📝 Rotas disponíveis: /api/mensagens/gerar-mensagem`);
 });
