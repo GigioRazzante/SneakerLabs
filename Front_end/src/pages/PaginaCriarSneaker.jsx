@@ -5,6 +5,7 @@ import ResumoPedido from '../components/ResumoPedido';
 import CarrinhoPedido from '../components/CarrinhoPedido';
 import Footer from '../components/Footer';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useTheme } from '../context/ThemeContext.jsx'; // 🎨 NOVO IMPORT
 
 // Mantenha o passos igual ao seu original
 const passos = [
@@ -59,6 +60,7 @@ const PaginaCriarSneaker = () => {
   const [pedidos, setPedidos] = useState([]);
   
   const { user } = useAuth();
+  const { primaryColor } = useTheme(); // 🎨 HOOK DO TEMA
 
   if (!user) {
     return (
@@ -385,18 +387,18 @@ const PaginaCriarSneaker = () => {
           position: relative;
         }
 
-        /* 🎯 CORREÇÃO CRÍTICA 2: Adiciona o CSS da barra no contêiner pai */
+        /* 🎯 CORREÇÃO CRÍTICA 2: Header Bar com cor do tema */
         .card-header-bar {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
-            height: 1.5rem; /* Altura ajustada */
-            background-color: var(--laranja-vibrante);
+            height: 8px; /* Altura ajustada */
+            background-color: var(--primary-color); /* 🎨 USA A COR DO TEMA */
             border-top-left-radius: 1.5rem;
             border-top-right-radius: 1.5rem;
+            transition: background-color 0.3s ease; /* 🎨 TRANSITION SUAVE */
         }
-
 
         .next-button {
           width: 100%;
@@ -442,7 +444,7 @@ const PaginaCriarSneaker = () => {
 
       <div className="page-container">
         <div className="main-content-card">
-          {/* 🎯 DIV DO HEADER BAR: Ela já estava aqui, agora o CSS funciona */}
+          {/* 🎯 DIV DO HEADER BAR: Agora usa a cor do tema do usuário */}
           <div className="card-header-bar"></div>
           {renderCurrentStep()}
         </div>

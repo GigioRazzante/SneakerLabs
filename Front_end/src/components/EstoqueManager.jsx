@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useTheme } from '../context/ThemeContext.jsx'; // 🎨 NOVO IMPORT
+import { useTheme } from '../context/ThemeContext.jsx';
 
 const EstoqueManager = () => {
-  const { primaryColor } = useTheme(); // 🎨 HOOK DO TEMA
+  const { primaryColor } = useTheme();
   const [estoque, setEstoque] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -25,19 +25,17 @@ const EstoqueManager = () => {
       const data = await response.json();
       console.log('📊 Resposta da API:', data);
       
-      // CORREÇÃO: A API retorna data.data, não data.estoque
       if (data.success && data.data) {
         setEstoque(data.data);
         console.log(`✅ ${data.data.length} itens carregados do banco`);
       } else {
-        // Se a tabela estiver vazia ou estrutura diferente
         throw new Error(data.error || 'Estrutura de dados inesperada');
       }
     } catch (err) {
       console.error('❌ Erro ao carregar estoque:', err);
       setError(err.message);
       
-      // Dados MOCK de fallback baseados na SUA estrutura real
+      // Dados MOCK de fallback
       setEstoque([
         { 
           id: 1, 
@@ -115,7 +113,6 @@ const EstoqueManager = () => {
         throw new Error(data.error || 'Erro ao repor item');
       }
 
-      // CORREÇÃO: Atualizar estoque local com a resposta correta
       if (data.success && data.data) {
         setEstoque(prevEstoque => 
           prevEstoque.map(item => 
@@ -189,181 +186,230 @@ const EstoqueManager = () => {
   return (
     <>
       <style>{`
-        .estoque-container {
-          width: 100%;
-          padding: 2rem;
+        .estoque-content {
           max-width: 1400px;
           margin: 0 auto;
+          padding: 2rem 1.5rem;
         }
         
-        .card-header-bar {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 1.5rem;
-          background-color: var(--primary-color); /* 🎨 COR DO TEMA */
-          border-top-left-radius: 1.5rem;
-          border-top-right-radius: 1.5rem;
+        /* Header do Estoque - Estilo Catálogo */
+        .estoque-header {
+          text-align: center;
+          margin-bottom: 4rem;
+          position: relative;
         }
         
-        .title-section {
+        .estoque-titulo {
+          font-size: 3.5rem;
+          font-weight: 800;
+          color: var(--primary-color);
+          margin-bottom: 1rem;
+          background: linear-gradient(135deg, var(--primary-color) 0%, #ffb347 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+        
+        .estoque-subtitulo {
+          font-size: 1.2rem;
+          color: #666;
+          max-width: 600px;
+          margin: 0 auto;
+          line-height: 1.6;
+        }
+        
+        /* Botão de Atualizar */
+        .atualizar-container {
           text-align: center;
           margin-bottom: 2rem;
         }
         
-        .title {
-          font-size: 2.2rem;
-          font-weight: bold;
-          color: var(--primary-color); /* 🎨 COR DO TEMA */
-          margin-bottom: 0.5rem;
-        }
-        
-        .subtitle {
-          color: #555;
+        .atualizar-button {
+          background-color: var(--primary-color);
+          color: white;
+          font-weight: 700;
+          padding: 1rem 2rem;
+          border-radius: 1rem;
+          border: none;
+          transition: all 0.3s ease;
           font-size: 1.1rem;
+          cursor: pointer;
+          box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.3);
         }
         
+        .atualizar-button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px rgba(var(--primary-color-rgb), 0.4);
+          opacity: 0.95;
+        }
+        
+        /* Estatísticas - Estilo Catálogo */
         .estoque-stats {
-          display: flex;
-          justify-content: space-around;
-          background: #f8f9fa;
-          padding: 1rem;
-          border-radius: 0.75rem;
-          margin-bottom: 2rem;
-          flex-wrap: wrap;
-          gap: 1rem;
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 2rem;
+          margin-bottom: 3rem;
         }
         
-        .stat-item {
+        .stat-card {
+          background: white;
+          border-radius: 1.5rem;
+          padding: 2rem 1.5rem;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+          border: 2px solid #f8f9fa;
           text-align: center;
         }
         
         .stat-value {
-          font-size: 1.5rem;
-          font-weight: bold;
-          color: var(--primary-color); /* 🎨 COR DO TEMA */
+          font-size: 2.5rem;
+          font-weight: 800;
+          color: var(--primary-color);
+          margin-bottom: 0.5rem;
         }
         
         .stat-label {
-          font-size: 0.9rem;
+          font-size: 1rem;
           color: #666;
+          font-weight: 600;
         }
         
+        /* Alerta */
+        .alerta-baixo {
+          background: #fff3cd;
+          border: 2px solid #ffeaa7;
+          color: #856404;
+          padding: 1.5rem;
+          border-radius: 1rem;
+          margin-bottom: 2rem;
+          text-align: center;
+          font-weight: 600;
+          font-size: 1.1rem;
+        }
+        
+        /* Grid de Itens - Estilo Catálogo */
         .estoque-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-          gap: 1.5rem;
-          margin-top: 1rem;
+          grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+          gap: 2rem;
+          align-items: stretch;
         }
         
+        /* Cards do Estoque - Estilo Catálogo */
         .estoque-card {
           background: white;
-          border-radius: 0.75rem;
-          padding: 1.5rem;
-          border: 2px solid #e9ecef;
-          transition: all 0.3s ease;
-          position: relative;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-        
-        .estoque-card:hover {
-          border-color: var(--primary-color); /* 🎨 COR DO TEMA */
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          border-radius: 1.5rem;
+          padding: 2rem 1.5rem;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+          border: 2px solid #f8f9fa;
+          display: flex;
+          flex-direction: column;
+          height: 100%;
         }
         
         .item-header {
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
-          margin-bottom: 1rem;
+          margin-bottom: 1.5rem;
+          padding-bottom: 1rem;
+          border-bottom: 2px solid #f0f0f0;
         }
         
-        .item-codigo-nome {
+        .item-info-container {
           flex: 1;
         }
         
         .item-nome {
-          font-size: 1.2rem;
-          font-weight: 600;
+          font-size: 1.4rem;
+          font-weight: 700;
           color: #333;
           margin: 0 0 0.5rem 0;
         }
         
         .item-categoria {
-          background: #6c757d;
+          background: var(--primary-color);
           color: white;
-          padding: 0.25rem 0.75rem;
-          border-radius: 1rem;
-          font-size: 0.8rem;
-          font-weight: 500;
-          white-space: nowrap;
-        }
-        
-        .item-info {
-          margin-bottom: 1rem;
-        }
-        
-        .info-row {
-          display: flex;
-          justify-content: space-between;
-          margin-bottom: 0.5rem;
-          padding: 0.25rem 0;
-        }
-        
-        .info-label {
-          color: #666;
-          font-weight: 500;
-        }
-        
-        .info-value {
-          color: #333;
+          padding: 0.4rem 0.8rem;
+          border-radius: 2rem;
+          font-size: 0.9rem;
           font-weight: 600;
         }
         
         .localizacao {
-          font-size: 0.9rem;
-          color: #888;
-          font-style: italic;
-          margin-bottom: 0.5rem;
+          font-size: 1rem;
+          color: #666;
+          margin-bottom: 1.5rem;
+          font-weight: 500;
+        }
+        
+        .item-details {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+          flex: 1;
+        }
+        
+        .detail-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 0.8rem 0;
+        }
+        
+        .detail-label {
+          font-weight: 600;
+          color: #666;
+          font-size: 1rem;
+        }
+        
+        .detail-value {
+          font-weight: 700;
+          color: #000000;
+          font-size: 1.1rem;
         }
         
         .status-esgotado {
           color: #dc3545;
-          font-weight: 600;
+          font-weight: 700;
         }
         
         .status-baixo {
           color: #ffc107;
-          font-weight: 600;
+          font-weight: 700;
         }
         
         .status-ok {
           color: #28a745;
-          font-weight: 600;
+          font-weight: 700;
         }
         
+        /* Botão Repor - COM HOVER (clicável) */
         .repor-button {
           width: 100%;
-          background-color: var(--primary-color); /* 🎨 COR DO TEMA */
+          background-color: var(--primary-color);
           color: white;
+          font-weight: 700;
+          padding: 1rem 2rem;
+          border-radius: 1rem;
           border: none;
-          padding: 0.75rem;
-          border-radius: 0.5rem;
-          font-weight: 600;
+          transition: all 0.3s ease;
+          font-size: 1.1rem;
           cursor: pointer;
-          transition: background-color 0.3s;
-          margin-top: 0.5rem;
+          box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.3);
+          margin-top: 1rem;
         }
         
         .repor-button:hover {
-          background-color: var(--primary-hover); /* 🎨 COR DO TEMA HOVER */
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px rgba(var(--primary-color-rgb), 0.4);
+          opacity: 0.95;
         }
         
         .repor-button:disabled {
-          background-color: #ccc;
+          background: #9CA3AF;
           cursor: not-allowed;
+          transform: none;
+          box-shadow: none;
         }
         
         /* Modal Styles */
@@ -383,32 +429,42 @@ const EstoqueManager = () => {
         .modal-content {
           background: white;
           padding: 2rem;
-          border-radius: 1rem;
+          border-radius: 1.5rem;
           width: 90%;
           max-width: 400px;
-          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+          border: 2px solid #f8f9fa;
         }
         
         .modal-title {
-          font-size: 1.5rem;
-          font-weight: 600;
-          color: #333;
+          font-size: 1.8rem;
+          font-weight: 700;
+          color: var(--primary-color);
           margin-bottom: 1rem;
           text-align: center;
         }
         
+        .modal-text {
+          text-align: center;
+          color: #666;
+          margin-bottom: 1.5rem;
+          line-height: 1.5;
+        }
+        
         .quantidade-input {
           width: 100%;
-          padding: 0.75rem;
+          padding: 1rem;
           border: 2px solid #e9ecef;
-          border-radius: 0.5rem;
-          font-size: 1rem;
-          margin: 1rem 0;
+          border-radius: 1rem;
+          font-size: 1.1rem;
+          margin: 1.5rem 0;
+          text-align: center;
+          font-weight: 600;
         }
         
         .quantidade-input:focus {
           outline: none;
-          border-color: var(--primary-color); /* 🎨 COR DO TEMA */
+          border-color: var(--primary-color);
         }
         
         .modal-actions {
@@ -418,124 +474,208 @@ const EstoqueManager = () => {
         
         .modal-button {
           flex: 1;
-          padding: 0.75rem;
+          padding: 1rem;
           border: none;
-          border-radius: 0.5rem;
-          font-weight: 600;
+          border-radius: 1rem;
+          font-weight: 700;
           cursor: pointer;
-          transition: background-color 0.3s;
+          transition: all 0.3s ease;
+          font-size: 1.1rem;
         }
         
         .modal-confirm {
-          background-color: #28a745;
+          background-color: var(--primary-color);
           color: white;
+          box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.3);
         }
         
         .modal-confirm:hover {
-          background-color: #218838;
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px rgba(var(--primary-color-rgb), 0.4);
         }
         
         .modal-cancel {
-          background-color: #6c757d;
+          background-color: #6B7280;
           color: white;
         }
         
         .modal-cancel:hover {
-          background-color: #545b62;
+          background-color: #4B5563;
         }
         
         .retry-button {
-          background-color: var(--primary-color); /* 🎨 COR DO TEMA */
+          background-color: var(--primary-color);
           color: white;
+          font-weight: 700;
+          padding: 1rem 2rem;
+          border-radius: 1rem;
           border: none;
-          padding: 0.75rem 1.5rem;
-          border-radius: 0.5rem;
-          font-weight: 600;
           cursor: pointer;
-          margin-top: 1rem;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.3);
+        }
+        
+        .retry-button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px rgba(var(--primary-color-rgb), 0.4);
         }
         
         .loading-spinner {
-          color: var(--primary-color); /* 🎨 COR DO TEMA */
-          font-size: 1.1rem;
-          font-weight: 500;
+          color: var(--primary-color);
+          font-size: 1.3rem;
+          font-weight: 600;
+        }
+
+        /* 🔥 RESPONSIVIDADE IGUAL AO CATÁLOGO */
+        
+        /* Tablets Grandes */
+        @media (max-width: 1200px) {
+          .estoque-grid {
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+          }
+          
+          .estoque-titulo {
+            font-size: 3rem;
+          }
         }
         
-        .alerta-baixo {
-          background: #fff3cd;
-          border: 1px solid #ffeaa7;
-          color: #856404;
-          padding: 0.5rem;
-          border-radius: 0.25rem;
-          margin-bottom: 1rem;
-          text-align: center;
-          font-weight: 500;
-        }
-        
-        @media (max-width: 768px) {
-          .estoque-container {
-            padding: 1rem;
+        /* Tablets */
+        @media (max-width: 968px) {
+          .estoque-content {
+            padding: 1.5rem 1rem;
+          }
+          
+          .estoque-titulo {
+            font-size: 2.5rem;
           }
           
           .estoque-grid {
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
           }
           
-          .title {
-            font-size: 1.8rem;
-          }
-          
-          .modal-content {
-            margin: 1rem;
-            padding: 1.5rem;
+          .estoque-card {
+            padding: 1.5rem 1rem;
           }
           
           .estoque-stats {
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+          }
+        }
+        
+        /* Tablets Pequenos e Mobile Grande */
+        @media (max-width: 768px) {
+          .estoque-header {
+            margin-bottom: 3rem;
+          }
+          
+          .estoque-titulo {
+            font-size: 2.2rem;
+          }
+          
+          .estoque-subtitulo {
+            font-size: 1.1rem;
+            padding: 0 1rem;
+          }
+          
+          .estoque-grid {
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.2rem;
+          }
+          
+          .item-header {
             flex-direction: column;
-            align-items: center;
-            gap: 0.5rem;
+            align-items: flex-start;
+            gap: 0.8rem;
+          }
+          
+          .modal-actions {
+            flex-direction: column;
+          }
+        }
+        
+        /* Mobile Médio */
+        @media (max-width: 640px) {
+          .estoque-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+          }
+          
+          .estoque-card {
+            padding: 1.5rem 1rem;
+            border-radius: 1rem;
+          }
+          
+          .estoque-titulo {
+            font-size: 1.8rem;
+          }
+        }
+        
+        /* Mobile Pequeno */
+        @media (max-width: 480px) {
+          .estoque-content {
+            padding: 1rem 0.5rem;
+          }
+          
+          .estoque-titulo {
+            font-size: 1.6rem;
+          }
+          
+          .estoque-subtitulo {
+            font-size: 1rem;
+          }
+          
+          .estoque-card {
+            padding: 1.2rem 0.8rem;
+          }
+          
+          .repor-button {
+            padding: 0.9rem 1.5rem;
+            font-size: 1rem;
           }
         }
       `}</style>
 
-      <div className="estoque-container">
-        <div className="card-header-bar"></div>
-
-        <div className="title-section">
-          <h1 className="title">📦 Gestão de Estoque</h1>
-          <p className="subtitle">Controle e reposição de materiais da produção</p>
-        </div>
+      <div className="estoque-content">
+        {/* Header - Estilo Catálogo */}
+        <header className="estoque-header">
+          <h1 className="estoque-titulo">Gestão de Estoque</h1>
+          <p className="estoque-subtitulo">
+            Controle e reposição de materiais da produção SneakLab
+          </p>
+        </header>
 
         {/* Botão de atualizar */}
-        <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+        <div className="atualizar-container">
           <button 
             onClick={carregarEstoque} 
-            className="repor-button"
-            style={{ width: 'auto', padding: '0.5rem 1rem' }}
+            className="atualizar-button"
           >
             🔄 Atualizar Estoque
           </button>
         </div>
 
-        {/* Estatísticas do Estoque */}
+        {/* Estatísticas do Estoque - Estilo Catálogo */}
         <div className="estoque-stats">
-          <div className="stat-item">
+          <div className="stat-card">
             <div className="stat-value">{estoque.length}</div>
             <div className="stat-label">Itens no Estoque</div>
           </div>
-          <div className="stat-item">
+          <div className="stat-card">
             <div className="stat-value">
               {estoque.filter(item => item.quantidade > (item.quantidade_minima || 5)).length}
             </div>
             <div className="stat-label">Itens com Estoque OK</div>
           </div>
-          <div className="stat-item">
+          <div className="stat-card">
             <div className="stat-value">
               {estoque.filter(item => item.quantidade <= (item.quantidade_minima || 5) && item.quantidade > 0).length}
             </div>
             <div className="stat-label">Itens com Estoque Baixo</div>
           </div>
-          <div className="stat-item">
+          <div className="stat-card">
             <div className="stat-value">
               {estoque.filter(item => item.quantidade === 0).length}
             </div>
@@ -551,39 +691,40 @@ const EstoqueManager = () => {
           </div>
         )}
 
+        {/* Grid de Itens - Estilo Catálogo */}
         <div className="estoque-grid">
           {estoque.map((item) => (
             <div key={item.id} className="estoque-card">
               <div className="item-header">
-                <div className="item-codigo-nome">
+                <div className="item-info-container">
                   <h3 className="item-nome">{item.nome_produto}</h3>
+                  {item.localizacao && (
+                    <div className="localizacao">📍 {item.localizacao}</div>
+                  )}
                 </div>
                 <span className="item-categoria">{item.categoria || 'Geral'}</span>
               </div>
               
-              {item.localizacao && (
-                <div className="localizacao">📍 {item.localizacao}</div>
-              )}
-              
-              <div className="item-info">
-                <div className="info-row">
-                  <span className="info-label">Quantidade Atual:</span>
-                  <span className="info-value">{item.quantidade} unidades</span>
+              <div className="item-details">
+                <div className="detail-row">
+                  <span className="detail-label">Quantidade Atual:</span>
+                  <span className="detail-value">{item.quantidade} unidades</span>
                 </div>
                 
-                <div className="info-row">
-                  <span className="info-label">Estoque Mínimo:</span>
-                  <span className="info-value">{item.quantidade_minima || 5} unidades</span>
+                <div className="detail-row">
+                  <span className="detail-label">Estoque Mínimo:</span>
+                  <span className="detail-value">{item.quantidade_minima || 5} unidades</span>
                 </div>
                 
-                <div className="info-row">
-                  <span className="info-label">Status:</span>
+                <div className="detail-row">
+                  <span className="detail-label">Status:</span>
                   <span className={getStatusClass(item.quantidade, item.quantidade_minima || 5)}>
                     {getStatusText(item.quantidade, item.quantidade_minima || 5)}
                   </span>
                 </div>
               </div>
               
+              {/* Botão Repor - ÚNICO com hover (clicável) */}
               <button
                 className="repor-button"
                 onClick={() => setModalAberto(item.id)}
@@ -599,8 +740,10 @@ const EstoqueManager = () => {
           <div className="modal-overlay">
             <div className="modal-content">
               <h3 className="modal-title">Repor Estoque</h3>
-              <p>Quantidade a adicionar para:</p>
-              <p><strong>{estoque.find(item => item.id === modalAberto)?.nome_produto}</strong></p>
+              <p className="modal-text">
+                Quantidade a adicionar para:<br />
+                <strong>{estoque.find(item => item.id === modalAberto)?.nome_produto}</strong>
+              </p>
               
               <input
                 type="number"

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTheme } from '../context/ThemeContext.jsx';
 
-// Importação das Imagens (Certifique-se de que estes paths estão corretos)
+// Importação das Imagens
 import estiloCasual from '../assets/estiloCasual.png';
 import estiloEsportivo from '../assets/estiloEsportivo.png';
 import estiloSkate from '../assets/estiloSkate.png';
@@ -38,14 +38,14 @@ const optionBackgrounds = {
 const MenuSelecao = ({ passo, onSelect, selectedOption, onNext }) => {
   const passoIndex = parseInt(passo.titulo.split(' ')[1]) - 1;
   const isColorStep = passoIndex === 3; // Passo 4 (índice 3) é a cor
-  const { primaryColor } = useTheme(); // 🎨 HOOK DO TEMA
+  const { primaryColor } = useTheme();
 
   return (
     <>
-      {/* 🎯 DIV DO HEADER BAR COM COR DINÂMICA */}
+      {/* Header Bar com cor do tema */}
       <div 
         className="card-header-bar" 
-        style={{ backgroundColor: primaryColor }} // 🎨 COR DINÂMICA
+        style={{ backgroundColor: primaryColor }}
       ></div> 
       
       <div className="title-section">
@@ -81,9 +81,12 @@ const MenuSelecao = ({ passo, onSelect, selectedOption, onNext }) => {
               )}
 
               <div className="card-content">
-                <span className="card-number">{opcao.nome}</span>
+                <span className="card-title">{opcao.nome}</span>
                 <p className="card-price">{opcao.preco}</p>
               </div>
+
+              {/* Indicador de seleção igual ao catálogo */}
+              <div className="card-hover-indicator" style={{ backgroundColor: primaryColor }}></div>
             </div>
           );
         })}
@@ -94,78 +97,73 @@ const MenuSelecao = ({ passo, onSelect, selectedOption, onNext }) => {
           className="next-button"
           onClick={onNext}
           disabled={!selectedOption}
+          style={{ backgroundColor: primaryColor }}
         >
           Próximo
         </button>
       </div>
 
       <style>{`
-        /* === ESTILOS ESTRUTURAIS === */
-        
+        /* === ESTRUTURA PRINCIPAL - ESTILO CATÁLOGO === */
         .card-header-bar {
           position: absolute;
           top: 0;
           left: 0;
           width: 100%;
-          height: 1.5rem;
-          background-color: var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
+          height: 8px;
+          background-color: var(--primary-color);
           border-top-left-radius: 1.5rem;
           border-top-right-radius: 1.5rem;
-          transition: background-color 0.3s ease; /* 🎨 TRANSITION SUAVE */
         }
         
         .title-section {
           text-align: center;
-          margin-top: 1.5rem;
-          margin-bottom: 2rem;
+          margin: 3rem 0 2rem 0;
         }
 
         .title {
-          font-size: 2.2rem;
-          font-weight: bold;
-          color: var(--primary-color, #1A1A1A); /* 🎨 COR DINÂMICA */
+          font-size: 2.5rem;
+          font-weight: 800;
+          color: var(--primary-color);
           margin-bottom: 0.5rem;
-          transition: color 0.3s ease; /* 🎨 TRANSITION SUAVE */
+          background: linear-gradient(135deg, var(--primary-color) 0%, #ffb347 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
         }
 
         .subtitle {
           color: #666;
-          margin-top: 0.5rem;
-          font-size: 1.1rem;
-          margin-bottom: 1.5rem;
+          font-size: 1.3rem;
+          font-weight: 500;
         }
 
-        /* ---------------------------------------------------- */
-        /* === GRID DE SELEÇÃO RESPONSIVO - FORÇANDO 3 COLUNAS === */
-        /* ---------------------------------------------------- */
+        /* === GRID NO ESTILO DO CATÁLOGO === */
         .selection-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
-          gap: 1.5rem;
-          margin-top: 2rem;
+          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+          gap: 2rem;
+          margin: 3rem 0;
         }
 
         .card-option {
+          background: white;
           padding: 2rem 1.5rem;
           text-align: center;
-          border-radius: 1rem;
-          transition: all 0.3s ease-in-out;
+          border-radius: 1.5rem;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           cursor: pointer;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-          border: 2px solid #E5E7EB;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+          border: 2px solid #f8f9fa;
           position: relative;
           overflow: hidden;
-          color: white;
-          height: 100%;
+          min-height: 200px;
           display: flex;
           flex-direction: column;
           justify-content: center;
           align-items: center;
-          background-color: #F8FAFC;
-          min-height: 180px;
         }
 
-        /* Estilos de Overlay, Content, Number, Price, Selected */
         .image-overlay {
           position: absolute;
           top: 0;
@@ -175,11 +173,9 @@ const MenuSelecao = ({ passo, onSelect, selectedOption, onNext }) => {
           background: linear-gradient(135deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.5) 100%);
           z-index: 1;
           transition: all 0.3s ease;
-          opacity: 0.8;
         }
 
         .card-option:hover .image-overlay {
-          opacity: 0.9;
           background: linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.6) 100%);
         }
 
@@ -190,48 +186,70 @@ const MenuSelecao = ({ passo, onSelect, selectedOption, onNext }) => {
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 0.75rem;
+          gap: 1rem;
         }
 
-        .card-number {
+        /* FONTES E PROPORÇÕES IGUAIS AO CATÁLOGO */
+        .card-title {
           font-size: 1.5rem;
-          font-weight: bold;
+          font-weight: 700;
           color: white;
           text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
           line-height: 1.2;
         }
 
         .card-price {
-          font-size: 1rem;
+          font-size: 1.1rem;
           font-weight: 600;
           color: white;
           text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
-          background: rgba(var(--primary-color-rgb, 255, 157, 0), 0.9); /* 🎨 COR DINÂMICA */
-          padding: 0.4rem 0.8rem;
+          background: rgba(0, 0, 0, 0.8);
+          padding: 0.5rem 1rem;
           border-radius: 2rem;
           backdrop-filter: blur(10px);
-          transition: background 0.3s ease; /* 🎨 TRANSITION SUAVE */
+          margin: 0;
         }
 
+        /* EFEITOS HOVER NO ESTILO DO CATÁLOGO */
         .card-option:hover {
-          border-color: var(--primary-color, #FF9D00); /* 🎨 COR DINÂMICA */
-          transform: translateY(-5px);
-          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+          border-color: var(--primary-color);
+          transform: translateY(-8px);
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
         }
 
         .card-option.selected {
           border-width: 3px;
-          border-color: var(--primary-color, #00BFFF); /* 🎨 COR DINÂMICA */
-          box-shadow: 0 0 0 4px var(--primary-light, rgba(0, 191, 255, 0.3)); /* 🎨 COR LIGHT DINÂMICA */
+          border-color: var(--primary-color);
+          box-shadow: 0 0 0 4px rgba(var(--primary-color-rgb), 0.2);
           transform: scale(1.02);
         }
 
-        /* Ajustes para Cores */
+        /* INDICADOR DE HOVER IGUAL AO CATÁLOGO */
+        .card-hover-indicator {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          width: 100%;
+          height: 4px;
+          transform: scaleX(0);
+          transition: transform 0.3s ease;
+          border-radius: 0 0 1.5rem 1.5rem;
+        }
+
+        .card-option:hover .card-hover-indicator {
+          transform: scaleX(1);
+        }
+
+        .card-option.selected .card-hover-indicator {
+          transform: scaleX(1);
+        }
+
+        /* AJUSTES PARA CARDS DE COR - ESTILO CATÁLOGO */
         .card-option[style*="background-color"] {
           color: #000000;
         }
 
-        .card-option[style*="background-color"] .card-number,
+        .card-option[style*="background-color"] .card-title,
         .card-option[style*="background-color"] .card-price {
           color: inherit;
           text-shadow: none;
@@ -242,21 +260,21 @@ const MenuSelecao = ({ passo, onSelect, selectedOption, onNext }) => {
           color: #1A1A1A;
         }
 
-        .card-option[style*="#FFFFFF"] .card-number,
+        .card-option[style*="#FFFFFF"] .card-title,
         .card-option[style*="#FFFFFF"] .card-price,
-        .card-option[style*="#FFC107"] .card-number, 
+        .card-option[style*="#FFC107"] .card-title, 
         .card-option[style*="#FFC107"] .card-price {
           color: #000000;
           text-shadow: none;
         }
 
-        .card-option.selected[style*="#000000"] .card-number, 
-        .card-option.selected[style*="#000000"] .card-price {
+        .card-option[style*="#000000"] .card-title, 
+        .card-option[style*="#000000"] .card-price {
           color: white;
           text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
         }
 
-        /* === BOTÃO PRÓXIMO === */
+        /* === BOTÃO PRÓXIMO NO ESTILO DO CATÁLOGO === */
         .next-button-container {
           display: flex;
           justify-content: center;
@@ -267,8 +285,8 @@ const MenuSelecao = ({ passo, onSelect, selectedOption, onNext }) => {
 
         .next-button {
           width: 100%;
-          max-width: 400px;
-          background: linear-gradient(135deg, var(--primary-color, #22C55E) 0%, var(--primary-hover, #16A34A) 100%); /* 🎨 GRADIENT DINÂMICO */
+          max-width: 300px;
+          background-color: var(--primary-color);
           color: white;
           font-weight: 700;
           padding: 1.2rem 2rem;
@@ -277,14 +295,13 @@ const MenuSelecao = ({ passo, onSelect, selectedOption, onNext }) => {
           transition: all 0.3s ease;
           font-size: 1.2rem;
           cursor: pointer;
-          box-shadow: 0 4px 12px rgba(var(--primary-color-rgb, 34, 197, 94), 0.3);
-          letter-spacing: 0.5px;
+          box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.3);
         }
 
         .next-button:hover:not(:disabled) {
           transform: translateY(-2px);
-          box-shadow: 0 6px 16px rgba(var(--primary-color-rgb, 34, 197, 94), 0.4);
-          background: linear-gradient(135deg, var(--primary-hover, #16A34A) 0%, var(--primary-hover-dark, #15803D) 100%); /* 🎨 GRADIENT HOVER DINÂMICO */
+          box-shadow: 0 6px 16px rgba(var(--primary-color-rgb), 0.4);
+          opacity: 0.95;
         }
 
         .next-button:disabled {
@@ -294,75 +311,89 @@ const MenuSelecao = ({ passo, onSelect, selectedOption, onNext }) => {
           box-shadow: none;
         }
 
-        /* 🎨 ESTILOS ADICIONAIS PARA ACESSIBILIDADE */
-        .card-option:focus {
-          outline: 2px solid var(--primary-color, #FF9D00);
-          outline-offset: 2px;
-        }
-
-        .next-button:focus {
-          outline: 2px solid white;
-          outline-offset: 2px;
-        }
-
-        /* ---------------------------------------------------- */
-        /* === MEDIA QUERIES (PARA FORÇAR 3 COLUNAS EM TABLETS) === */
-        /* ---------------------------------------------------- */
+        /* === RESPONSIVIDADE NO ESTILO DO CATÁLOGO === */
         
-        /* Tablets Grandes */
+        /* Tablets */
         @media (max-width: 1024px) {
           .selection-grid {
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 1.25rem;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+          }
+          
+          .title {
+            font-size: 2.2rem;
+          }
+          
+          .card-option {
+            min-height: 180px;
+            padding: 1.5rem 1rem;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .selection-grid {
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.2rem;
+          }
+          
+          .title {
+            font-size: 2rem;
+          }
+          
+          .subtitle {
+            font-size: 1.1rem;
           }
           
           .card-option {
             min-height: 160px;
+            padding: 1.5rem 1rem;
+          }
+          
+          .card-title {
+            font-size: 1.3rem;
           }
         }
 
-        /* Tablets Pequenos */
-        @media (max-width: 768px) {
+        /* Mobile */
+        @media (max-width: 640px) {
           .selection-grid {
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 0.75rem;
+            grid-template-columns: 1fr;
+            gap: 1rem;
           }
           
           .title {
             font-size: 1.8rem;
           }
           
-          .subtitle {
-            font-size: 1rem;
-          }
-          
           .card-option {
-            padding: 1.5rem 1rem;
             min-height: 140px;
-            border-radius: 0.75rem;
+            padding: 1.5rem 1rem;
           }
           
-          .card-number {
-            font-size: 1.2rem;
+          .next-button {
+            padding: 1rem 1.5rem;
+            font-size: 1.1rem;
           }
         }
 
-        /* Mobile (640px) */
-        @media (max-width: 640px) {
-          .selection-grid {
-            grid-template-columns: 1fr;
-            gap: 0.75rem;
-          }
-          
+        @media (max-width: 480px) {
           .title {
             font-size: 1.6rem;
           }
           
-          .card-option {
-            min-height: 120px;
+          .subtitle {
+            font-size: 1rem;
+          }
+          
+          .card-title {
+            font-size: 1.2rem;
+          }
+          
+          .card-price {
+            font-size: 1rem;
+            padding: 0.4rem 0.8rem;
           }
         }
-        
       `}</style>
     </>
   );

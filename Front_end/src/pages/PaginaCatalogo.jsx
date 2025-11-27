@@ -1,4 +1,3 @@
-// src/pages/PaginaCatalogo.jsx (COMPLETO E CORRIGIDO)
 import React from 'react';
 import Navbar from '../components/Navbar';
 import Catalogo from '../components/Catalogo';
@@ -11,7 +10,7 @@ function PaginaCatalogo() {
                 {`
                 /* Cores do Projeto */
                 :root {
-                    --laranja-vibrante: #FF9D00;
+                    --laranja-vibrante: var(--primary-color); /* 🎨 AGORA USA A COR DO TEMA */
                     --preto: #000000;
                     --cinza-medio: #A6A6A6;
                     --branco: #FFFFFF;
@@ -53,10 +52,10 @@ function PaginaCatalogo() {
                 /* Estilos do Conteúdo do Catálogo */
                 .catalogo-titulo {
                     font-size: 2.5rem;
-                    color: var(--laranja-vibrante);
+                    color: var(--laranja-vibrante); /* 🎨 USA A COR DO TEMA */
                     text-align: center;
                     margin-bottom: 2rem;
-                    border-bottom: 3px solid var(--laranja-vibrante);
+                    border-bottom: 3px solid var(--laranja-vibrante); /* 🎨 USA A COR DO TEMA */
                     padding-bottom: 0.5rem;
                 }
 
@@ -74,7 +73,7 @@ function PaginaCatalogo() {
                     text-transform: uppercase;
                     letter-spacing: 1px;
                     padding-left: 1rem;
-                    border-left: 5px solid var(--laranja-vibrante); 
+                    border-left: 5px solid var(--laranja-vibrante); /* 🎨 USA A COR DO TEMA */
                 }
 
                 .catalogo-grid {

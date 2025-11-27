@@ -1,8 +1,8 @@
 import React from 'react';
-import { useTheme } from '../context/ThemeContext.jsx'; // 🎨 NOVO IMPORT
+import { useTheme } from '../context/ThemeContext.jsx';
 
 const ResumoPedido = ({ selections, passos, onFinalize }) => {
-    const { primaryColor } = useTheme(); // 🎨 HOOK DO TEMA
+    const { primaryColor } = useTheme();
     
     // Cálculo do valor total e criação dos itens
     let total = 0;
@@ -28,7 +28,6 @@ const ResumoPedido = ({ selections, passos, onFinalize }) => {
     // Ordenar os itens pelo passo
     items.sort((a, b) => a.step - b.step);
 
-    // 🚨 CORREÇÃO: Função para enviar dados completos
     const handleFinalizar = () => {
         const pedidoData = {
             items: items,
@@ -42,109 +41,190 @@ const ResumoPedido = ({ selections, passos, onFinalize }) => {
     return (
         <>
             <style>{`
-                .card-container {
-                    width: 100%;
+                .resumo-content {
+                    max-width: 1200px;
+                    margin: 0 auto;
+                    padding: 0 1.5rem;
                 }
                 
-                .card-header-bar {
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 1.5rem;
-                    background-color: var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
-                    border-top-left-radius: 1.5rem;
-                    border-top-right-radius: 1.5rem;
-                    transition: background-color 0.3s ease; /* 🎨 TRANSITION SUAVE */
-                }
-                
-                .title-section {
+                /* Header do Resumo - Igual ao Catálogo */
+                .resumo-header {
                     text-align: center;
-                    margin-top: 1.5rem;
-                    margin-bottom: 2rem;
+                    margin-bottom: 4rem;
+                    position: relative;
                 }
                 
-                .title {
+                .resumo-titulo {
+                    font-size: 3.5rem;
+                    font-weight: 800;
+                    color: var(--primary-color);
+                    margin-bottom: 1rem;
+                    background: linear-gradient(135deg, var(--primary-color) 0%, #ffb347 100%);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    background-clip: text;
+                }
+                
+                .resumo-subtitulo {
+                    font-size: 1.2rem;
+                    color: #666;
+                    max-width: 600px;
+                    margin: 0 auto;
+                    line-height: 1.6;
+                }
+                
+                /* Seções do Resumo - Estilo Catálogo */
+                .resumo-secao {
+                    margin-bottom: 4rem;
+                    position: relative;
+                }
+                
+                .secao-header {
+                    display: flex;
+                    align-items: center;
+                    margin-bottom: 2.5rem;
+                    padding-bottom: 1rem;
+                    border-bottom: 2px solid #f0f0f0;
+                }
+                
+                .secao-titulo {
                     font-size: 2.2rem;
-                    font-weight: bold;
-                    color: var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
-                    transition: color 0.3s ease; /* 🎨 TRANSITION SUAVE */
+                    font-weight: 700;
+                    color: var(--primary-color);
+                    margin: 0;
+                    position: relative;
+                    padding-left: 1.5rem;
                 }
                 
-                .subtitle {
-                    color: #555;
-                    margin-top: 0.5rem;
-                    font-size: 1.1rem;
+                .secao-titulo::before {
+                    content: '';
+                    position: absolute;
+                    left: 0;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    width: 8px;
+                    height: 30px;
+                    background: var(--primary-color);
+                    border-radius: 4px;
                 }
                 
-                .summary-list {
-                    margin: 2rem 0;
+                .secao-count {
+                    background: var(--primary-color);
+                    color: white;
+                    padding: 0.3rem 0.8rem;
+                    border-radius: 20px;
+                    font-size: 0.9rem;
+                    font-weight: 600;
+                    margin-left: 1rem;
+                }
+                
+                /* Grid de Itens - Estilo Catálogo */
+                .resumo-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                    gap: 2rem;
+                    align-items: stretch;
+                }
+                
+                /* Cards do Resumo - Estilo Catálogo */
+                .resumo-card {
+                    background: white;
+                    border-radius: 1.5rem;
+                    padding: 2rem 1.5rem;
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    position: relative;
+                    overflow: hidden;
+                    border: 2px solid #f8f9fa;
+                    display: flex;
+                    flex-direction: column;
+                    height: 100%;
+                }
+                
+                .resumo-card:hover {
+                    transform: translateY(-8px);
+                    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+                    border-color: var(--primary-color);
+                }
+                
+                .resumo-card-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 1.5rem;
+                    padding-bottom: 1rem;
+                    border-bottom: 2px solid #f0f0f0;
+                }
+                
+                .resumo-step {
+                    font-weight: 700;
+                    color: var(--primary-color);
+                    font-size: 1rem;
+                    background: rgba(var(--primary-color-rgb), 0.1);
+                    padding: 0.4rem 0.8rem;
+                    border-radius: 2rem;
+                }
+                
+                .resumo-category {
+                    font-weight: 700;
+                    color: #000000;
+                    font-size: 1.2rem;
+                }
+                
+                .resumo-details {
                     display: flex;
                     flex-direction: column;
                     gap: 1rem;
+                    flex: 1;
                 }
                 
-                .summary-item {
-                    background-color: #F5F5F5;
-                    border-radius: 0.75rem;
-                    padding: 1.5rem;
-                    border-left: 4px solid var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
-                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                    transition: border-color 0.3s ease; /* 🎨 TRANSITION SUAVE */
-                }
-                
-                .summary-item-header {
+                .resumo-detail-row {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    margin-bottom: 0.5rem;
-                    border-bottom: 1px solid #ddd;
-                    padding-bottom: 0.5rem;
+                    padding: 0.8rem 0;
                 }
                 
-                .summary-step {
-                    font-weight: bold;
-                    color: var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
-                    font-size: 0.9rem;
-                    transition: color 0.3s ease; /* 🎨 TRANSITION SUAVE */
-                }
-                
-                .summary-category {
+                .resumo-label {
                     font-weight: 600;
-                    color: #000000;
+                    color: #666;
                     font-size: 1rem;
                 }
                 
-                .summary-item-details,
-                .summary-item-price {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-top: 0.5rem;
-                }
-                
-                .summary-label {
-                    font-weight: 500;
-                    color: #666;
-                }
-                
-                .summary-value {
-                    font-weight: 600;
+                .resumo-value {
+                    font-weight: 700;
                     color: #000000;
+                    font-size: 1.1rem;
                 }
                 
-                .summary-total {
-                    background-color: var(--primary-light, #fff8e1); /* 🎨 VARIÁVEL CSS */
-                    border: 2px solid var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
-                    border-radius: 0.75rem;
-                    padding: 1.5rem;
-                    margin-top: 2rem;
+                .resumo-price {
+                    font-weight: 700;
+                    color: var(--primary-color);
+                    background: rgba(var(--primary-color-rgb), 0.1);
+                    padding: 0.5rem 1rem;
+                    border-radius: 2rem;
+                    font-size: 1rem;
+                }
+                
+                /* Total - Estilo Catálogo */
+                .resumo-total {
+                    background: white;
+                    border: 2px solid var(--primary-color);
+                    border-radius: 1.5rem;
+                    padding: 2rem 1.5rem;
+                    margin-top: 3rem;
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    font-weight: bold;
-                    font-size: 1.2rem;
-                    transition: all 0.3s ease; /* 🎨 TRANSITION SUAVE */
+                    font-weight: 700;
+                    font-size: 1.4rem;
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+                    transition: all 0.3s ease;
+                }
+                
+                .resumo-total:hover {
+                    transform: translateY(-5px);
+                    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
                 }
                 
                 .total-label {
@@ -152,128 +232,259 @@ const ResumoPedido = ({ selections, passos, onFinalize }) => {
                 }
                 
                 .total-value {
-                    color: var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
-                    transition: color 0.3s ease; /* 🎨 TRANSITION SUAVE */
+                    color: var(--primary-color);
+                    background: linear-gradient(135deg, var(--primary-color) 0%, #ffb347 100%);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    background-clip: text;
+                    padding: 0.5rem 1rem;
+                    border-radius: 1rem;
+                    border: 2px solid rgba(var(--primary-color-rgb), 0.2);
                 }
                 
-                .next-button-container {
+                /* Botão - Estilo Catálogo */
+                .resumo-actions {
                     display: flex;
                     justify-content: center;
-                    margin-top: 3rem;
+                    margin-top: 4rem;
+                    padding-top: 3rem;
+                    border-top: 2px dashed var(--primary-color);
                 }
                 
-                .next-button {
+                .resumo-button {
                     width: 100%;
-                    max-width: 300px;
-                    background: linear-gradient(135deg, var(--primary-color, #22C55E) 0%, var(--primary-hover, #1A9C4B) 100%); /* 🎨 GRADIENT DINÂMICO */
+                    max-width: 400px;
+                    background-color: var(--primary-color);
                     color: white;
-                    font-weight: 600;
-                    padding: 0.8rem;
-                    border-radius: 9999px;
+                    font-weight: 700;
+                    padding: 1.2rem 2rem;
+                    border-radius: 1rem;
                     border: none;
-                    transition: all 0.3s ease; /* 🎨 TRANSITION SUAVE */
-                    font-size: 1.1rem;
+                    transition: all 0.3s ease;
+                    font-size: 1.2rem;
                     cursor: pointer;
-                    box-shadow: 0 4px 12px rgba(var(--primary-color-rgb, 34, 197, 94), 0.3); /* 🎨 SHADOW DINÂMICO */
+                    box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.3);
                 }
                 
-                .next-button:hover {
-                    background: linear-gradient(135deg, var(--primary-hover, #1A9C4B) 0%, var(--primary-hover-dark, #15803D) 100%); /* 🎨 GRADIENT HOVER DINÂMICO */
+                .resumo-button:hover {
                     transform: translateY(-2px);
-                    box-shadow: 0 6px 16px rgba(var(--primary-color-rgb, 34, 197, 94), 0.4); /* 🎨 SHADOW HOVER DINÂMICO */
+                    box-shadow: 0 6px 16px rgba(var(--primary-color-rgb), 0.4);
+                    opacity: 0.95;
                 }
                 
-                .next-button:active {
-                    transform: translateY(0);
+                /* Indicador de Hover - Igual ao Catálogo */
+                .resumo-card::after,
+                .resumo-total::after {
+                    content: '';
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 4px;
+                    background: var(--primary-color);
+                    transform: scaleX(0);
+                    transition: transform 0.3s ease;
+                    border-radius: 0 0 1.5rem 1.5rem;
                 }
                 
-                /* 🎨 ESTILOS PARA ACESSIBILIDADE */
-                .next-button:focus {
-                    outline: 2px solid white;
-                    outline-offset: 2px;
+                .resumo-card:hover::after,
+                .resumo-total:hover::after {
+                    transform: scaleX(1);
+                }
+
+                /* 🔥 RESPONSIVIDADE IGUAL AO CATÁLOGO */
+                
+                /* Tablets Grandes */
+                @media (max-width: 1200px) {
+                    .resumo-grid {
+                        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                        gap: 1.5rem;
+                    }
+                    
+                    .resumo-titulo {
+                        font-size: 3rem;
+                    }
                 }
                 
-                @media (max-width: 768px) {
-                    .summary-item {
-                        padding: 1rem;
+                /* Tablets */
+                @media (max-width: 968px) {
+                    .resumo-content {
+                        padding: 0 1rem;
                     }
                     
-                    .summary-item-header {
-                        flex-direction: column;
-                        align-items: flex-start;
-                        gap: 0.25rem;
+                    .resumo-titulo {
+                        font-size: 2.5rem;
                     }
                     
-                    .summary-total {
-                        padding: 1rem;
-                        font-size: 1.1rem;
-                    }
-                    
-                    .title {
+                    .secao-titulo {
                         font-size: 1.8rem;
                     }
                     
-                    .next-button {
-                        max-width: 100%;
+                    .resumo-grid {
+                        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                        gap: 1.5rem;
+                    }
+                    
+                    .resumo-card {
+                        padding: 1.5rem 1rem;
                     }
                 }
                 
-                @media (max-width: 480px) {
-                    .title {
-                        font-size: 1.5rem;
+                /* Tablets Pequenos e Mobile Grande */
+                @media (max-width: 768px) {
+                    .resumo-header {
+                        margin-bottom: 3rem;
                     }
                     
-                    .summary-item-details,
-                    .summary-item-price {
+                    .resumo-titulo {
+                        font-size: 2.2rem;
+                    }
+                    
+                    .resumo-subtitulo {
+                        font-size: 1.1rem;
+                        padding: 0 1rem;
+                    }
+                    
+                    .secao-header {
+                        margin-bottom: 2rem;
+                    }
+                    
+                    .secao-titulo {
+                        font-size: 1.6rem;
+                    }
+                    
+                    .resumo-grid {
+                        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+                        gap: 1.2rem;
+                    }
+                    
+                    .resumo-secao {
+                        margin-bottom: 3.5rem;
+                    }
+                    
+                    .resumo-card-header {
                         flex-direction: column;
                         align-items: flex-start;
-                        gap: 0.25rem;
+                        gap: 0.8rem;
                     }
                     
-                    .next-button {
-                        padding: 1rem;
+                    .resumo-total {
+                        flex-direction: column;
+                        gap: 1rem;
+                        text-align: center;
+                    }
+                }
+                
+                /* Mobile Médio */
+                @media (max-width: 640px) {
+                    .resumo-grid {
+                        grid-template-columns: 1fr;
+                        gap: 1rem;
+                    }
+                    
+                    .resumo-card {
+                        padding: 1.5rem 1rem;
+                        border-radius: 1rem;
+                    }
+                    
+                    .resumo-titulo {
+                        font-size: 1.8rem;
+                    }
+                    
+                    .secao-titulo {
+                        font-size: 1.4rem;
+                        padding-left: 1rem;
+                    }
+                    
+                    .secao-titulo::before {
+                        width: 6px;
+                        height: 25px;
+                    }
+                }
+                
+                /* Mobile Pequeno */
+                @media (max-width: 480px) {
+                    .resumo-content {
+                        padding: 0 0.5rem;
+                    }
+                    
+                    .resumo-titulo {
+                        font-size: 1.6rem;
+                    }
+                    
+                    .resumo-subtitulo {
                         font-size: 1rem;
+                    }
+                    
+                    .secao-titulo {
+                        font-size: 1.3rem;
+                    }
+                    
+                    .resumo-card {
+                        padding: 1.2rem 0.8rem;
+                    }
+                    
+                    .resumo-button {
+                        padding: 1rem 1.5rem;
+                        font-size: 1.1rem;
                     }
                 }
             `}</style>
 
-            <div className="card-container">
-                <div className="card-header-bar"></div>
-                <div className="title-section">
-                    <h2 className="title">Resumo do Pedido</h2>
-                    <p className="subtitle">Revise suas escolhas antes de finalizar.</p>
-                </div>
+            <div className="resumo-content">
+                {/* REMOVIDO: card-header-bar - já é fornecido pela página principal */}
                 
-                <div className="summary-list">
-                    {items.map((item, index) => (
-                        <div key={index} className="summary-item">
-                            <div className="summary-item-header">
-                                <span className="summary-step">Passo {item.step}</span>
-                                <span className="summary-category">{item.category}</span>
+                {/* Header - Estilo Catálogo */}
+                <header className="resumo-header">
+                    <h1 className="resumo-titulo">Resumo do Pedido</h1>
+                    <p className="resumo-subtitulo">
+                        Revise suas escolhas cuidadosamente antes de enviar para produção
+                    </p>
+                </header>
+
+                {/* Seção Principal - Estilo Catálogo */}
+                <section className="resumo-secao">
+                    <div className="secao-header">
+                        <h2 className="secao-titulo">Suas Escolhas</h2>
+                        <span className="secao-count">{items.length} itens</span>
+                    </div>
+                    
+                    <div className="resumo-grid">
+                        {items.map((item, index) => (
+                            <div key={index} className="resumo-card">
+                                <div className="resumo-card-header">
+                                    <span className="resumo-step">Passo {item.step}</span>
+                                    <span className="resumo-category">{item.category}</span>
+                                </div>
+                                
+                                <div className="resumo-details">
+                                    <div className="resumo-detail-row">
+                                        <span className="resumo-label">Modelo:</span>
+                                        <span className="resumo-value">{item.name}</span>
+                                    </div>
+                                    <div className="resumo-detail-row">
+                                        <span className="resumo-label">Investimento:</span>
+                                        <span className="resumo-price">{item.price}</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="summary-item-details">
-                                <span className="summary-label">Escolha:</span>
-                                <span className="summary-value">{item.name}</span>
-                            </div>
-                            <div className="summary-item-price">
-                                <span className="summary-label">Valor:</span>
-                                <span className="summary-value">{item.price}</span>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-                
-                <div className="summary-total">
-                    <span className="total-label">Valor Total:</span>
+                        ))}
+                    </div>
+                </section>
+
+                {/* Total - Estilo Catálogo */}
+                <div className="resumo-total">
+                    <span className="total-label">Valor Total do Sneaker:</span>
                     <span className="total-value">R$ {total.toFixed(2)}</span>
                 </div>
-                
-                <div className="next-button-container">
+
+                {/* Ações - Estilo Catálogo */}
+                <div className="resumo-actions">
                     <button
-                        className="next-button"
+                        className="resumo-button"
                         onClick={handleFinalizar}
                     >
-                        Enviar Pedido para Produção
+                        🚀 Enviar para Produção
                     </button>
                 </div>
             </div>
