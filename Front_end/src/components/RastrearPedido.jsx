@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar'; 
-import Footer from '../components/Footer';
 import { useAuth } from '../context/AuthContext.jsx';
-import { useTheme } from '../context/ThemeContext.jsx'; // 🎨 NOVO IMPORT
+import { useTheme } from '../context/ThemeContext.jsx';
 import EditarProdutoModal from '../components/EditarProdutoModal';
 import ConfirmarRemocaoModal from '../components/ConfirmarRemocaoModal';
 
@@ -55,7 +54,7 @@ const getProdutoTitle = (config) => {
 function RastrearPedido() {
     const { codigoRastreio: codigoRastreioParam } = useParams();
     const { user } = useAuth();
-    const { primaryColor } = useTheme(); // 🎨 HOOK DO TEMA
+    const { primaryColor } = useTheme();
     const navigate = useNavigate();
     
     const [codigoRastreioInput, setCodigoRastreioInput] = useState(codigoRastreioParam || '');
@@ -214,7 +213,7 @@ function RastrearPedido() {
             
             if (novosProdutos.length === 0) {
                 alert('Todos os produtos foram removidos. O pedido foi cancelado.');
-                navigate('/meus-pedidos');
+                navigate('/perfil'); // ✅ CORRIGIDO: volta para o perfil
             }
         }
         
@@ -269,7 +268,7 @@ function RastrearPedido() {
                     onClick={() => navigate('/login')}
                     style={{
                         padding: '0.75rem 1.5rem',
-                        backgroundColor: primaryColor, // 🎨 COR DINÂMICA
+                        backgroundColor: primaryColor,
                         color: 'white',
                         border: 'none',
                         borderRadius: '0.5rem',
@@ -290,11 +289,11 @@ function RastrearPedido() {
                 <div className="main-content-card">
                     <div 
                         className="card-header-bar" 
-                        style={{ backgroundColor: primaryColor }} // 🎨 COR DINÂMICA
+                        style={{ backgroundColor: primaryColor }}
                     ></div>
                     
                     <div className="title-section">
-                        <h2 className="title">🚚 Acompanhar Pedido</h2>
+                        <h1 className="title">🚚 Acompanhar Pedido</h1>
                         <p className="subtitle">Digite o código de rastreio para acompanhar o status de produção.</p>
                         
                         {/* Informações do usuário */}
@@ -319,22 +318,12 @@ function RastrearPedido() {
                                 type="submit" 
                                 disabled={loading}
                                 className="search-button"
-                                style={{ backgroundColor: primaryColor }} // 🎨 COR DINÂMICA
+                                style={{ backgroundColor: primaryColor }}
                             >
                                 {loading ? '🔍 Buscando...' : '🔍 Rastrear Pedido'} 
                             </button>
                         </div>
                     </form>
-
-                    {/* Opções alternativas */}
-                    <div className="search-options">
-                        <button 
-                            onClick={() => navigate('/meus-pedidos')}
-                            className="alternative-button"
-                        >
-                            📋 Ver Meus Pedidos
-                        </button>
-                    </div>
 
                     {/* Mensagem de erro */}
                     {error && (
@@ -347,16 +336,24 @@ function RastrearPedido() {
                     {statusData && (
                         <div className="resultado-card">
                             <div className="pedido-geral-info">
-                                <h3>Pedido <span className="pedido-number" style={{ color: primaryColor }}>#{statusData.pedidoId}</span></h3> {/* 🎨 COR DINÂMICA */}
+                                <h2 className="pedido-title">Pedido <span className="pedido-number" style={{ color: primaryColor }}>#{statusData.pedidoId}</span></h2>
                                 <div className="pedido-details-grid">
-                                    <p><strong>Data do Pedido:</strong> {formatarData(statusData.dataCriacao)}</p>
-                                    <p><strong>Status Geral:</strong> 
+                                    <div className="detail-item">
+                                        <strong>Data do Pedido:</strong> 
+                                        <span>{formatarData(statusData.dataCriacao)}</span>
+                                    </div>
+                                    <div className="detail-item">
+                                        <strong>Status Geral:</strong> 
                                         <span className="status-badge" style={{ backgroundColor: formatStatus(statusData.statusGeral).color }}>
                                             {formatStatus(statusData.statusGeral).text}
                                         </span>
-                                    </p>
-                                    <p><strong>Código de Rastreio:</strong> {statusData.codigoRastreio}</p>
-                                    <p><strong>Slot de Expedição:</strong> 
+                                    </div>
+                                    <div className="detail-item">
+                                        <strong>Código de Rastreio:</strong> 
+                                        <span>{statusData.codigoRastreio}</span>
+                                    </div>
+                                    <div className="detail-item">
+                                        <strong>Slot de Expedição:</strong> 
                                         {statusData.slotExpedicao 
                                             ? <span className="status-badge" style={{ backgroundColor: '#28A745' }}>
                                                 Slot {statusData.slotExpedicao.id} - {statusData.slotExpedicao.status}
@@ -365,11 +362,11 @@ function RastrearPedido() {
                                                 Não alocado
                                               </span>
                                         }
-                                    </p>
+                                    </div>
                                 </div>
                             </div>
 
-                            <h4 className="produtos-title">Itens de Produção ({statusData.produtos?.length || 0})</h4>
+                            <h3 className="produtos-title">Itens de Produção ({statusData.produtos?.length || 0})</h3>
                             
                             <div className="produtos-lista">
                                 {statusData.produtos && statusData.produtos.length > 0 ? (
@@ -386,8 +383,14 @@ function RastrearPedido() {
                                             </div>
                                             
                                             <div className="produto-detalhes">
-                                                <p><strong>Rastreio ID:</strong> {produto.rastreioId || 'Aguardando geração'}</p>
-                                                <p><strong>Status:</strong> {formatStatus(produto.status).text}</p>
+                                                <div className="detalhe-item">
+                                                    <strong>Rastreio ID:</strong> 
+                                                    <span>{produto.rastreioId || 'Aguardando geração'}</span>
+                                                </div>
+                                                <div className="detalhe-item">
+                                                    <strong>Status:</strong> 
+                                                    <span>{formatStatus(produto.status).text}</span>
+                                                </div>
                                             </div>
 
                                             {/* 🎯 BOTÕES DE EDIÇÃO/REMOÇÃO */}
@@ -429,11 +432,11 @@ function RastrearPedido() {
                                 </div>
                             )}
 
-                            {/* Botão para voltar */}
+                            {/* Botões de ação - CORRIGIDOS */}
                             <div className="action-buttons">
                                 <button 
                                     className="back-button"
-                                    onClick={() => navigate('/meus-pedidos')}
+                                    onClick={() => navigate('/perfil')}  // ✅ CORRIGIDO
                                 >
                                     ← Voltar para Meus Pedidos
                                 </button>
@@ -441,7 +444,7 @@ function RastrearPedido() {
                                 <button 
                                     className="rastrear-button"
                                     onClick={() => navigate(`/rastrear-pedido/${statusData.codigoRastreio}`)}
-                                    style={{ backgroundColor: primaryColor }} // 🎨 COR DINÂMICA
+                                    style={{ backgroundColor: primaryColor }}
                                 >
                                     🔄 Atualizar Status
                                 </button>
@@ -470,10 +473,8 @@ function RastrearPedido() {
             )}
             
             <style>{`
-                /* ESTILOS GLOBAIS */
+                /* ESTILOS GLOBAIS - PADRÃO DOS COMPONENTES */
                 :root {
-                    --laranja-vibrante: #FF9D00;
-                    --preto: #000000;
                     --navbar-height: 5rem;
                 }
                 
@@ -504,7 +505,7 @@ function RastrearPedido() {
                     border-radius: 1.5rem; 
                     box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15); 
                     padding: 2.5rem;
-                    margin: 1.5rem 0; 
+                    margin: 2rem auto;
                     position: relative;
                 }
 
@@ -513,116 +514,120 @@ function RastrearPedido() {
                     top: 0;
                     left: 0;
                     width: 100%;
-                    height: 1.5rem;
-                    background-color: var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
+                    height: 8px;
+                    background-color: var(--primary-color);
                     border-top-left-radius: 1.5rem;
                     border-top-right-radius: 1.5rem;
-                    transition: background-color 0.3s ease; /* 🎨 TRANSITION SUAVE */
                 }
 
+                /* HEADER SECTION - IGUAL AOS OUTROS COMPONENTES */
                 .title-section {
                     text-align: center;
-                    margin-bottom: 2rem;
+                    margin-bottom: 2.5rem;
                 }
 
                 .title {
-                    font-size: 2.2rem;
-                    font-weight: bold;
-                    color: #1A1A1A;
+                    font-size: 2.8rem;
+                    font-weight: 800;
                     margin-bottom: 0.5rem;
+                    background: linear-gradient(135deg, var(--primary-color) 0%, #ffb347 100%);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    background-clip: text;
                 }
 
                 .subtitle {
-                    color: #666;
-                    margin-top: 0.5rem;
                     font-size: 1.1rem;
-                    margin-bottom: 1.5rem;
+                    color: #666;
+                    max-width: 600px;
+                    margin: 0 auto 2rem auto;
+                    line-height: 1.6;
                 }
 
+                /* USER INFO CARD */
                 .user-info-card {
-                    background-color: #f8f9fa;
-                    border-radius: 0.5rem;
-                    padding: 1rem;
-                    border: 1px solid #e9ecef;
-                    text-align: left;
-                    max-width: 400px;
+                    background-color: rgba(var(--primary-color-rgb), 0.05);
+                    border-radius: 1rem;
+                    padding: 1.5rem;
+                    border: 1px solid rgba(var(--primary-color-rgb), 0.1);
+                    text-align: center;
+                    max-width: 500px;
                     margin: 0 auto;
                 }
 
                 .user-info-card p {
-                    margin: 0.3rem 0;
-                    color: #666;
-                    font-size: 0.9rem;
+                    margin: 0.5rem 0;
+                    color: #333;
+                    font-size: 1rem;
                 }
 
-                /* FORMULÁRIO DE BUSCA */
+                /* FORMULÁRIO DE BUSCA - RESPONSIVO */
                 .search-form {
-                    margin-bottom: 1rem;
-                }
-
-                .search-options {
-                    margin-bottom: 2rem;
-                    text-align: center;
-                }
-
-                .alternative-button {
-                    background: #6c757d;
-                    color: white;
-                    border: none;
-                    padding: 0.5rem 1rem;
-                    border-radius: 0.5rem;
-                    cursor: pointer;
-                    font-size: 0.9rem;
-                    transition: background 0.3s ease; /* 🎨 TRANSITION SUAVE */
-                }
-
-                .alternative-button:hover {
-                    background: #545b62;
+                    margin-bottom: 1.5rem;
                 }
 
                 .input-group {
                     display: flex;
-                    gap: 0.75rem;
+                    gap: 1rem;
                     width: 100%;
+                    max-width: 600px;
+                    margin: 0 auto;
                 }
 
                 .search-input {
                     flex-grow: 1;
-                    padding: 0.75rem 1rem;
-                    border-radius: 0.5rem;
-                    border: 1px solid #ddd;
+                    padding: 1rem 1.2rem;
+                    border: 2px solid #f0f0f0;
+                    border-radius: 1rem;
                     font-size: 1rem;
-                    transition: border-color 0.3s, box-shadow 0.3s;
+                    background: #fafafa;
+                    color: #333;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+
+                .search-input::placeholder {
+                    color: #888;
                 }
 
                 .search-input:focus {
                     outline: none;
-                    border-color: var(--primary-color, #FF9D00); /* 🎨 COR DINÂMICA */
-                    box-shadow: 0 0 0 2px var(--primary-light, rgba(255, 157, 0, 0.1)); /* 🎨 COR LIGHT DINÂMICA */
-                }
-
-                .search-button {
-                    padding: 0.75rem 1.5rem;
-                    background-color: var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
-                    color: white;
-                    border: none;
-                    border-radius: 0.5rem;
-                    cursor: pointer;
-                    font-size: 1rem;
-                    font-weight: 600;
-                    transition: all 0.3s ease; /* 🎨 TRANSITION SUAVE */
-                    white-space: nowrap;
-                }
-
-                .search-button:hover:not(:disabled) {
-                    background-color: var(--primary-hover, #e68a00); /* 🎨 COR HOVER DINÂMICA */
+                    border-color: var(--primary-color);
+                    background: white;
+                    box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.15);
                     transform: translateY(-1px);
                 }
 
-                .search-button:disabled {
+                .search-input:disabled {
+                    background-color: #f5f5f5;
+                    cursor: not-allowed;
                     opacity: 0.7;
+                }
+
+                .search-button {
+                    padding: 1rem 2rem;
+                    background-color: var(--primary-color);
+                    color: white;
+                    border: none;
+                    border-radius: 1rem;
+                    font-weight: 700;
+                    font-size: 1.1rem;
+                    cursor: pointer;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    white-space: nowrap;
+                    box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.3);
+                }
+
+                .search-button:hover:not(:disabled) {
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 20px rgba(var(--primary-color-rgb), 0.4);
+                    filter: brightness(1.05);
+                }
+
+                .search-button:disabled {
+                    opacity: 0.6;
                     cursor: not-allowed;
                     transform: none;
+                    box-shadow: none;
                 }
 
                 /* MENSAGENS DE ERRO */
@@ -630,165 +635,215 @@ function RastrearPedido() {
                     color: #DC3545;
                     text-align: center;
                     font-weight: 600;
-                    margin-bottom: 1.5rem;
-                    padding: 1rem;
+                    margin: 1.5rem auto;
+                    padding: 1.2rem;
                     background-color: #f8d7da;
                     border: 1px solid #f5c6cb;
-                    border-radius: 0.5rem;
+                    border-radius: 1rem;
+                    max-width: 600px;
                 }
 
                 /* CARD DE RESULTADOS */
                 .resultado-card {
-                    border: 1px solid #e9ecef;
-                    padding: 1.5rem;
-                    border-radius: 1rem;
-                    background-color: #fafafa;
+                    background: white;
+                    border-radius: 1.5rem;
+                    padding: 2.5rem;
+                    margin-top: 2rem;
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+                    border: 2px solid #f8f9fa;
                 }
 
                 .pedido-geral-info {
-                    padding-bottom: 1rem;
-                    border-bottom: 1px dashed #dee2e6;
-                    margin-bottom: 1rem;
+                    padding-bottom: 2rem;
+                    border-bottom: 2px solid #f0f0f0;
+                    margin-bottom: 2rem;
+                }
+
+                .pedido-title {
+                    font-size: 2.2rem;
+                    font-weight: 700;
+                    color: #333;
+                    margin-bottom: 1.5rem;
                 }
 
                 .pedido-number {
-                    color: var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
-                    transition: color 0.3s ease; /* 🎨 TRANSITION SUAVE */
+                    color: var(--primary-color);
                 }
 
                 .pedido-details-grid {
                     display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                    gap: 1.5rem;
+                }
+
+                .detail-item {
+                    display: flex;
+                    flex-direction: column;
                     gap: 0.5rem;
                 }
 
-                .pedido-details-grid p {
-                    margin: 0;
-                    color: #555;
-                    display: flex;
-                    align-items: center;
-                    gap: 0.5rem;
+                .detail-item strong {
+                    color: #666;
+                    font-size: 0.95rem;
+                }
+
+                .detail-item span {
+                    color: #333;
+                    font-size: 1.1rem;
+                    font-weight: 500;
                 }
 
                 .status-badge {
-                    padding: 0.25rem 0.75rem;
+                    padding: 0.5rem 1rem;
                     border-radius: 9999px;
                     color: white;
                     font-weight: 600;
-                    font-size: 0.8rem;
+                    font-size: 0.9rem;
+                    display: inline-block;
+                    text-align: center;
                 }
 
                 /* LISTA DE PRODUTOS */
                 .produtos-title {
-                    margin-top: 2rem;
-                    margin-bottom: 1rem;
+                    font-size: 1.6rem;
+                    font-weight: 700;
                     color: #333;
-                    font-size: 1.1rem;
-                    border-left: 4px solid var(--primary-color, #FF9D00); /* 🎨 COR DINÂMICA */
-                    padding-left: 0.75rem;
-                    transition: border-color 0.3s ease; /* 🎨 TRANSITION SUAVE */
+                    margin: 2.5rem 0 1.5rem 0;
+                    padding-top: 1.5rem;
+                    border-top: 2px solid #f0f0f0;
+                    position: relative;
+                }
+
+                .produtos-title::before {
+                    content: '';
+                    position: absolute;
+                    left: 0;
+                    top: -2px;
+                    width: 60px;
+                    height: 4px;
+                    background: var(--primary-color);
+                    border-radius: 2px;
                 }
 
                 .produtos-lista {
                     display: flex;
                     flex-direction: column;
-                    gap: 1rem;
+                    gap: 1.5rem;
                 }
 
                 .produto-item {
-                    border: 1px solid #e9ecef;
-                    padding: 1.25rem;
-                    border-radius: 0.75rem;
-                    background-color: white;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-                    transition: transform 0.2s;
+                    background: white;
+                    border: 2px solid #f8f9fa;
+                    border-radius: 1rem;
+                    padding: 1.5rem;
+                    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                 }
 
                 .produto-item:hover {
+                    border-color: var(--primary-color);
                     transform: translateY(-2px);
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+                    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
                 }
 
                 .produto-header {
                     display: flex;
                     justify-content: space-between;
                     align-items: flex-start;
-                    padding-bottom: 0.75rem;
-                    margin-bottom: 0.75rem;
-                    border-bottom: 1px solid #f8f9fa;
-                    gap: 1rem;
+                    margin-bottom: 1rem;
                 }
 
                 .produto-nome {
                     font-weight: 600;
-                    color: #1A1A1A;
-                    font-size: 1rem;
+                    color: #333;
+                    font-size: 1.1rem;
                     flex: 1;
+                    line-height: 1.4;
                 }
 
                 .produto-status-badge {
-                    padding: 0.35rem 0.8rem;
+                    padding: 0.5rem 1rem;
                     border-radius: 9999px;
                     color: white;
                     font-weight: 600;
-                    font-size: 0.75rem;
+                    font-size: 0.85rem;
                     white-space: nowrap;
                 }
 
-                .produto-detalhes p {
-                    margin: 0.4rem 0;
-                    color: #666;
-                    font-size: 0.9rem;
+                .produto-detalhes {
+                    display: grid;
+                    gap: 0.75rem;
+                    margin-bottom: 1rem;
+                }
+
+                .detalhe-item {
                     display: flex;
                     justify-content: space-between;
+                    align-items: center;
+                    padding: 0.5rem 0;
+                }
+
+                .detalhe-item strong {
+                    color: #666;
+                    font-size: 0.9rem;
+                }
+
+                .detalhe-item span {
+                    color: #333;
+                    font-weight: 500;
                 }
 
                 /* 🎯 BOTÕES DE AÇÃO DOS PRODUTOS */
                 .produto-actions {
                     display: flex;
-                    gap: 0.5rem;
+                    gap: 1rem;
                     margin-top: 1rem;
-                    padding-top: 0.75rem;
-                    border-top: 1px solid #f8f9fa;
+                    padding-top: 1rem;
+                    border-top: 1px solid #f0f0f0;
                 }
 
                 .edit-button {
+                    flex: 1;
                     background: #007bff;
                     color: white;
                     border: none;
-                    padding: 0.5rem 1rem;
-                    border-radius: 0.5rem;
-                    font-size: 0.9rem;
+                    padding: 0.75rem;
+                    border-radius: 0.75rem;
+                    font-weight: 600;
+                    font-size: 0.95rem;
                     cursor: pointer;
-                    transition: background 0.3s;
-                    flex: 1;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                 }
 
                 .edit-button:hover {
                     background: #0056b3;
+                    transform: translateY(-1px);
                 }
 
                 .delete-button {
+                    flex: 1;
                     background: #dc3545;
                     color: white;
                     border: none;
-                    padding: 0.5rem 1rem;
-                    border-radius: 0.5rem;
-                    font-size: 0.9rem;
+                    padding: 0.75rem;
+                    border-radius: 0.75rem;
+                    font-weight: 600;
+                    font-size: 0.95rem;
                     cursor: pointer;
-                    transition: background 0.3s;
-                    flex: 1;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                 }
 
                 .delete-button:hover {
                     background: #c82333;
+                    transform: translateY(-1px);
                 }
 
                 /* 🎯 SEÇÃO DE ENTREGA */
                 .entrega-section {
-                    margin-top: 2rem;
+                    margin-top: 2.5rem;
                     padding: 1.5rem;
                     background: #e8f5e8;
-                    border-radius: 0.75rem;
+                    border-radius: 1rem;
                     border: 2px solid #28a745;
                     text-align: center;
                 }
@@ -798,62 +853,74 @@ function RastrearPedido() {
                     color: white;
                     border: none;
                     padding: 1rem 2rem;
-                    border-radius: 0.75rem;
+                    border-radius: 1rem;
                     font-size: 1.1rem;
-                    font-weight: 600;
+                    font-weight: 700;
                     cursor: pointer;
-                    transition: background 0.3s;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                     margin-bottom: 1rem;
+                    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
                 }
 
                 .confirmar-entrega-button:hover {
                     background: #218838;
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
                 }
 
                 .entrega-info {
                     color: #155724;
                     font-size: 0.9rem;
                     margin: 0;
+                    line-height: 1.5;
                 }
 
                 /* BOTÕES DE AÇÃO GERAIS */
                 .action-buttons {
                     display: flex;
-                    gap: 1rem;
-                    margin-top: 2rem;
+                    gap: 1.5rem;
+                    margin-top: 3rem;
                     justify-content: center;
                     flex-wrap: wrap;
                 }
 
                 .back-button {
-                    background: #6c757d;
-                    color: white;
-                    border: none;
-                    padding: 0.75rem 1.5rem;
-                    border-radius: 0.5rem;
+                    padding: 1rem 2rem;
+                    background: transparent;
+                    color: #333;
+                    border: 2px solid #333;
+                    border-radius: 1rem;
                     font-weight: 600;
+                    font-size: 1rem;
                     cursor: pointer;
-                    transition: background 0.3s;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
                 }
 
                 .back-button:hover {
-                    background: #545b62;
+                    background: #333;
+                    color: white;
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
                 }
 
                 .rastrear-button {
-                    background: var(--primary-color, #FF9D00); /* 🎨 VARIÁVEL CSS */
+                    padding: 1rem 2rem;
+                    background: var(--primary-color);
                     color: white;
                     border: none;
-                    padding: 0.75rem 1.5rem;
-                    border-radius: 0.5rem;
+                    border-radius: 1rem;
                     font-weight: 600;
+                    font-size: 1rem;
                     cursor: pointer;
-                    transition: all 0.3s ease; /* 🎨 TRANSITION SUAVE */
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    box-shadow: 0 4px 15px rgba(var(--primary-color-rgb), 0.3);
                 }
 
                 .rastrear-button:hover {
-                    background: var(--primary-hover, #e68a00); /* 🎨 COR HOVER DINÂMICA */
-                    transform: translateY(-1px);
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 20px rgba(var(--primary-color-rgb), 0.4);
+                    filter: brightness(1.05);
                 }
 
                 .no-products {
@@ -861,103 +928,294 @@ function RastrearPedido() {
                     color: #666;
                     font-style: italic;
                     padding: 2rem;
+                    background: #fafafa;
+                    border-radius: 1rem;
+                    border: 2px dashed #e9ecef;
                 }
 
-                /* RESPONSIVIDADE */
-                @media (max-width: 768px) {
-                    .page-container {
-                        padding-top: 4.5rem;
-                    }
-
+                /* 🔥 RESPONSIVIDADE AVANÇADA - IGUAL AOS OUTROS COMPONENTES */
+                
+                /* Tablets Grandes (1200px) */
+                @media (max-width: 1200px) {
                     .main-content-card {
-                        padding: 1.5rem;
-                        margin: 1rem 0;
-                        border-radius: 1rem;
+                        max-width: 95%;
                     }
-
+                    
                     .title {
-                        font-size: 1.8rem;
+                        font-size: 2.5rem;
                     }
-
+                }
+                
+                /* Tablets (968px) */
+                @media (max-width: 968px) {
+                    .main-content-card {
+                        padding: 2rem;
+                        margin: 1.5rem auto;
+                    }
+                    
+                    .title {
+                        font-size: 2.3rem;
+                    }
+                    
+                    .subtitle {
+                        font-size: 1.05rem;
+                    }
+                    
                     .input-group {
                         flex-direction: column;
+                        max-width: 500px;
                     }
-
+                    
                     .search-button {
                         width: 100%;
                     }
-
-                    .produto-header {
-                        flex-direction: column;
-                        align-items: flex-start;
-                        gap: 0.5rem;
+                    
+                    .pedido-title {
+                        font-size: 2rem;
                     }
-
-                    .produto-status-badge {
-                        align-self: flex-start;
+                    
+                    .produtos-title {
+                        font-size: 1.4rem;
                     }
-
-                    .pedido-details-grid p {
-                        flex-direction: column;
-                        align-items: flex-start;
-                        gap: 0.25rem;
+                }
+                
+                /* Tablets Pequenos e Mobile Grande (768px) */
+                @media (max-width: 768px) {
+                    .page-container {
+                        padding-top: 4.5rem;
+                        padding-bottom: 1rem;
                     }
-
-                    .produto-detalhes p {
-                        flex-direction: column;
-                        gap: 0.25rem;
+                    
+                    .main-content-card {
+                        padding: 1.5rem;
+                        margin: 1rem auto;
+                        border-radius: 1.2rem;
                     }
-
+                    
+                    .title {
+                        font-size: 2rem;
+                    }
+                    
+                    .subtitle {
+                        font-size: 1rem;
+                        margin-bottom: 1.5rem;
+                    }
+                    
                     .user-info-card {
+                        padding: 1.2rem;
                         max-width: 100%;
                     }
-
+                    
+                    .user-info-card p {
+                        font-size: 0.95rem;
+                    }
+                    
+                    .input-group {
+                        max-width: 100%;
+                    }
+                    
+                    .search-input {
+                        padding: 0.9rem;
+                    }
+                    
+                    .search-button {
+                        padding: 0.9rem;
+                        font-size: 1rem;
+                    }
+                    
+                    .resultado-card {
+                        padding: 1.5rem;
+                        margin-top: 1.5rem;
+                    }
+                    
+                    .pedido-title {
+                        font-size: 1.8rem;
+                        margin-bottom: 1.2rem;
+                    }
+                    
+                    .pedido-details-grid {
+                        grid-template-columns: 1fr;
+                        gap: 1rem;
+                    }
+                    
+                    .detail-item strong {
+                        font-size: 0.9rem;
+                    }
+                    
+                    .detail-item span {
+                        font-size: 1rem;
+                    }
+                    
+                    .produtos-title {
+                        font-size: 1.3rem;
+                        margin: 2rem 0 1rem 0;
+                    }
+                    
+                    .produto-item {
+                        padding: 1.2rem;
+                    }
+                    
+                    .produto-nome {
+                        font-size: 1rem;
+                    }
+                    
+                    .produto-status-badge {
+                        font-size: 0.8rem;
+                        padding: 0.4rem 0.8rem;
+                    }
+                    
+                    .detalhe-item {
+                        flex-direction: column;
+                        align-items: flex-start;
+                        gap: 0.25rem;
+                    }
+                    
                     .produto-actions {
                         flex-direction: column;
                     }
-
+                    
+                    .edit-button,
+                    .delete-button {
+                        width: 100%;
+                    }
+                    
                     .action-buttons {
                         flex-direction: column;
                         align-items: center;
+                        gap: 1rem;
                     }
-
+                    
                     .back-button,
                     .rastrear-button {
                         width: 100%;
                         max-width: 300px;
                     }
+                    
+                    .confirmar-entrega-button {
+                        padding: 0.9rem 1.5rem;
+                        font-size: 1rem;
+                    }
                 }
-
-                @media (max-width: 480px) {
+                
+                /* Mobile Médio (640px) */
+                @media (max-width: 640px) {
                     .main-content-card {
-                        padding: 1rem;
-                        margin: 0.5rem 0;
+                        padding: 1.2rem;
+                        border-radius: 1rem;
                     }
-
+                    
                     .title {
-                        font-size: 1.5rem;
+                        font-size: 1.8rem;
                     }
-
+                    
+                    .subtitle {
+                        font-size: 0.95rem;
+                    }
+                    
+                    .search-input {
+                        padding: 0.8rem;
+                        font-size: 0.95rem;
+                    }
+                    
+                    .search-button {
+                        padding: 0.8rem;
+                        font-size: 0.95rem;
+                    }
+                    
                     .resultado-card {
-                        padding: 1rem;
+                        padding: 1.2rem;
                     }
-
+                    
+                    .pedido-title {
+                        font-size: 1.6rem;
+                    }
+                    
+                    .produtos-title {
+                        font-size: 1.2rem;
+                    }
+                    
                     .produto-item {
                         padding: 1rem;
                     }
-
-                    .produto-nome {
+                }
+                
+                /* Mobile Pequeno (480px) */
+                @media (max-width: 480px) {
+                    .main-content-card {
+                        padding: 1rem;
+                        margin: 0.5rem auto;
+                    }
+                    
+                    .title {
+                        font-size: 1.6rem;
+                    }
+                    
+                    .subtitle {
+                        font-size: 0.9rem;
+                        margin-bottom: 1rem;
+                    }
+                    
+                    .user-info-card {
+                        padding: 1rem;
+                    }
+                    
+                    .user-info-card p {
                         font-size: 0.9rem;
                     }
-
-                    .produto-status-badge {
-                        font-size: 0.7rem;
-                        padding: 0.3rem 0.6rem;
+                    
+                    .search-input {
+                        font-size: 0.9rem;
                     }
-
-                    .confirmar-entrega-button {
-                        padding: 0.75rem 1rem;
+                    
+                    .pedido-title {
+                        font-size: 1.4rem;
+                    }
+                    
+                    .produtos-title {
+                        font-size: 1.1rem;
+                    }
+                    
+                    .produto-nome {
+                        font-size: 0.95rem;
+                    }
+                    
+                    .produto-status-badge {
+                        font-size: 0.75rem;
+                        padding: 0.35rem 0.7rem;
+                    }
+                    
+                    .back-button,
+                    .rastrear-button {
+                        font-size: 0.95rem;
+                        padding: 0.9rem;
+                    }
+                }
+                
+                /* Mobile Muito Pequeno (360px) */
+                @media (max-width: 360px) {
+                    .title {
+                        font-size: 1.4rem;
+                    }
+                    
+                    .subtitle {
+                        font-size: 0.85rem;
+                    }
+                    
+                    .search-button {
+                        font-size: 0.9rem;
+                    }
+                    
+                    .pedido-title {
+                        font-size: 1.3rem;
+                    }
+                    
+                    .produtos-title {
                         font-size: 1rem;
+                    }
+                    
+                    .confirmar-entrega-button {
+                        font-size: 0.95rem;
+                        padding: 0.8rem 1.2rem;
                     }
                 }
             `}</style>

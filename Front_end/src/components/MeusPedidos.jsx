@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; 
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import Navbar from '../components/Navbar'; 
+import { useTheme } from '../context/ThemeContext.jsx';
+import Navbar from '../components/Navbar';
 
 const MeusPedidos = () => {
-    const navigate = useNavigate(); 
+    const navigate = useNavigate();
     const { user } = useAuth();
+    const { primaryColor } = useTheme();
     
     const [pedidos, setPedidos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Mapeamento de status para cores
     const statusColors = {
         CONCLUIDO: '#22C55E',
         PENDENTE: '#FF9D00',
@@ -21,29 +22,20 @@ const MeusPedidos = () => {
 
     useEffect(() => {
         const fetchPedidos = async () => {
-            if (!user || !user.id) {
+            if (!user?.id) {
                 setError('Usuário não logado');
                 setLoading(false);
                 return;
             }
 
-            setLoading(true);
-            setError(null);
             try {
-                // 🎯 MUDANÇA: Usar rota detalhada
                 const response = await fetch(`http://localhost:3001/api/orders/cliente/${user.id}/detalhado`);
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || `Erro HTTP ${response.status}: Falha ao buscar pedidos.`);
-                }
-
+                if (!response.ok) throw new Error('Falha ao buscar pedidos');
+                
                 const data = await response.json();
                 setPedidos(data.pedidos || []);
-                
             } catch (err) {
-                console.error('Erro ao buscar pedidos:', err);
-                setError(err.message || 'Erro interno do servidor ao buscar pedidos.');
+                setError(err.message);
             } finally {
                 setLoading(false);
             }
@@ -52,88 +44,63 @@ const MeusPedidos = () => {
         fetchPedidos();
     }, [user]);
 
-    const formatarData = (dataString) => {
-        try {
-            const dataObj = new Date(dataString);
-            return dataObj.toLocaleDateString('pt-BR');
-        } catch {
-            return dataString;
-        }
-    };
+    const formatarData = (dataString) => new Date(dataString).toLocaleDateString('pt-BR');
 
-    // 🎯 MUDANÇA: Agora navega para código de rastreio
     const handleRastrearPedido = (pedido) => {
-        // Usa o primeiro código de rastreio disponível
-        const codigoRastreio = pedido.codigos_rastreio && pedido.codigos_rastreio.length > 0 
-            ? pedido.codigos_rastreio[0] 
-            : null;
-            
-        if (codigoRastreio) {
-            navigate(`/rastrear-pedido/${codigoRastreio}`);
-        } else {
-            alert('Este pedido ainda não tem código de rastreio disponível.');
-        }
+        const codigoRastreio = pedido.codigos_rastreio?.[0];
+        codigoRastreio 
+            ? navigate(`/rastrear-pedido/${codigoRastreio}`)
+            : alert('Este pedido ainda não tem código de rastreio disponível.');
     };
 
-    // 🎯 FUNÇÃO PARA CONFIRMAR ENTREGA
     const handleConfirmarEntrega = async (pedidoId) => {
-        if (!pedidoId) return;
-
         try {
             const response = await fetch(`http://localhost:3001/api/entrega/confirmar`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    pedidoId: pedidoId
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pedidoId })
             });
 
-            if (!response.ok) {
-                throw new Error('Erro ao confirmar entrega');
-            }
+            if (!response.ok) throw new Error('Erro ao confirmar entrega');
 
-            const data = await response.json();
-            alert('✅ Entrega confirmada com sucesso! O slot foi liberado.');
-            
-            // Atualizar status localmente
+            alert('✅ Entrega confirmada com sucesso!');
             setPedidos(prev => prev.map(pedido => 
                 pedido.pedido_id === pedidoId 
                     ? { ...pedido, status_geral: 'ENTREGUE' }
                     : pedido
             ));
-
         } catch (error) {
-            console.error('❌ Erro ao confirmar entrega:', error);
             alert('Erro ao confirmar entrega: ' + error.message);
         }
     };
 
     if (!user) {
         return (
-            <div style={{ 
-                display: 'flex', 
-                justifyContent: 'center', 
-                alignItems: 'center', 
-                height: '50vh',
-                flexDirection: 'column',
-                gap: '1rem'
-            }}>
+            <div className="login-required">
                 <p>Você precisa estar logado para ver seus pedidos.</p>
                 <button 
                     onClick={() => navigate('/login')}
-                    style={{
-                        padding: '0.75rem 1.5rem',
-                        backgroundColor: '#FF9D00',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '0.5rem',
-                        cursor: 'pointer'
-                    }}
+                    style={{ backgroundColor: primaryColor }}
                 >
                     Fazer Login
                 </button>
+                <style>{`
+                    .login-required {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        height: 100vh;
+                        gap: 1rem;
+                    }
+                    .login-required button {
+                        padding: 0.75rem 1.5rem;
+                        color: white;
+                        border: none;
+                        border-radius: 0.5rem;
+                        cursor: pointer;
+                    }
+                `}</style>
             </div>
         );
     }
@@ -142,84 +109,85 @@ const MeusPedidos = () => {
         <>
             <Navbar />
             
-            <div className="page-container"> 
-                <div className="main-content-card" style={{maxWidth: '800px', padding: '2rem 1.5rem'}}>
-                    <div className="title-section">
-                        <h2 className="title">Histórico de Pedidos</h2>
-                        <p className="subtitle">Seus pedidos personalizados e status de produção.</p>
-                        <p className="user-info" style={{ fontSize: '0.9rem', color: '#666', marginTop: '0.5rem' }}>
-                            Cliente: {user.nome_usuario} (ID: {user.id})
-                        </p>
+            <div className="container">
+                <div className="card">
+                    <div className="header">
+                        <h1>Histórico de Pedidos</h1>
+                        <p>Seus pedidos personalizados e status de produção.</p>
+                        
+                        <div className="user-info">
+                            <p><strong>Cliente:</strong> {user.nome_usuario}</p>
+                            <p><strong>ID:</strong> {user.id}</p>
+                        </div>
                     </div>
 
-                    {loading && <p style={{ textAlign: 'center' }}>Carregando pedidos...</p>}
+                    {loading && <div className="loading">Carregando pedidos...</div>}
                     
                     {error && (
-                        <div style={{ color: '#DC3545', textAlign: 'center', border: '1px solid #DC3545', padding: '1rem', borderRadius: '0.5rem' }}>
-                            <p>Erro: {error}</p>
+                        <div className="error">
+                            <p><strong>Erro:</strong> {error}</p>
                             <p>Verifique se o seu Backend (porta 3001) está rodando.</p>
                         </div>
                     )}
                     
-                    {!loading && pedidos.length === 0 && !error && (
-                        <p style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '1.1rem' }}>
-                            Nenhum pedido encontrado para sua conta.
-                        </p>
+                    {!loading && !pedidos.length && !error && (
+                        <div className="empty">
+                            <p>Nenhum pedido encontrado para sua conta.</p>
+                            <button 
+                                onClick={() => navigate('/criar-sneaker')}
+                                style={{ backgroundColor: primaryColor }}
+                            >
+                                🎨 Criar meu Primeiro Sneaker
+                            </button>
+                        </div>
                     )}
 
-                    <div className="pedidos-lista">
+                    <div className="pedidos-list">
                         {pedidos.map(pedido => (
-                            <div key={pedido.pedido_id} className="pedido-card">
-                                <div className="pedido-header-info">
-                                    <span className="pedido-id">Pedido #{pedido.pedido_id}</span>
-                                    <span 
-                                        className="pedido-status" 
-                                        style={{ backgroundColor: statusColors[pedido.status_geral] || '#ccc' }}
-                                    >
+                            <div key={pedido.pedido_id} className="pedido">
+                                <div className="pedido-header">
+                                    <h3>Pedido #{pedido.pedido_id}</h3>
+                                    <span className="status" style={{ backgroundColor: statusColors[pedido.status_geral] }}>
                                         {pedido.status_geral}
                                     </span>
                                 </div>
                                 
-                                <div className="pedido-details">
-                                    <p>Data do Pedido: <strong>{formatarData(pedido.data_criacao)}</strong></p>
-                                    <p>Total de Itens: <strong>{pedido.total_produtos}</strong></p>
-                                    <p>Valor Total: <strong className="total-price">R$ {pedido.valor_total ? pedido.valor_total.toFixed(2).replace('.', ',') : 'N/A'}</strong></p>
+                                <div className="pedido-detalhes">
+                                    <div className="detalhe">
+                                        <strong>Data do Pedido:</strong>
+                                        <span>{formatarData(pedido.data_criacao)}</span>
+                                    </div>
+                                    <div className="detalhe">
+                                        <strong>Total de Itens:</strong>
+                                        <span>{pedido.total_produtos}</span>
+                                    </div>
+                                    <div className="detalhe">
+                                        <strong>Valor Total:</strong>
+                                        <span className="valor">R$ {pedido.valor_total?.toFixed(2).replace('.', ',') || 'N/A'}</span>
+                                    </div>
                                     
-                                    {/* 🎯 NOVO: Mostrar códigos de rastreio */}
-                                    {pedido.codigos_rastreio && pedido.codigos_rastreio.length > 0 && (
-                                        <p>
-                                            Códigos de Rastreio: {' '}
-                                            <strong>
+                                    {pedido.codigos_rastreio?.length > 0 && (
+                                        <div className="detalhe">
+                                            <strong>Códigos de Rastreio:</strong>
+                                            <div className="codigos">
                                                 {pedido.codigos_rastreio.map((codigo, index) => (
-                                                    <span key={index} style={{ 
-                                                        backgroundColor: '#e9ecef', 
-                                                        padding: '2px 6px', 
-                                                        borderRadius: '4px', 
-                                                        fontSize: '0.8rem',
-                                                        marginLeft: '4px'
-                                                    }}>
-                                                        {codigo}
-                                                    </span>
+                                                    <span key={index} className="codigo">{codigo}</span>
                                                 ))}
-                                            </strong>
-                                        </p>
+                                            </div>
+                                        </div>
                                     )}
                                 </div>
                                 
-                                <div className="pedido-actions">
+                                <div className="acoes">
                                     <button 
-                                        className="rastrear-button"
-                                        onClick={() => handleRastrearPedido(pedido)} 
+                                        onClick={() => handleRastrearPedido(pedido)}
+                                        style={{ backgroundColor: primaryColor }}
                                     >
-                                        Rastrear Detalhes »
+                                        📦 Rastrear Detalhes
                                     </button>
                                     
-                                    {/* 🎯 BOTÃO DE CONFIRMAR ENTREGA - Só mostrar se pedido estiver CONCLUIDO */}
                                     {pedido.status_geral === 'CONCLUIDO' && (
-                                        <button 
-                                            className="confirmar-entrega-button"
-                                            onClick={() => handleConfirmarEntrega(pedido.pedido_id)}
-                                        >
+                                        <button onClick={() => handleConfirmarEntrega(pedido.pedido_id)}>
                                             ✅ Confirmar Entrega
                                         </button>
                                     )}
@@ -227,146 +195,243 @@ const MeusPedidos = () => {
                             </div>
                         ))}
                     </div>
+
+                    <div className="footer-buttons">
+                        <button onClick={() => navigate('/perfil')}>← Voltar para Perfil</button>
+                    </div>
                 </div>
             </div>
             
             <style>{`
-                .title-section .title {
-                    color: #1A1A1A;
-                    font-size: 2rem;
-                    font-weight: bold;
-                    margin-bottom: 0.5rem;
-                }
-                
-                .title-section .subtitle {
-                    color: #666;
-                    font-size: 1rem;
+                :root {
+                    --primary-color: ${primaryColor};
+                    --success: #28a745;
+                    --error: #DC3545;
+                    --gray-light: #f8f9fa;
+                    --gray: #e9ecef;
+                    --text: #333;
+                    --text-light: #666;
                 }
 
-                .pedidos-lista {
+                /* Layout */
+                .container {
+                    padding: 5rem 1rem 2rem;
+                    min-height: 100vh;
+                    background: var(--gray-light);
+                }
+
+                .card {
+                    max-width: 900px;
+                    margin: 0 auto;
+                    background: white;
+                    border-radius: 1.5rem;
+                    padding: 2.5rem;
+                    box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+                }
+
+                /* Header */
+                .header {
+                    text-align: center;
+                    margin-bottom: 2.5rem;
+                }
+
+                .header h1 {
+                    font-size: 2.8rem;
+                    font-weight: 800;
+                    margin-bottom: 0.5rem;
+                    background: linear-gradient(135deg, var(--primary-color) 0%, #ffb347 100%);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    background-clip: text;
+                }
+
+                .header p {
+                    color: var(--text-light);
+                    max-width: 600px;
+                    margin: 0 auto 2rem;
+                    line-height: 1.6;
+                }
+
+                .user-info {
+                    background: rgba(0,0,0,0.02);
+                    border-radius: 1rem;
+                    padding: 1.5rem;
+                    border: 1px solid var(--gray);
+                    max-width: 500px;
+                    margin: 0 auto;
+                }
+
+                .user-info p {
+                    margin: 0.5rem 0;
+                }
+
+                /* Estados */
+                .loading, .error, .empty {
+                    text-align: center;
+                    padding: 2rem;
+                    margin: 1.5rem 0;
+                }
+
+                .error {
+                    color: var(--error);
+                    background: #f8d7da;
+                    border: 1px solid #f5c6cb;
+                    border-radius: 1rem;
+                }
+
+                .empty {
+                    background: #fafafa;
+                    border: 2px dashed var(--gray);
+                    border-radius: 1rem;
+                }
+
+                .empty button {
+                    padding: 1rem 2rem;
+                    color: white;
+                    border: none;
+                    border-radius: 1rem;
+                    font-weight: 700;
+                    cursor: pointer;
+                    margin-top: 1rem;
+                }
+
+                /* Lista de pedidos */
+                .pedidos-list {
                     display: flex;
                     flex-direction: column;
                     gap: 1.5rem;
-                    margin-top: 2rem;
+                    margin: 2rem 0;
                 }
-                .pedido-card {
-                    padding: 1.5rem;
-                    border: 1px solid #eee;
+
+                .pedido {
+                    border: 2px solid var(--gray);
                     border-radius: 1rem;
-                    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-                    transition: transform 0.2s;
+                    padding: 1.5rem;
+                    transition: all 0.3s ease;
                 }
-                .pedido-card:hover {
-                    transform: translateY(-3px);
-                    box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+
+                .pedido:hover {
+                    border-color: var(--primary-color);
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
                 }
-                .pedido-header-info {
+
+                .pedido-header {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    margin-bottom: 1rem;
-                    padding-bottom: 0.5rem;
-                    border-bottom: 1px dashed #ddd;
+                    margin-bottom: 1.5rem;
+                    padding-bottom: 1rem;
+                    border-bottom: 2px solid var(--gray);
                 }
-                .pedido-id {
-                    font-size: 1.25rem;
-                    font-weight: bold;
-                    color: var(--laranja-vibrante, #FF9D00);
+
+                .pedido-header h3 {
+                    margin: 0;
+                    color: var(--text);
                 }
-                .pedido-status {
-                    padding: 0.3rem 0.8rem;
+
+                .status {
+                    padding: 0.5rem 1rem;
                     border-radius: 9999px;
                     color: white;
                     font-weight: 600;
-                    font-size: 0.85rem;
+                    text-transform: uppercase;
                 }
-                .pedido-details p {
-                    margin: 0.3rem 0;
-                    color: #555;
+
+                /* Detalhes */
+                .pedido-detalhes {
+                    display: grid;
+                    gap: 0.75rem;
+                    margin-bottom: 1.5rem;
+                }
+
+                .detalhe {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
                 }
-                
-                /* 🎯 CONTAINER PARA OS BOTÕES */
-                .pedido-actions {
+
+                .detalhe strong { color: var(--text-light); }
+                .detalhe span { color: var(--text); font-weight: 500; }
+                .valor { color: var(--success); font-weight: 700; font-size: 1.2rem; }
+
+                .codigos {
                     display: flex;
-                    gap: 0.75rem;
-                    margin-top: 1rem;
+                    gap: 0.5rem;
                     flex-wrap: wrap;
+                    justify-content: flex-end;
                 }
-                
-                .rastrear-button {
-                    flex: 1;
-                    background-color: var(--azul-selecao, #00BFFF);
-                    color: white;
-                    font-weight: 600;
-                    padding: 0.75rem;
-                    border: none;
+
+                .codigo {
+                    background: var(--gray);
+                    padding: 0.4rem 0.8rem;
                     border-radius: 0.5rem;
-                    cursor: pointer;
-                    transition: background-color 0.3s;
-                    min-width: 150px;
+                    font-family: monospace;
                 }
-                .rastrear-button:hover {
-                    background-color: #0099cc;
+
+                /* Botões */
+                .acoes {
+                    display: flex;
+                    gap: 1rem;
+                    padding-top: 1.5rem;
+                    border-top: 1px solid var(--gray);
                 }
-                
-                /* 🎯 BOTÃO DE CONFIRMAR ENTREGA */
-                .confirmar-entrega-button {
+
+                .acoes button {
                     flex: 1;
-                    background-color: #28a745;
-                    color: white;
-                    font-weight: 600;
-                    padding: 0.75rem;
+                    padding: 0.9rem;
                     border: none;
-                    border-radius: 0.5rem;
+                    border-radius: 0.75rem;
+                    font-weight: 600;
                     cursor: pointer;
-                    transition: background-color 0.3s;
-                    min-width: 150px;
+                    transition: all 0.3s ease;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 0.5rem;
                 }
-                .confirmar-entrega-button:hover {
-                    background-color: #218838;
+
+                .acoes button:first-child { color: white; }
+                .acoes button:last-child { background: var(--success); color: white; }
+
+                .footer-buttons {
+                    margin-top: 3rem;
+                    text-align: center;
                 }
-                
-                /* RESPONSIVIDADE */
+
+                .footer-buttons button {
+                    padding: 1rem 2rem;
+                    background: transparent;
+                    color: var(--text);
+                    border: 2px solid var(--text);
+                    border-radius: 1rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                }
+
+                .footer-buttons button:hover {
+                    background: var(--text);
+                    color: white;
+                }
+
+                /* Responsividade */
                 @media (max-width: 768px) {
-                    .pedido-actions {
-                        flex-direction: column;
-                    }
-                    
-                    .rastrear-button,
-                    .confirmar-entrega-button {
-                        width: 100%;
-                    }
-                    
-                    .pedido-header-info {
-                        flex-direction: column;
-                        align-items: flex-start;
-                        gap: 0.5rem;
-                    }
-                    
-                    .pedido-details p {
-                        flex-direction: column;
-                        align-items: flex-start;
-                        gap: 0.25rem;
-                    }
+                    .container { padding-top: 4.5rem; }
+                    .card { padding: 1.5rem; border-radius: 1.2rem; }
+                    .header h1 { font-size: 2rem; }
+                    .header p { font-size: 1rem; }
+                    .pedido-header { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+                    .detalhe { flex-direction: column; align-items: flex-start; gap: 0.25rem; }
+                    .codigos { justify-content: flex-start; }
+                    .acoes { flex-direction: column; }
                 }
-                
+
                 @media (max-width: 480px) {
-                    .pedido-card {
-                        padding: 1rem;
-                    }
-                    
-                    .pedido-id {
-                        font-size: 1.1rem;
-                    }
-                    
-                    .rastrear-button,
-                    .confirmar-entrega-button {
-                        padding: 0.6rem;
-                        font-size: 0.9rem;
-                    }
+                    .card { padding: 1rem; margin: 0.5rem; }
+                    .header h1 { font-size: 1.6rem; }
+                    .header p { font-size: 0.9rem; }
+                    .acoes button, .footer-buttons button { width: 100%; }
                 }
             `}</style>
         </>

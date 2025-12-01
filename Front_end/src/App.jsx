@@ -1,9 +1,9 @@
-// src/App.jsx - ATUALIZADO COM THEME PROVIDER E FAVICON MANAGER
+// src/App.jsx
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext.jsx';
-import { ThemeProvider } from './context/ThemeContext.jsx'; // 🎨 NOVO
-import FaviconManager from './components/FaviconManager.jsx'; // 🎨 NOVO FAVICON
+import { ThemeProvider } from './context/ThemeContext.jsx';
+import FaviconManager from './components/FaviconManager.jsx';
 
 import PaginaInicial from './pages/PaginaInicial.jsx';
 import PaginaInicialLog from './pages/PaginaInicialLog.jsx';
@@ -16,18 +16,16 @@ import PaginaEstoque from './pages/PaginaEstoque.jsx';
 import MeusPedidos from "./components/MeusPedidos.jsx";
 import RastrearPedido from "./components/RastrearPedido.jsx";
 
-// Componente para gerenciar o background baseado na rota
 function BackgroundHandler() {
   const location = useLocation();
 
   useEffect(() => {
     const path = location.pathname;
     
-    // Páginas que devem ter fundo branco/cinza (apenas páginas deslogadas)
     if (
       path === "/login" || 
       path === "/cadastro" || 
-      path === "/"  // Apenas raiz (página inicial deslogada)
+      path === "/"
     ) {
       document.body.classList.add("no-bg");
     } else {
@@ -41,26 +39,30 @@ function BackgroundHandler() {
 function App() {
   return (
     <AuthProvider>
-      <ThemeProvider> {/* 🎨 ENVOLVE COM THEME PROVIDER */}
+      <ThemeProvider>
         <Router>
-          <FaviconManager /> {/* 🎨 FAVICON PERSONALIZADO */}
+          <FaviconManager />
           <BackgroundHandler />
           <Routes>
-            {/* Rota Raiz: Página Inicial DESLOGADA (fundo branco) */}
+            {/* Rota Raiz */}
             <Route path="/" element={<PaginaInicial />} /> 
             
-            {/* Rotas de Autenticação (fundo branco) */}
+            {/* Rotas de Autenticação */}
             <Route path="/login" element={<PaginaLogin />} />
             <Route path="/cadastro" element={<PaginaCadastro />} />
 
-            {/* Rotas Logadas (background da imagem) */}
+            {/* Rotas Logadas */}
             <Route path="/home" element={<PaginaInicialLog />} />
             <Route path="/catalogo" element={<PaginaCatalogo />} />
             <Route path="/criar-sneaker" element={<PaginaCriarSneaker />} />
             <Route path="/estoque" element={<PaginaEstoque />} />
             <Route path="/perfil" element={<PaginaPerfil />} />
+            
+            {/* Rota separada para Meus Pedidos */}
             <Route path="/meus-pedidos" element={<MeusPedidos />} />
-            <Route path="/rastrear-pedido/:codigoRastreio" element={<RastrearPedido />} /> {/* 🎯 CORREÇÃO: agora usa códigoRastreio */}
+            
+            {/* Rota para Rastrear Pedido */}
+            <Route path="/rastrear-pedido/:codigoRastreio" element={<RastrearPedido />} />
           </Routes>
         </Router>
       </ThemeProvider>
