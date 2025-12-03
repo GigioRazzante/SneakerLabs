@@ -1,47 +1,193 @@
-# Logs
-logs
-*.log
+# =============================================
+# 🚨 ARQUIVOS CRÍTICOS - NUNCA COMMITAR!
+# =============================================
+
+# Variáveis de ambiente
+.env
+.env.*
+!.env.example
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Chaves e segredos
+*.key
+*.pem
+*.crt
+*.pfx
+secrets.json
+credentials.json
+config/private.js
+config/secrets.js
+
+# =============================================
+# 📦 DEPENDÊNCIAS E BUILD
+# =============================================
+
+# Node.js - Backend e Frontend
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
 
-# Dependências
-node_modules
-dist
-dist-ssr
-*.local
+# Build outputs
+dist/
+dist-ssr/
+build/
+.next/
+.nuxt/
+.vuepress/dist
+.next/
+.cache/
 
-# Environment variables - CRÍTICO!
-.env
-.env.local
-.env.production
-.env.development
-.env.test
+# Dependências específicas
+.jest/
+.yarn/
+.pnpm/
+.npm/
+.bin/
 
-# Editor directories and files
-.vscode/*
+# =============================================
+# 🔧 DESENVOLVIMENTO E EDITORES
+# =============================================
+
+# VS Code
+.vscode/
 !.vscode/extensions.json
-.idea
+.vscode/settings.json
+.vscode/launch.json
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Outros editores
 .DS_Store
+*.sublime-project
+*.sublime-workspace
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
-
-# Arquivos de sistema
 Thumbs.db
 ehthumbs.db
 
-# Backup files
+# =============================================
+# 🗄️ BANCO DE DADOS E BACKUPS
+# =============================================
+
+# Bancos locais
+*.db
+*.sqlite
+*.sqlite3
+*.dump
 *.backup
 *.bak
 
-# Temporary files
+# PostgreSQL (se tiver dados locais)
+postgres_data/
+docker/postgres/data/
+
+# =============================================
+# 📁 UPLOADS E TEMPORÁRIOS
+# =============================================
+
+# Backend
+backend/uploads/
+backend/tmp/
+backend/temp/
+backend/storage/
+
+# Frontend (se aplicável)
+frontend/public/uploads/
+frontend/tmp/
+
+# Arquivos temporários
 *.tmp
 *.temp
+*.cache
+.temp/
+
+# =============================================
+# 🧪 TESTES E COBERTURA
+# =============================================
+
+coverage/
+.nyc_output/
+*.lcov
+test-results/
+reports/
+jest-coverage/
+mocha-reports/
+
+# =============================================
+# 🐳 DOCKER E CONTAINERS
+# =============================================
+
+docker-compose.override.yml
+Dockerfile.local
+docker-compose.dev.yml
+
+# =============================================
+# 🚀 DEPLOY E HOSTING
+# =============================================
+
+# Render (você tem render.yaml, mas ignore arquivos locais)
+.render.local.yaml
+.render.yaml.local
+
+# Vercel
+.vercel/
+
+# Netlify
+.netlify/
+
+# Serverless
+.serverless/
+
+# Railway
+.railway/
+
+# =============================================
+# 📊 LOGS
+# =============================================
+
+logs
+*.log
+lerna-debug.log*
+pnpm-debug.log*
+
+# =============================================
+# 🔐 SSL / CERTIFICADOS
+# =============================================
+
+*.pem
+*.key
+*.crt
+*.csr
+*.pfx
+*.p12
+
+# =============================================
+# 📦 CACHE DE PACOTES
+# =============================================
+
+.npm
+.npmrc
+.yarn-integrity
+.pnpm-store/
+.pnpm-debug.log
+
+# =============================================
+# 📋 MISCELÂNEA
+# =============================================
 
 # Runtime data
 pids
@@ -50,23 +196,7 @@ pids
 *.pid.lock
 
 # Coverage directory used by tools like istanbul
-coverage
 *.lcov
-
-# Dependency directories
-jspm_packages/
-
-# Optional npm cache directory
-.npm
-
-# Optional eslint cache
-.eslintcache
-
-# Microbundle cache
-.rpt2_cache/
-.rts2_cache_cjs/
-.rts2_cache_es/
-.rts2_cache_umd/
 
 # Optional REPL history
 .node_repl_history
@@ -74,24 +204,8 @@ jspm_packages/
 # Output of 'npm pack'
 *.tgz
 
-# Yarn Integrity file
-.yarn-integrity
-
-# parcel-bundler cache (https://parceljs.org/)
-.cache
+# parcel-bundler cache
 .parcel-cache
-
-# next.js build output
-.next
-
-# nuxt.js build output
-.nuxt
-
-# vuepress build output
-.vuepress/dist
-
-# Serverless directories
-.serverless/
 
 # FuseBox cache
 .fusebox/

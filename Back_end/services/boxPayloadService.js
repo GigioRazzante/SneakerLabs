@@ -1,6 +1,27 @@
-const BACKEND_URL = `http://localhost:3001`;
+import fetch from 'node-fetch';
 
-const generateBoxPayload = (orderDetails) => {
+// URL FIXA do middleware AWS
+const MIDDLEWARE_URL = 'http://52.1.197.112:3000';
+
+// Detecta URL do backend automaticamente
+const getBackendUrl = () => {
+    // Serviços de deploy
+    if (process.env.RENDER_EXTERNAL_URL) return process.env.RENDER_EXTERNAL_URL;
+    if (process.env.RAILWAY_STATIC_URL) return process.env.RAILWAY_STATIC_URL;
+    if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+    if (process.env.HEROKU_APP_NAME) return `https://${process.env.HEROKU_APP_NAME}.herokuapp.com`;
+    
+    // Variável customizada
+    if (process.env.BACKEND_URL) return process.env.BACKEND_URL;
+    
+    // Fallback para localhost
+    const port = process.env.PORT || 3001;
+    return `http://localhost:${port}`;
+};
+
+const BACKEND_URL = getBackendUrl();
+
+const generateBoxPayload = (orderDetails, pedidoId, produtoDbId) => {
     // Mapeamento completo baseado na sua tabela
     const styleMap = {
         "Casual": { numBlocos: 1 },
@@ -35,7 +56,7 @@ const generateBoxPayload = (orderDetails) => {
         "Sem cadarço": 1,
     };
 
-    // Extrai os dados do pedido do front-end
+    // Extrai os dados do pedido
     const estilo = orderDetails.passoUmDeCinco;
     const material = orderDetails.passoDoisDeCinco;
     const solado = orderDetails.passoTresDeCinco;
@@ -48,9 +69,9 @@ const generateBoxPayload = (orderDetails) => {
     const corLamina = corMap[cor];
     const numLaminas = detalhesMap[detalhes];
 
-    // Constrói os objetos de bloco dinamicamente
+    // Constrói os objetos de bloco
     const order = {
-        codigoProduto: 1,
+        codigoProduto: numBlocos, // 1, 2 ou 3 andares
     };
 
     for (let i = 1; i <= numBlocos; i++) {
@@ -68,14 +89,74 @@ const generateBoxPayload = (orderDetails) => {
         order[`bloco${i}`] = bloco;
     }
 
+    // ID único para rastreamento
+    const orderId = `SNK-${pedidoId}-${produtoDbId}-${Date.now().toString().slice(-6)}`;
+
     return {
         payload: {
-            orderId: `SNEAKER-TEMP-${Date.now()}`, 
+            orderId: orderId,
             sku: "KIT-01",
             order: order,
         },
-        callbackUrl: `${BACKEND_URL}/api/callback` 
+        callbackUrl: `${BACKEND_URL}/api/callback`
     };
 };
 
-export { generateBoxPayload };
+// Função para enviar para middleware
+const enviarParaMiddleware = async (boxPayload) => {
+    try {
+        console.log(`🚀 Enviando para middleware: ${MIDDLEWARE_URL}/queue/items`);
+        
+        const response = await fetch(`${MIDDLEWARE_URL}/queue/items`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(boxPayload)
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`❌ Middleware error ${response.status}:`, errorText);
+            throw new Error(`Middleware error ${response.status}: ${errorText}`);
+        }
+
+        const data = await response.json();
+        console.log(`✅ Middleware respondeu com ID: ${data.id || data._id}`);
+        return data;
+        
+    } catch (error) {
+        console.error('❌ Erro ao enviar para middleware:', error.message);
+        throw error;
+    }
+};
+
+// Função para verificar status
+const verificarStatusMiddleware = async (middlewareId) => {
+    try {
+        console.log(`🔍 Verificando status no middleware: ${middlewareId}`);
+        
+        const response = await fetch(`${MIDDLEWARE_URL}/queue/items/${middlewareId}`);
+        
+        if (!response.ok) {
+            throw new Error(`Erro ao verificar status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log(`📊 Status: ${data.status}, Progresso: ${data.progress}%`);
+        return data;
+        
+    } catch (error) {
+        console.error('❌ Erro ao verificar status:', error.message);
+        throw error;
+    }
+};
+
+export { 
+    generateBoxPayload, 
+    enviarParaMiddleware,
+    verificarStatusMiddleware,
+    MIDDLEWARE_URL,
+    BACKEND_URL 
+};

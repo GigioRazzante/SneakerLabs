@@ -1,3 +1,4 @@
+// routes/mensagemRoutes.js
 import express from 'express';
 import { 
   gerarMensagemSneaker,

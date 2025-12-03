@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: sneakerlabs-backend
+    env: node
+    region: oregon  # ou sa-east-1 para Brasil
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sneakerlabs-db
+          property: connectionString
+      - key: OPENAI_API_KEY
+        sync: false  # Você vai configurar manualmente
+      - key: MIDDLEWARE_URL
+        value: http://52.1.197.112:3000
+    healthCheckPath: /api/health
+    autoDeploy: true

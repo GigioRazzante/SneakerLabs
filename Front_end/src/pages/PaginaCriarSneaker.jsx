@@ -281,18 +281,32 @@ const PaginaCriarSneaker = () => {
         const successData = await response.json();
         console.log("✅ Sucesso! Dados retornados:", successData);
         
-        alert(`🎉 Pedido #${successData.pedidoId} recebido e ${successData.produtosEnviados.length} produto(s) enviado(s) para produção! Valor: R$ ${produtosParaEnvio.reduce((sum, p) => sum + p.valor, 0).toFixed(2)}`);
+        // 🎯 CORREÇÃO AQUI: O backend agora retorna 'produtos' em vez de 'produtosEnviados'
+        // Verifique qual campo está disponível
+        const produtosRetornados = successData.produtos || successData.produtosEnviados || [];
         
-        // 🎯 AGORA RETORNAMOS OS DADOS DO PEDIDO CRIADO
+        // Calcular valor total baseado na resposta ou nos dados locais
+        const valorTotalCalculado = successData.valorTotal || 
+                                   produtosParaEnvio.reduce((sum, p) => sum + p.valor, 0);
+        
+        alert(`🎉 Pedido #${successData.pedidoId} ${successData.message || 'processado com sucesso'}! Valor: R$ ${valorTotalCalculado.toFixed(2)}`);
+        
+        // 🎯 CORREÇÃO: Criar objeto de pedido com o formato correto
         const pedidoCriado = {
             id: successData.pedidoId,
-            produtos: successData.produtosEnviados,
-            valorTotal: produtosParaEnvio.reduce((sum, p) => sum + p.valor, 0)
+            produtos: produtosRetornados, // Usa o campo correto
+            valorTotal: valorTotalCalculado,
+            status: successData.status || 'PROCESSANDO',
+            modo: successData.modo || 'SIMULAÇÃO'
         };
         
         setSelections({});
         setPedidos([]);
         setCurrentStep(0);
+        
+        // 🎯 DEBUG: Verificar os dados retornados
+        console.log("📊 Pedido criado:", pedidoCriado);
+        console.log("📦 Produtos retornados:", produtosRetornados.length);
         
         // 🎯 RETORNE O PEDIDO CRIADO
         return pedidoCriado;

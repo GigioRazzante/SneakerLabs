@@ -7,13 +7,10 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
     const { primaryColor } = useTheme();
     const { user } = useAuth();
     const [generatedMessages, setGeneratedMessages] = useState({});
-    const [loadingMessages, setLoadingMessages] = useState({});
-    const [messagesGenerated, setMessagesGenerated] = useState(false);
 
     if (!pedidos || !Array.isArray(pedidos)) {
         return (
             <div className="carrinho-container">
-                {/* REMOVIDO: card-header-bar - já é fornecido pela página principal */}
                 <div className="title-section">
                     <h2 className="title">Erro no Carrinho</h2>
                     <p className="subtitle">Não foi possível carregar os pedidos.</p>
@@ -37,11 +34,11 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
 
     const extractSneakerConfig = (items) => {
         const config = {
-            estilo: '',
-            material: '',
-            solado: '', 
-            cor: '',
-            detalhes: ''
+            estilo: 'Personalizado',
+            material: 'Premium',
+            solado: 'Conforto', 
+            cor: 'Clássica',
+            detalhes: 'Exclusivos'
         };
         
         items.forEach(item => {
@@ -57,130 +54,48 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
         return config;
     };
 
-    const generateSneakerMessage = async (pedidoIndex, sneakerConfig) => {
-        const messageKey = `${pedidoIndex}`;
-        
-        if (loadingMessages[messageKey] || generatedMessages[messageKey]) {
-            return;
-        }
-        
-        setLoadingMessages(prev => ({ ...prev, [messageKey]: true }));
-        
-        try {
-            const response = await fetch('http://localhost:3001/api/mensagens/gerar-mensagem', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    pedidoId: `temp-${Date.now()}-${pedidoIndex}`,
-                    produtoIndex: pedidoIndex,
-                    sneakerConfig: sneakerConfig,
-                    nomeUsuario: user?.nome_usuario || 'Cliente'
-                })
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                
-                if (data.sucesso && data.mensagem) {
-                    setGeneratedMessages(prev => ({
-                        ...prev,
-                        [messageKey]: data.mensagem
-                    }));
-                } else {
-                    const fallbackMessage = createFallbackMessage(sneakerConfig, user?.nome_usuario || 'Cliente');
-                    setGeneratedMessages(prev => ({
-                        ...prev,
-                        [messageKey]: fallbackMessage
-                    }));
-                }
-            } else {
-                throw new Error('Falha na requisição');
-            }
-        } catch (error) {
-            const fallbackMessage = createFallbackMessage(sneakerConfig, user?.nome_usuario || 'Cliente');
-            setGeneratedMessages(prev => ({
-                ...prev,
-                [messageKey]: fallbackMessage
-            }));
-        } finally {
-            setLoadingMessages(prev => ({ ...prev, [messageKey]: false }));
-        }
-    };
-
-    const createFallbackMessage = (sneakerConfig, nomeUsuario) => {
+    const createSneakerMessage = (sneakerConfig, nomeUsuario) => {
         const { estilo, material, cor, solado, detalhes } = sneakerConfig;
         
-        return `Excelente, ${nomeUsuario}! 🎉
+        return `🎉 Excelente, ${nomeUsuario}!
 
-Seu sneaker ${estilo} em ${material} na cor ${cor}, com solado ${solado} e ${detalhes} ficou incrível!
+Seu sneaker "${estilo}" em ${material} na cor ${cor}, com solado ${solado} e ${detalhes} ficou incrível!
 
-Pedido confirmado e em breve estará em produção. Obrigado por criar conosco no SneakLab! 👟✨`;
+📦 **Status**: Pedido confirmado
+⏱️ **Previsão**: 7-10 dias úteis para produção
+📱 **Acompanhamento**: Acesse "Meus Pedidos" para acompanhar
+
+Obrigado por criar conosco no SneakLab! 👟✨`;
     };
 
     useEffect(() => {
-        if (pedidos.length > 0 && !messagesGenerated) {
+        if (pedidos.length > 0) {
+            const newMessages = {};
+            
             pedidos.forEach((pedido, pedidoIndex) => {
                 if (pedido.items && Array.isArray(pedido.items)) {
                     const sneakerConfig = extractSneakerConfig(pedido.items);
-                    const messageKey = `${pedidoIndex}`;
-                    
-                    if (!generatedMessages[messageKey] && !loadingMessages[messageKey]) {
-                        setTimeout(() => {
-                            generateSneakerMessage(pedidoIndex, sneakerConfig);
-                        }, pedidoIndex * 1000);
-                    }
+                    const message = createSneakerMessage(sneakerConfig, user?.nome_usuario || 'Cliente');
+                    newMessages[pedidoIndex] = message;
                 }
             });
             
-            setMessagesGenerated(true);
+            setGeneratedMessages(newMessages);
         }
-    }, [pedidos, messagesGenerated]);
-
-    useEffect(() => {
-        setMessagesGenerated(false);
-        setGeneratedMessages({});
-        setLoadingMessages({});
-    }, [pedidos.length]);
+    }, [pedidos, user]);
 
     const handleConfirmarPedidos = async () => {
         try {
-            const pedidoCriado = await onConfirmarPedidos();
-            
-            if (!pedidoCriado || !pedidoCriado.id) {
-                alert('Erro: Não foi possível obter o ID do pedido.');
-                return;
-            }
-
-            const pedidoIdReal = pedidoCriado.id;
-
-            const saveMessagePromises = pedidos.map(async (pedido, pedidoIndex) => {
-                if (pedido.items && Array.isArray(pedido.items)) {
-                    const sneakerConfig = extractSneakerConfig(pedido.items);
-                    
-                    await fetch('http://localhost:3001/api/mensagens/salvar-no-pedido', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            pedidoId: pedidoIdReal,
-                            produtoIndex: pedidoIndex,
-                            sneakerConfig: sneakerConfig,
-                            nomeUsuario: user?.nome_usuario || 'Cliente'
-                        })
-                    });
-                }
-            });
-
-            await Promise.all(saveMessagePromises);
-
+            // Apenas confirma o pedido, sem salvar mensagens
+            await onConfirmarPedidos();
         } catch (error) {
-            alert('Erro ao salvar mensagens dos sneakers. Tente novamente.');
+            alert('Erro ao confirmar pedido. Tente novamente.');
         }
     };
 
     if (pedidos.length === 0) {
         return (
             <div className="carrinho-container">
-                {/* REMOVIDO: card-header-bar - já é fornecido pela página principal */}
                 <div className="title-section">
                     <h2 className="title">Carrinho Vazio</h2>
                     <p className="subtitle">Adicione sneakers personalizados ao carrinho</p>
@@ -433,8 +348,6 @@ Pedido confirmado e em breve estará em produção. Obrigado por criar conosco n
             `}</style>
 
             <div className="carrinho-container">
-                {/* REMOVIDO: card-header-bar - já é fornecido pela página principal */}
-                
                 <div className="title-section">
                     <h2 className="title">Meu Carrinho</h2>
                     <p className="subtitle">{pedidos.length} sneaker(s) personalizado(s)</p>
@@ -451,9 +364,8 @@ Pedido confirmado e em breve estará em produção. Obrigado por criar conosco n
                                               return sum + (item.acrescimo || 0);
                                           }, 0) : 0);
 
-                        const messageKey = `${pedidoIndex}`;
+                        const messageKey = pedidoIndex;
                         const message = generatedMessages[messageKey];
-                        const isLoading = loadingMessages[messageKey];
 
                         return (
                             <div key={pedido.id || pedidoIndex} className="pedido-item">
@@ -464,19 +376,14 @@ Pedido confirmado e em breve estará em produção. Obrigado por criar conosco n
                                 
                                 <div className="sneaker-message">
                                     <div className="message-container">
-                                        {isLoading ? (
-                                            <div style={{textAlign: 'center'}}>
-                                                <div className="loading-spinner"></div>
-                                                <p className="loading-text">Gerando mensagem personalizada...</p>
-                                            </div>
-                                        ) : message ? (
+                                        {message ? (
                                             <div className="message-content">
                                                 {message}
                                             </div>
                                         ) : (
                                             <div style={{textAlign: 'center'}}>
                                                 <div className="loading-spinner"></div>
-                                                <p className="loading-text">Preparando mensagem...</p>
+                                                <p className="loading-text">Gerando mensagem personalizada...</p>
                                             </div>
                                         )}
                                     </div>
