@@ -17,7 +17,7 @@ const getDatabaseConfig = () => {
     const dbPassword = process.env.DB_PASSWORD || 'senai';
     const dbHost = process.env.DB_HOST || 'localhost';
     const dbPort = process.env.DB_PORT || '5432';
-    const dbName = process.env.DB_NAME || 'SneakerLabs DB';
+    const dbName = process.env.DB_NAME || 'sneakerlabsdb';  // ← CORRIGIDO!
     
     const connectionString = `postgresql://${dbUser}:${dbPassword}@${dbHost}:${dbPort}/${dbName}`;
     
