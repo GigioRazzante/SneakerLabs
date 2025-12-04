@@ -1,7 +1,7 @@
 // services/openaiService.js - VERSÃO FREE TIER
 import fetch from 'node-fetch';
 
-class OpenAIService {
+class openAiService {
   constructor() {
     // 🔐 Para free tier, use sua chave normalmente
     this.apiKey = process.env.OPENAI_API_KEY || '';
@@ -128,4 +128,4 @@ Mensagem deve:
   }
 }
 
-export default new OpenAIService();
+export default new openAiService();
