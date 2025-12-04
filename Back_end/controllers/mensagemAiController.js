@@ -1,5 +1,5 @@
 // controllers/mensagemAiController.js
-import openaiService from '../services/openAiService.js';
+import openaiService from '../services/openAiService-fix.js';
 import pool from '../config/database.js';
 
 // 🎯 GERAR MENSAGEM
