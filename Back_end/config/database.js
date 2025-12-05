@@ -1,50 +1,54 @@
+// Back_end/config/database.js - VERSÃO DEFINITIVA
 import pkg from 'pg';
 const { Pool } = pkg;
 
-console.log('🚀 Iniciando conexão com banco de dados...');
+console.log('🚀 Configurando conexão com o banco do Render...');
 
-// ============================================
-// CONFIGURAÇÃO APENAS PARA RENDER
-// ============================================
+// ✅ URL CORRETA - Use a EXTERNAL do seu Render
+const RENDER_DB_URL = 'postgresql://sneakerlabsdb_user:btvZE5o6LiixUx48aA8eFVoL1lb6R0Wq@dpg-d4out3i4i8rc73b1akrg-a.oregon-postgres.render.com:5432/sneakerlabsdb?sslmode=require';
 
-// NO RENDER: Esta variável existe automaticamente
-// NO LOCAL: Crie um arquivo .env com DATABASE_URL para testar
-const DATABASE_URL = process.env.DATABASE_URL;
-
-if (!DATABASE_URL) {
-    console.log('⚠️  AVISO: DATABASE_URL não encontrada');
-    console.log('💡 Para desenvolvimento LOCAL:');
-    console.log('   1. Crie um arquivo .env na pasta Back_end');
-    console.log('   2. Adicione: DATABASE_URL=sua_url_do_render');
-    console.log('');
-    console.log('💡 Para PRODUÇÃO no Render:');
-    console.log('   - A DATABASE_URL já está configurada automaticamente');
-    console.log('   - Faça git push e teste na nuvem:');
-    console.log('   - https://sneakerslab-backend.onrender.com');
-    console.log('');
-    console.log('🎯 Continuando sem banco local...');
-}
+console.log(`🔗 Usando: ${RENDER_DB_URL.split('@')[1].split(':')[0]}`);
 
 const pool = new Pool({
-    connectionString: DATABASE_URL,
-    ssl: DATABASE_URL ? { rejectUnauthorized: false } : false
+    connectionString: RENDER_DB_URL,
+    ssl: {
+        rejectUnauthorized: false
+    },
+    connectionTimeoutMillis: 30000,
+    idleTimeoutMillis: 30000,
+    max: 20
 });
 
-// Teste de conexão (apenas se tiver DATABASE_URL)
-if (DATABASE_URL) {
-    pool.query('SELECT NOW()', (err, res) => {
-        if (err) {
-            console.error('❌ Erro ao conectar ao banco:', err.message);
-            console.log('🔍 Verifique sua DATABASE_URL no arquivo .env');
-        } else {
-            console.log('✅ Banco conectado com sucesso!');
-            console.log(`   ⏰ Hora do servidor: ${res.rows[0].now}`);
-            console.log(`   📍 Conectado ao: ${DATABASE_URL.includes('render.com') ? 'RENDER' : 'banco configurado'}`);
-        }
-    });
-} else {
-    console.log('⚠️  Executando SEM banco de dados (modo de emergência)');
-    console.log('💡 URLs ainda funcionarão, mas rotas de banco darão erro');
-}
+// Teste de conexão IMEDIATO
+(async () => {
+    try {
+        console.log('🔄 Testando conexão com o banco...');
+        const client = await pool.connect();
+        
+        // Teste 1: Verificar hora do servidor
+        const timeResult = await client.query('SELECT NOW() as current_time');
+        console.log(`✅ Conexão estabelecida! Hora do servidor: ${timeResult.rows[0].current_time}`);
+        
+        // Teste 2: Verificar banco
+        const dbResult = await client.query('SELECT current_database() as db_name');
+        console.log(`📊 Banco conectado: ${dbResult.rows[0].db_name}`);
+        
+        // Teste 3: Verificar versão do PostgreSQL
+        const versionResult = await client.query('SELECT version()');
+        console.log(`🔧 PostgreSQL: ${versionResult.rows[0].version.split(',')[0]}`);
+        
+        client.release();
+        console.log('🎉 Conexão com Render PostgreSQL 100% funcional!');
+        
+    } catch (err) {
+        console.error('❌ ERRO na conexão:', err.message);
+        console.log('\n🔧 VERIFIQUE:');
+        console.log('1. URL no Render Dashboard: Connections → External');
+        console.log('2. Adicione "?sslmode=require" no final da URL');
+        console.log('3. Aguarde 2 minutos após criar o banco');
+        console.log('\n🌐 Para testar agora:');
+        console.log('   psql "postgresql://sneakerlabsdb_user:btvZE5o6LiixUx48aA8eFVoL1lb6R0Wq@dpg-d4out3i4i8rc73b1akrg-a.oregon-postgres.render.com:5432/sneakerlabsdb"');
+    }
+})();
 
 export default pool;

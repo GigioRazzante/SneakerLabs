@@ -8,85 +8,98 @@ const Footer = () => {
         <>
             <footer className="footer">
                 <div className="footer-content">
-                    <div className="footer-contact">
-                        <a href="mailto:sneakerlab@email.com" className="contact-link">
-                            ✉️ Email: sneakerlab@email.com
-                        </a>
-                        <a href="https://instagram.com/sneakerlab" target="_blank" rel="noopener noreferrer" className="contact-link">
-                            📷 Instagram: @sneakerlab
-                        </a>
-                    </div>
-                    
                     <div className="footer-brand">
                         <span className="brand-name" style={{ color: primaryColor }}>SNEAKLAB</span>
-                        <span className="brand-emoji">👟</span>
+                        <span className="brand-subtitle">Personalize seu estilo</span>
                     </div>
                     
-                    <p className="footer-copyright">
+                    <div className="footer-contact">
+                        <span className="contact-item">
+                            <i className="fas fa-envelope"></i> sneakerlab@email.com
+                        </span>
+                        <span className="contact-item">
+                            <i className="fab fa-instagram"></i> @sneakerlab
+                        </span>
+                    </div>
+                    
+                    <div className="footer-copyright">
                         © {new Date().getFullYear()} SneakLab. Todos os direitos reservados.
-                    </p>
+                    </div>
                 </div>
             </footer>
 
             <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=Sedgwick+Ave+Display&display=swap');
+                @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
+                
                 .footer {
-                    background: #1a1a1a;
+                    background: rgba(0, 0, 0, 0.9);
                     color: #e0e0e0;
                     padding: 2rem 1rem;
-                    text-align: center;
-                    border-top: 4px solid ${primaryColor};
-                    width: 100%;
+                    border-top: 3px solid ${primaryColor};
                     margin-top: auto;
+                    box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.3);
                 }
                 
                 .footer-content {
-                    max-width: 800px;
+                    max-width: 900px;
                     margin: 0 auto;
                     display: flex;
                     flex-direction: column;
+                    align-items: center;
                     gap: 1.5rem;
-                }
-                
-                .footer-contact {
-                    display: flex;
-                    justify-content: center;
-                    gap: 2rem;
-                    flex-wrap: wrap;
-                }
-                
-                .contact-link {
-                    color: #cccccc;
-                    text-decoration: none;
-                    font-size: 0.9rem;
-                    transition: all 0.3s ease;
-                    padding: 0.5rem 0.75rem;
-                    border-radius: 0.5rem;
-                    background: rgba(255, 255, 255, 0.05);
-                }
-                
-                .contact-link:hover {
-                    color: ${primaryColor};
-                    background: rgba(var(--primary-color-rgb), 0.1);
-                    transform: translateY(-2px);
                 }
                 
                 .footer-brand {
                     display: flex;
+                    flex-direction: column;
                     align-items: center;
-                    justify-content: center;
                     gap: 0.5rem;
-                    font-size: 1.5rem;
-                    font-weight: 700;
                 }
                 
-                .brand-emoji {
-                    font-size: 1.2rem;
+                .brand-name {
+                    font-family: 'Sedgwick Ave Display', cursive;
+                    font-size: 2.2rem;
+                    letter-spacing: 1.5px;
+                    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+                }
+                
+                .brand-subtitle {
+                    font-size: 0.9rem;
+                    color: #aaa;
+                    font-style: italic;
+                }
+                
+                .footer-contact {
+                    display: flex;
+                    gap: 2rem;
+                    flex-wrap: wrap;
+                    justify-content: center;
+                }
+                
+                .contact-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    color: #ccc;
+                    font-size: 0.95rem;
+                    padding: 0.5rem 1rem;
+                    border-radius: 20px;
+                    background: rgba(255, 255, 255, 0.05);
+                    transition: all 0.3s ease;
+                }
+                
+                .contact-item i {
+                    color: ${primaryColor};
                 }
                 
                 .footer-copyright {
-                    color: #999;
+                    color: #888;
                     font-size: 0.8rem;
-                    margin: 0;
+                    text-align: center;
+                    border-top: 1px solid rgba(255, 255, 255, 0.1);
+                    padding-top: 1rem;
+                    width: 100%;
                 }
                 
                 /* Responsividade */
@@ -94,65 +107,26 @@ const Footer = () => {
                     .footer {
                         padding: 1.5rem 1rem;
                     }
-                    
                     .footer-contact {
                         gap: 1rem;
                         flex-direction: column;
                         align-items: center;
                     }
-                    
-                    .contact-link {
-                        width: 100%;
-                        max-width: 300px;
-                        text-align: center;
-                    }
-                    
-                    .footer-brand {
-                        font-size: 1.3rem;
+                    .brand-name {
+                        font-size: 1.8rem;
                     }
                 }
                 
                 @media (max-width: 480px) {
                     .footer {
-                        padding: 1.25rem 0.75rem;
+                        padding: 1rem;
                     }
-                    
-                    .footer-content {
-                        gap: 1.25rem;
+                    .brand-name {
+                        font-size: 1.5rem;
                     }
-                    
-                    .contact-link {
+                    .contact-item {
                         font-size: 0.85rem;
-                        padding: 0.4rem 0.6rem;
                     }
-                    
-                    .footer-brand {
-                        font-size: 1.2rem;
-                    }
-                    
-                    .footer-copyright {
-                        font-size: 0.75rem;
-                    }
-                }
-                
-                /* Animações */
-                @keyframes fadeIn {
-                    from {
-                        opacity: 0;
-                    }
-                    to {
-                        opacity: 1;
-                    }
-                }
-                
-                .footer {
-                    animation: fadeIn 0.5s ease-out;
-                }
-                
-                /* Acessibilidade */
-                .contact-link:focus {
-                    outline: 2px solid ${primaryColor};
-                    outline-offset: 2px;
                 }
             `}</style>
         </>

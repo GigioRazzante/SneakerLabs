@@ -3,19 +3,17 @@ import { Link, useNavigate } from 'react-router-dom';
 import ImagemTenis from '../assets/ImgPagLogin.png';
 
 const PaginaCadastro = () => {
-    // Definindo os estados para os campos do formulário
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [username, setUsername] = useState('');
     const [birthdate, setBirthdate] = useState('');
     const [phone, setPhone] = useState('');
-    const [loading, setLoading] = useState(false); // 🚨 NOVO: Estado para controle de carregamento
+    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
-    const handleCadastro = async (e) => { // 🚨 ALTERADO: Função agora é assíncrona
+    const handleCadastro = async (e) => {
         e.preventDefault();
 
-        // 1. Validação básica
         if (!email || !password || !username || !birthdate || !phone) {
             alert('Por favor, preencha todos os campos.');
             return;
@@ -24,7 +22,6 @@ const PaginaCadastro = () => {
         setLoading(true);
 
         try {
-            // 2. Chamada à API do Backend para Cadastro
             const response = await fetch('http://localhost:3001/api/auth/register', {
                 method: 'POST',
                 headers: {
@@ -32,31 +29,27 @@ const PaginaCadastro = () => {
                 },
                 body: JSON.stringify({
                     email,
-                    senha: password,             // Ajuste o nome do campo se seu backend usar 'password'
-                    nome_usuario: username,      // Ajuste o nome do campo
-                    data_nascimento: birthdate,  // Ajuste o nome do campo
-                    telefone: phone,             // Ajuste o nome do campo
+                    senha: password,
+                    nome_usuario: username,
+                    data_nascimento: birthdate,
+                    telefone: phone,
                 }),
             });
 
             const data = await response.json();
 
             if (response.ok) {
-                // Cadastro bem-sucedido
                 console.log('Resposta do Cadastro:', data);
                 alert('Cadastro realizado com sucesso! Bem-vindo ao SneakLab! 🎉');
-                
-                // Redireciona para a página de login para que o usuário possa logar com o novo ID
-                navigate('/login'); 
+                navigate('/login');
             } else {
-                // Erro retornado pelo backend (ex: email já cadastrado)
                 alert(`Falha no cadastro: ${data.error || 'Erro desconhecido. Verifique se o servidor está rodando.'}`);
             }
         } catch (error) {
             console.error('Erro de rede ou no servidor:', error);
             alert('Não foi possível conectar ao servidor. Verifique a conexão ou tente novamente mais tarde.');
         } finally {
-            setLoading(false); // Finaliza o carregamento, independentemente do sucesso ou falha
+            setLoading(false);
         }
     };
 
@@ -64,10 +57,13 @@ const PaginaCadastro = () => {
         <>
             <style>
                 {`
+                @import url('https://fonts.googleapis.com/css2?family=Rubik+Glitch&display=swap');
+                @import url('https://fonts.googleapis.com/css2?family=Sedgwick+Ave+Display&display=swap');
+                
                 .login-main-container {
                     display: flex;
                     min-height: 100vh;
-                    font-family: Arial, sans-serif;
+                    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
                     background-color: #fff;
                 }
 
@@ -83,15 +79,34 @@ const PaginaCadastro = () => {
                 
                 .login-logo {
                     font-size: 2.5rem;
-                    font-weight: bold;
+                    font-weight: 400;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 0;
                 }
 
-                .login-logo-black {
-                    color: #000;
+                .login-logo-creative {
+                    font-family: 'Rubik Glitch', system-ui;
+                    font-size: 2.5rem;
+                    font-weight: 400;
+                    letter-spacing: 2px;
+                    background: linear-gradient(135deg, #000 0%, #333 100%);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    background-clip: text;
+                    transition: all 0.3s ease;
+                    text-shadow: 3px 3px 0px rgba(0,0,0,0.1);
                 }
 
-                .login-logo-orange {
+                .login-logo-colored {
+                    font-family: 'Rubik Glitch', system-ui;
+                    font-size: 2.5rem;
+                    font-weight: 400;
+                    letter-spacing: 2px;
                     color: #FF9D00;
+                    transition: all 0.3s ease;
+                    text-shadow: 3px 3px 0px rgba(0,0,0,0.1);
                 }
 
                 .sneaker-image {
@@ -101,15 +116,21 @@ const PaginaCadastro = () => {
                 }
                 
                 .text-slogan-1 {
-                    font-size: 2.25rem;
-                    font-weight: bold;
+                    font-size: 2rem;
                     color: #FF9D00;
-                    margin-top: 2rem;
+                    font-family: 'Sedgwick Ave Display', cursive;
+                    margin-top: 1.5rem;
+                    line-height: 1.2;
+                    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+                    letter-spacing: 1px;
                 }
 
                 .text-slogan-2 {
                     color: #666;
                     margin-top: 0.5rem;
+                    font-size: 1rem;
+                    line-height: 1.5;
+                    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
                 }
 
                 .login-right-div {
@@ -131,8 +152,10 @@ const PaginaCadastro = () => {
 
                 .text-login-slogan {
                     font-size: 2.25rem;
-                    font-weight: bold;
+                    font-weight: 700;
                     margin-bottom: 2rem;
+                    line-height: 1.2;
+                    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
                 }
 
                 .input-group {
@@ -143,7 +166,8 @@ const PaginaCadastro = () => {
                     display: block;
                     text-align: left;
                     margin-bottom: 0.5rem;
-                    font-weight: bold;
+                    font-weight: 600;
+                    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
                 }
 
                 .input-group input {
@@ -154,26 +178,21 @@ const PaginaCadastro = () => {
                     background-color: transparent;
                     color: #fff;
                     outline: none;
+                    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+                    font-size: 1rem;
                 }
                 
                 .input-group input::placeholder {
                     color: rgba(255, 255, 255, 0.7);
                 }
 
-                /* Apenas para corrigir a cor do texto do input[type="date"] no Chrome */
                 .input-group input[type="date"] {
-                    color: #fff; 
-                }
-
-                /* Garante que o texto do input[type="date"] seja branco quando preenchido */
-                .input-group input[type="date"]::-webkit-datetime-edit {
                     color: #fff;
                 }
-                
-                .remember-me {
-                    display: flex;
-                    align-items: center;
-                    margin-bottom: 1.5rem;
+
+                .input-group input[type="date"]::-webkit-datetime-edit {
+                    color: #fff;
+                    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
                 }
 
                 .login-button {
@@ -183,30 +202,34 @@ const PaginaCadastro = () => {
                     border: none;
                     border-radius: 9999px;
                     color: #FF9D00;
-                    font-weight: bold;
+                    font-weight: 600;
                     cursor: pointer;
                     transition: background-color 0.3s, opacity 0.3s;
+                    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+                    font-size: 1rem;
                 }
                 
-                .login-button:hover:not(:disabled) { /* 🚨 NOVO: Desativa hover quando disabled */
+                .login-button:hover:not(:disabled) {
                     background-color: #f0f0f0;
                 }
                 
-                .login-button:disabled { /* 🚨 NOVO: Estilo para disabled */
+                .login-button:disabled {
                     opacity: 0.6;
                     cursor: not-allowed;
                 }
 
-
                 .register-link-text {
                     margin-top: 1.5rem;
                     color: #fff;
+                    font-size: 0.95rem;
+                    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
                 }
 
                 .register-link {
                     color: #fff;
-                    font-weight: bold;
+                    font-weight: 600;
                     text-decoration: underline;
+                    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
                 }
                 
                 @media (max-width: 768px) {
@@ -216,8 +239,31 @@ const PaginaCadastro = () => {
                     .login-left-div {
                         padding: 1rem;
                     }
-                    .text-slogan-1, .text-login-slogan {
+                    .text-login-slogan {
                         font-size: 1.75rem;
+                    }
+                    .login-logo-creative,
+                    .login-logo-colored {
+                        font-size: 2rem;
+                    }
+                    .text-slogan-1 {
+                        font-size: 1.6rem;
+                    }
+                    .text-slogan-2 {
+                        font-size: 0.95rem;
+                    }
+                }
+                
+                @media (max-width: 480px) {
+                    .login-logo-creative,
+                    .login-logo-colored {
+                        font-size: 1.8rem;
+                    }
+                    .text-slogan-1 {
+                        font-size: 1.4rem;
+                    }
+                    .text-login-slogan {
+                        font-size: 1.5rem;
                     }
                 }
                 `}
@@ -225,8 +271,8 @@ const PaginaCadastro = () => {
             <div className="login-main-container">
                 <div className="login-left-div">
                     <h1 className="login-logo">
-                        <span className="login-logo-black">SNEAK</span>
-                        <span className="login-logo-orange">LAB</span>
+                        <span className="login-logo-creative">Sneak</span>
+                        <span className="login-logo-colored">Lab</span>
                     </h1>
                     <img 
                         src={ImagemTenis}

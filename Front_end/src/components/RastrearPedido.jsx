@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import Navbar from '../components/Navbar'; 
+import Navbar from '../components/Navbar'; // ADICIONE
+import Footer from '../components/Footer'; // ADICIONE
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import EditarProdutoModal from '../components/EditarProdutoModal';
@@ -8,47 +9,40 @@ import ConfirmarRemocaoModal from '../components/ConfirmarRemocaoModal';
 
 const BACKEND_URL = 'http://localhost:3001'; 
 
-// ✅ FUNÇÕES AUXILIARES
+// ✅ FUNÇÕES AUXILIARES SIMPLIFICADAS
 const formatarData = (dataString) => {
-    try {
-        const dataObj = new Date(dataString);
-        return dataObj.toLocaleDateString('pt-BR', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    } catch {
-        return dataString;
-    }
+    if (!dataString) return 'Data não disponível';
+    return new Date(dataString).toLocaleDateString('pt-BR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
 };
 
 const formatStatus = (status) => {
-    switch (status) {
-        case 'PENDENTE':
-            return { text: 'Aguardando Produção', color: '#FF9D00' };
-        case 'CONCLUIDO':
-            return { text: 'Pronto para Retirada', color: '#28A745' };
-        case 'FILA':
-            return { text: 'Em Fila de Montagem', color: '#007BFF' };
-        case 'PRONTO':
-            return { text: 'Produto Montado', color: '#20C997' };
-        case 'FALHA_ENVIO':
-            return { text: 'Falha no Envio', color: '#DC3545' };
-        case 'ENTREGUE':
-            return { text: 'Entregue', color: '#6F42C1' };
-        default:
-            return { text: status, color: '#6C757D' };
-    }
+    const statusMap = {
+        'PENDENTE': { text: 'Aguardando Produção', color: '#FF9D00' },
+        'CONCLUIDO': { text: 'Pronto para Retirada', color: '#28A745' },
+        'FILA': { text: 'Em Fila de Montagem', color: '#007BFF' },
+        'PRONTO': { text: 'Produto Montado', color: '#20C997' },
+        'FALHA_ENVIO': { text: 'Falha no Envio', color: '#DC3545' },
+        'ENTREGUE': { text: 'Entregue', color: '#6F42C1' },
+        'SIMULADO': { text: 'Pedido Simulado', color: '#6C757D' }
+    };
+    return statusMap[status] || { text: status, color: '#6C757D' };
 };
 
+// ✅ FUNÇÃO CORRIGIDA - Agora lida com undefined
 const getProdutoTitle = (config) => {
+    if (!config || typeof config !== 'string') return 'Sneaker Personalizado';
+    
     const parts = config.split('/');
     if (parts.length >= 2) {
         return `${parts[0].trim()} - Material: ${parts[1].trim()}`;
     }
-    return config; 
+    return config || 'Sneaker Personalizado';
 };
 
 function RastrearPedido() {
@@ -62,96 +56,69 @@ function RastrearPedido() {
     const [loading, setLoading] = useState(!!codigoRastreioParam);
     const [error, setError] = useState('');
     
-    // Estados para modais de edição/remoção
+    // Estados para modais
     const [modalEditarAberto, setModalEditarAberto] = useState(false);
     const [modalRemoverAberto, setModalRemoverAberto] = useState(false);
     const [produtoSelecionado, setProdutoSelecionado] = useState(null);
 
     useEffect(() => {
-        console.log('🔐 Usuário no RastrearPedido:', user);
-        console.log('📦 Código de Rastreio da URL:', codigoRastreioParam);
+        console.log('🔐 Usuário:', user?.nome_usuario);
+        console.log('📦 Código da URL:', codigoRastreioParam);
     }, [user, codigoRastreioParam]);
 
-    const handleSearch = async (e) => {
-        if (e) {
-            e.preventDefault();
-        }
-        
-        const currentCodigoRastreio = e ? codigoRastreioInput : codigoRastreioParam;
-
-        if (!currentCodigoRastreio) {
-            setError('Por favor, digite o Código de Rastreio.');
-            setStatusData(null);
+    const buscarPedido = async (codigo) => {
+        if (!codigo || !user?.id) {
+            setError('Informações incompletas para busca.');
             return;
         }
 
         setLoading(true);
         setError('');
-        setStatusData(null);
 
         try {
-            if (!user || !user.id) {
-                setError('Usuário não identificado. Faça login novamente.');
-                return;
-            }
-
             const headers = {
                 'Content-Type': 'application/json',
                 'x-client-id': user.id.toString()
             };
 
-            console.log(`🔍 Buscando pedido por código: ${currentCodigoRastreio} para cliente ${user.id}`);
-
-            const response = await fetch(`${BACKEND_URL}/api/orders/rastreio/${currentCodigoRastreio}`, {
-                headers: headers
-            });
-            
-            console.log(`📡 Resposta do backend: ${response.status}`);
-            
-            if (response.status === 401) {
-                setError('Autenticação necessária. Faça login novamente.');
-                return;
-            }
-            
-            if (response.status === 403) {
-                setError('Você não tem permissão para acessar este pedido.');
-                return;
-            }
+            const response = await fetch(`${BACKEND_URL}/api/orders/rastreio/${codigo}`, { headers });
             
             if (response.status === 404) {
-                setError(`Código de rastreio "${currentCodigoRastreio}" não encontrado no sistema.`);
+                setError(`Código "${codigo}" não encontrado.`);
                 return;
             }
-
+            
             if (!response.ok) {
-                throw new Error(`Erro HTTP ${response.status}: ${response.statusText}`);
+                throw new Error(`Erro ${response.status}: ${response.statusText}`);
             }
 
             const data = await response.json();
             setStatusData(data);
-            console.log('✅ Dados recebidos:', data);
-
+            
         } catch (err) {
-            console.error('❌ Erro na busca:', err);
-            setError(`Falha na busca: ${err.message}. Verifique se o Backend está rodando.`);
+            console.error('❌ Erro:', err);
+            setError(`Falha na busca: ${err.message}`);
         } finally {
             setLoading(false);
         }
     };
+
+    const handleSubmit = (e) => {
+        e?.preventDefault();
+        buscarPedido(codigoRastreioInput || codigoRastreioParam);
+    };
     
     useEffect(() => {
-        if (codigoRastreioParam && user && user.id) {
-            console.log('🔄 Buscando automaticamente...');
-            handleSearch();
+        if (codigoRastreioParam && user?.id) {
+            buscarPedido(codigoRastreioParam);
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [codigoRastreioParam, user]);
 
-    // 🎯 FUNÇÕES PARA EDIÇÃO/REMOÇÃO
-    const abrirModalEditar = (produto, produtoIndex) => {
+    // 🎯 FUNÇÕES DE EDIÇÃO/REMOÇÃO
+    const abrirModalEditar = (produto, index) => {
         const configParts = produto.configuracao?.split(' / ') || [];
-        const produtoCompleto = {
-            id: produto.id || `produto-${produtoIndex}`,
+        setProdutoSelecionado({
+            id: produto.id || `produto-${index}`,
             passo_um: configParts[0]?.trim() || '',
             passo_dois: configParts[1]?.trim() || '',
             passo_tres: configParts[2]?.trim() || '',
@@ -159,152 +126,98 @@ function RastrearPedido() {
             passo_cinco: configParts[4]?.trim() || '',
             status: produto.status,
             rastreioId: produto.rastreioId
-        };
-        
-        setProdutoSelecionado(produtoCompleto);
+        });
         setModalEditarAberto(true);
     };
 
-    const abrirModalRemover = (produto, produtoIndex) => {
-        const configParts = produto.configuracao?.split(' / ') || [];
-        const produtoCompleto = {
-            id: produto.id || `produto-${produtoIndex}`,
-            passo_um: configParts[0]?.trim() || '',
-            passo_dois: configParts[1]?.trim() || '',
-            passo_quatro: configParts[3]?.trim() || '',
-            status: produto.status
-        };
-        
-        setProdutoSelecionado(produtoCompleto);
+    const abrirModalRemover = (produto, index) => {
+        setProdutoSelecionado({
+            id: produto.id || `produto-${index}`,
+            descricao: produto.configuracao?.split(' / ')[0] || 'Produto'
+        });
         setModalRemoverAberto(true);
     };
 
-    // 🎯 FUNÇÃO CHAMADA APÓS EDIÇÃO BEM-SUCEDIDA
-    const handleProdutoEditado = (produtoAtualizado, novoValorTotal) => {
-        console.log('✅ Produto editado com sucesso:', produtoAtualizado);
-        
-        if (statusData && statusData.produtos) {
-            setStatusData(prev => ({
-                ...prev,
-                produtos: prev.produtos.map(p => 
-                    p.id === produtoAtualizado.id ? { 
-                        ...p, 
-                        configuracao: `${produtoAtualizado.passo_um} / ${produtoAtualizado.passo_dois} / ${produtoAtualizado.passo_tres} / ${produtoAtualizado.passo_quatro} / ${produtoAtualizado.passo_cinco}`
-                    } : p
-                )
-            }));
-        }
-        
+    const handleProdutoEditado = () => {
         setModalEditarAberto(false);
-        handleSearch(); // Recarregar dados
+        buscarPedido(codigoRastreioInput || codigoRastreioParam);
     };
 
-    // 🎯 FUNÇÃO CHAMADA APÓS REMOÇÃO BEM-SUCEDIDA
-    const handleProdutoRemovido = (resultado) => {
-        console.log('✅ Produto removido com sucesso:', resultado);
-        
-        if (statusData && statusData.produtos) {
-            const novosProdutos = statusData.produtos.filter(p => p.id !== produtoSelecionado.id);
-            
-            setStatusData(prev => ({
-                ...prev,
-                produtos: novosProdutos
-            }));
-            
-            if (novosProdutos.length === 0) {
-                alert('Todos os produtos foram removidos. O pedido foi cancelado.');
-                navigate('/perfil'); // ✅ CORRIGIDO: volta para o perfil
-            }
-        }
-        
+    const handleProdutoRemovido = () => {
         setModalRemoverAberto(false);
+        buscarPedido(codigoRastreioInput || codigoRastreioParam);
     };
 
-    // 🎯 FUNÇÃO PARA CONFIRMAR ENTREGA
     const handleConfirmarEntrega = async () => {
-        if (!statusData || !statusData.pedidoId) return;
+        if (!statusData?.pedidoId) return;
 
         try {
             const response = await fetch(`${BACKEND_URL}/api/entrega/confirmar`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    pedidoId: statusData.pedidoId
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pedidoId: statusData.pedidoId })
             });
 
-            if (!response.ok) {
-                throw new Error('Erro ao confirmar entrega');
+            if (response.ok) {
+                alert('✅ Entrega confirmada!');
+                setStatusData(prev => ({ ...prev, statusGeral: 'ENTREGUE' }));
             }
-
-            const data = await response.json();
-            alert('✅ Entrega confirmada com sucesso! O slot foi liberado.');
-            
-            setStatusData(prev => ({
-                ...prev,
-                statusGeral: 'ENTREGUE'
-            }));
-
         } catch (error) {
-            console.error('❌ Erro ao confirmar entrega:', error);
-            alert('Erro ao confirmar entrega: ' + error.message);
+            alert('Erro ao confirmar entrega');
         }
     };
 
     if (!user) {
         return (
-            <div style={{ 
-                display: 'flex', 
-                justifyContent: 'center', 
-                alignItems: 'center', 
-                height: '100vh',
-                flexDirection: 'column',
-                gap: '1rem'
-            }}>
-                <p>Você precisa estar logado para rastrear pedidos.</p>
+            <div className="login-required">
+                <p style={{ color: '#000000' }}>Você precisa estar logado para rastrear pedidos.</p>
                 <button 
                     onClick={() => navigate('/login')}
-                    style={{
-                        padding: '0.75rem 1.5rem',
-                        backgroundColor: primaryColor,
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '0.5rem',
-                        cursor: 'pointer'
-                    }}
+                    style={{ backgroundColor: primaryColor }}
                 >
                     Fazer Login
                 </button>
+                <style>{`
+                    .login-required {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        height: 100vh;
+                        gap: 1rem;
+                        background-color: #f8f9fa;
+                    }
+                    .login-required button {
+                        padding: 0.75rem 1.5rem;
+                        color: white;
+                        border: none;
+                        border-radius: 0.5rem;
+                        cursor: pointer;
+                    }
+                `}</style>
             </div>
         );
     }
 
     return (
         <>
-            <Navbar />
+            <Navbar /> {/* NAVBAR ADICIONADO */}
             
             <div className="page-container">
                 <div className="main-content-card">
-                    <div 
-                        className="card-header-bar" 
-                        style={{ backgroundColor: primaryColor }}
-                    ></div>
+                    <div className="card-header-bar" style={{ backgroundColor: primaryColor }}></div>
                     
                     <div className="title-section">
                         <h1 className="title">🚚 Acompanhar Pedido</h1>
-                        <p className="subtitle">Digite o código de rastreio para acompanhar o status de produção.</p>
+                        <p className="subtitle" style={{ color: '#666' }}>Digite o código de rastreio para acompanhar o status de produção.</p>
                         
-                        {/* Informações do usuário */}
                         <div className="user-info-card">
-                            <p><strong>Usuário logado:</strong> {user.nome_usuario} (ID: {user.id})</p>
-                            <p><strong>Código a ser rastreado:</strong> {codigoRastreioParam || 'Nenhum'}</p>
+                            <p style={{ color: '#000000' }}><strong>Usuário:</strong> {user.nome_usuario}</p>
+                            <p style={{ color: '#000000' }}><strong>Código:</strong> {codigoRastreioParam || 'Nenhum'}</p>
                         </div>
                     </div>
 
-                    {/* Formulário de busca */}
-                    <form onSubmit={handleSearch} className="search-form">
+                    <form onSubmit={handleSubmit} className="search-form">
                         <div className="input-group">
                             <input 
                                 type="text" 
@@ -313,6 +226,7 @@ function RastrearPedido() {
                                 onChange={(e) => setCodigoRastreioInput(e.target.value)} 
                                 disabled={loading}
                                 className="search-input"
+                                style={{ color: '#000000' }}
                             />
                             <button 
                                 type="submit" 
@@ -320,92 +234,52 @@ function RastrearPedido() {
                                 className="search-button"
                                 style={{ backgroundColor: primaryColor }}
                             >
-                                {loading ? '🔍 Buscando...' : '🔍 Rastrear Pedido'} 
+                                {loading ? '🔍 Buscando...' : '🔍 Rastrear'} 
                             </button>
                         </div>
                     </form>
 
-                    {/* Mensagem de erro */}
-                    {error && (
-                        <div className="error-message">
-                            {error}
-                        </div>
-                    )}
+                    {error && <div className="error-message">{error}</div>}
 
-                    {/* Resultados */}
                     {statusData && (
                         <div className="resultado-card">
                             <div className="pedido-geral-info">
-                                <h2 className="pedido-title">Pedido <span className="pedido-number" style={{ color: primaryColor }}>#{statusData.pedidoId}</span></h2>
+                                <h2 style={{ color: '#000000' }}>Pedido <span style={{ color: primaryColor }}>#{statusData.pedidoId}</span></h2>
                                 <div className="pedido-details-grid">
-                                    <div className="detail-item">
-                                        <strong>Data do Pedido:</strong> 
-                                        <span>{formatarData(statusData.dataCriacao)}</span>
-                                    </div>
-                                    <div className="detail-item">
-                                        <strong>Status Geral:</strong> 
+                                    <div style={{ color: '#000000' }}><strong style={{ color: '#333' }}>Data:</strong> {formatarData(statusData.dataCriacao)}</div>
+                                    <div style={{ color: '#000000' }}>
+                                        <strong style={{ color: '#333' }}>Status:</strong> 
                                         <span className="status-badge" style={{ backgroundColor: formatStatus(statusData.statusGeral).color }}>
                                             {formatStatus(statusData.statusGeral).text}
                                         </span>
                                     </div>
-                                    <div className="detail-item">
-                                        <strong>Código de Rastreio:</strong> 
-                                        <span>{statusData.codigoRastreio}</span>
-                                    </div>
-                                    <div className="detail-item">
-                                        <strong>Slot de Expedição:</strong> 
-                                        {statusData.slotExpedicao 
-                                            ? <span className="status-badge" style={{ backgroundColor: '#28A745' }}>
-                                                Slot {statusData.slotExpedicao.id} - {statusData.slotExpedicao.status}
-                                              </span>
-                                            : <span className="status-badge" style={{ backgroundColor: '#6C757D' }}>
-                                                Não alocado
-                                              </span>
-                                        }
-                                    </div>
+                                    <div style={{ color: '#000000' }}><strong style={{ color: '#333' }}>Código:</strong> {statusData.codigoRastreio}</div>
                                 </div>
                             </div>
 
-                            <h3 className="produtos-title">Itens de Produção ({statusData.produtos?.length || 0})</h3>
+                            <h3 style={{ color: '#333' }}>Itens de Produção ({statusData.produtos?.length || 0})</h3>
                             
                             <div className="produtos-lista">
-                                {statusData.produtos && statusData.produtos.length > 0 ? (
+                                {statusData.produtos?.length > 0 ? (
                                     statusData.produtos.map((produto, index) => (
                                         <div key={index} className="produto-item">
                                             <div className="produto-header">
-                                                <span className="produto-nome">{getProdutoTitle(produto.configuracao)}</span>
-                                                <span 
-                                                    className="produto-status-badge"
-                                                    style={{ backgroundColor: formatStatus(produto.status).color }}
-                                                >
+                                                <span className="produto-nome" style={{ color: '#000000' }}>{getProdutoTitle(produto.configuracao)}</span>
+                                                <span className="produto-status-badge" style={{ backgroundColor: formatStatus(produto.status).color }}>
                                                     {formatStatus(produto.status).text}
                                                 </span>
                                             </div>
                                             
                                             <div className="produto-detalhes">
-                                                <div className="detalhe-item">
-                                                    <strong>Rastreio ID:</strong> 
-                                                    <span>{produto.rastreioId || 'Aguardando geração'}</span>
-                                                </div>
-                                                <div className="detalhe-item">
-                                                    <strong>Status:</strong> 
-                                                    <span>{formatStatus(produto.status).text}</span>
-                                                </div>
+                                                <div style={{ color: '#000000' }}><strong style={{ color: '#333' }}>Rastreio ID:</strong> {produto.rastreioId || 'Aguardando'}</div>
                                             </div>
 
-                                            {/* 🎯 BOTÕES DE EDIÇÃO/REMOÇÃO */}
                                             {statusData.statusGeral !== 'CONCLUIDO' && statusData.statusGeral !== 'ENTREGUE' && (
                                                 <div className="produto-actions">
-                                                    <button 
-                                                        className="edit-button"
-                                                        onClick={() => abrirModalEditar(produto, index)}
-                                                    >
+                                                    <button className="edit-button" onClick={() => abrirModalEditar(produto, index)}>
                                                         ✏️ Editar
                                                     </button>
-                                                    <button 
-                                                        className="delete-button"
-                                                        onClick={() => abrirModalRemover(produto, index)}
-                                                    >
+                                                    <button className="delete-button" onClick={() => abrirModalRemover(produto, index)}>
                                                         🗑️ Remover
                                                     </button>
                                                 </div>
@@ -413,40 +287,28 @@ function RastrearPedido() {
                                         </div>
                                     ))
                                 ) : (
-                                    <p className="no-products">Nenhum produto encontrado neste pedido.</p>
+                                    <p className="no-products" style={{ color: '#000000' }}>Nenhum produto encontrado.</p>
                                 )}
                             </div>
 
-                            {/* 🎯 BOTÃO DE CONFIRMAR ENTREGA */}
                             {statusData.statusGeral === 'CONCLUIDO' && (
                                 <div className="entrega-section">
-                                    <button 
-                                        className="confirmar-entrega-button"
-                                        onClick={handleConfirmarEntrega}
-                                    >
-                                        ✅ Confirmar Entrega e Liberar Slot
+                                    <button className="confirmar-entrega-button" onClick={handleConfirmarEntrega}>
+                                        ✅ Confirmar Entrega
                                     </button>
-                                    <p className="entrega-info">
-                                        Ao confirmar a entrega, o slot de expedição será liberado para novos pedidos.
-                                    </p>
                                 </div>
                             )}
 
-                            {/* Botões de ação - CORRIGIDOS */}
                             <div className="action-buttons">
-                                <button 
-                                    className="back-button"
-                                    onClick={() => navigate('/perfil')}  // ✅ CORRIGIDO
-                                >
-                                    ← Voltar para Meus Pedidos
+                                <button className="back-button" onClick={() => navigate('/perfil')} style={{ color: '#000000' }}>
+                                    ← Voltar para Perfil
                                 </button>
-                                
                                 <button 
                                     className="rastrear-button"
-                                    onClick={() => navigate(`/rastrear-pedido/${statusData.codigoRastreio}`)}
+                                    onClick={() => buscarPedido(statusData.codigoRastreio)}
                                     style={{ backgroundColor: primaryColor }}
                                 >
-                                    🔄 Atualizar Status
+                                    🔄 Atualizar
                                 </button>
                             </div>
                         </div>
@@ -454,7 +316,9 @@ function RastrearPedido() {
                 </div>
             </div>
 
-            {/* 🎯 MODAIS DE EDIÇÃO/REMOÇÃO */}
+            <Footer /> {/* FOOTER ADICIONADO */}
+
+            {/* 🎯 MODAIS */}
             {modalEditarAberto && produtoSelecionado && (
                 <EditarProdutoModal
                     produto={produtoSelecionado}
@@ -473,37 +337,27 @@ function RastrearPedido() {
             )}
             
             <style>{`
-                /* ESTILOS GLOBAIS - PADRÃO DOS COMPONENTES */
                 :root {
-                    --navbar-height: 5rem;
+                    --primary-color: ${primaryColor};
                 }
                 
-                html { overflow-x: hidden; }
-                body, html, #root {
-                    margin: 0;
-                    padding: 0;
-                    width: 100%;
-                    min-height: 100vh;
-                    overflow-x: hidden;
-                }
-
+                /* CONTAINER PRINCIPAL COM ESPAÇO PARA NAVBAR */
                 .page-container {
-                    padding-top: var(--navbar-height); 
+                    padding-top: 5rem; /* Espaço para navbar */
                     padding-bottom: 2rem;
-                    width: 100%; 
-                    min-height: 100vh;
+                    min-height: calc(100vh - 200px); /* Ajusta altura para footer */
                     display: flex;
-                    justify-content: center; 
-                    align-items: flex-start; 
-                    box-sizing: border-box;
+                    justify-content: center;
+                    align-items: flex-start;
+                    width: 100%;
                 }
-
+                
                 .main-content-card {
-                    width: 95%; 
+                    width: 95%;
                     max-width: 900px;
-                    background-color: white;
-                    border-radius: 1.5rem; 
-                    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15); 
+                    background: white;
+                    border-radius: 1.5rem;
+                    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
                     padding: 2.5rem;
                     margin: 2rem auto;
                     position: relative;
@@ -515,12 +369,10 @@ function RastrearPedido() {
                     left: 0;
                     width: 100%;
                     height: 8px;
-                    background-color: var(--primary-color);
                     border-top-left-radius: 1.5rem;
                     border-top-right-radius: 1.5rem;
                 }
 
-                /* HEADER SECTION - IGUAL AOS OUTROS COMPONENTES */
                 .title-section {
                     text-align: center;
                     margin-bottom: 2.5rem;
@@ -533,35 +385,22 @@ function RastrearPedido() {
                     background: linear-gradient(135deg, var(--primary-color) 0%, #ffb347 100%);
                     -webkit-background-clip: text;
                     -webkit-text-fill-color: transparent;
-                    background-clip: text;
                 }
 
                 .subtitle {
                     font-size: 1.1rem;
-                    color: #666;
+                    margin: 0 auto 2rem;
                     max-width: 600px;
-                    margin: 0 auto 2rem auto;
-                    line-height: 1.6;
                 }
 
-                /* USER INFO CARD */
                 .user-info-card {
-                    background-color: rgba(var(--primary-color-rgb), 0.05);
+                    background: rgba(0, 0, 0, 0.05);
                     border-radius: 1rem;
                     padding: 1.5rem;
-                    border: 1px solid rgba(var(--primary-color-rgb), 0.1);
-                    text-align: center;
                     max-width: 500px;
                     margin: 0 auto;
                 }
 
-                .user-info-card p {
-                    margin: 0.5rem 0;
-                    color: #333;
-                    font-size: 1rem;
-                }
-
-                /* FORMULÁRIO DE BUSCA - RESPONSIVO */
                 .search-form {
                     margin-bottom: 1.5rem;
                 }
@@ -569,128 +408,69 @@ function RastrearPedido() {
                 .input-group {
                     display: flex;
                     gap: 1rem;
-                    width: 100%;
                     max-width: 600px;
                     margin: 0 auto;
                 }
 
                 .search-input {
-                    flex-grow: 1;
+                    flex: 1;
                     padding: 1rem 1.2rem;
                     border: 2px solid #f0f0f0;
                     border-radius: 1rem;
                     font-size: 1rem;
                     background: #fafafa;
-                    color: #333;
-                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    transition: border 0.3s;
+                    color: #000000 !important;
                 }
 
                 .search-input::placeholder {
-                    color: #888;
+                    color: #666;
                 }
 
                 .search-input:focus {
                     outline: none;
                     border-color: var(--primary-color);
                     background: white;
-                    box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.15);
-                    transform: translateY(-1px);
-                }
-
-                .search-input:disabled {
-                    background-color: #f5f5f5;
-                    cursor: not-allowed;
-                    opacity: 0.7;
                 }
 
                 .search-button {
                     padding: 1rem 2rem;
-                    background-color: var(--primary-color);
                     color: white;
                     border: none;
                     border-radius: 1rem;
                     font-weight: 700;
                     font-size: 1.1rem;
                     cursor: pointer;
-                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                    white-space: nowrap;
-                    box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.3);
+                    transition: transform 0.3s;
                 }
 
                 .search-button:hover:not(:disabled) {
                     transform: translateY(-2px);
-                    box-shadow: 0 6px 20px rgba(var(--primary-color-rgb), 0.4);
-                    filter: brightness(1.05);
                 }
 
-                .search-button:disabled {
-                    opacity: 0.6;
-                    cursor: not-allowed;
-                    transform: none;
-                    box-shadow: none;
-                }
-
-                /* MENSAGENS DE ERRO */
                 .error-message {
                     color: #DC3545;
                     text-align: center;
-                    font-weight: 600;
-                    margin: 1.5rem auto;
-                    padding: 1.2rem;
-                    background-color: #f8d7da;
-                    border: 1px solid #f5c6cb;
+                    padding: 1rem;
+                    background: #f8d7da;
                     border-radius: 1rem;
                     max-width: 600px;
+                    margin: 1.5rem auto;
                 }
 
-                /* CARD DE RESULTADOS */
                 .resultado-card {
                     background: white;
                     border-radius: 1.5rem;
-                    padding: 2.5rem;
+                    padding: 2rem;
                     margin-top: 2rem;
-                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
                     border: 2px solid #f8f9fa;
-                }
-
-                .pedido-geral-info {
-                    padding-bottom: 2rem;
-                    border-bottom: 2px solid #f0f0f0;
-                    margin-bottom: 2rem;
-                }
-
-                .pedido-title {
-                    font-size: 2.2rem;
-                    font-weight: 700;
-                    color: #333;
-                    margin-bottom: 1.5rem;
-                }
-
-                .pedido-number {
-                    color: var(--primary-color);
                 }
 
                 .pedido-details-grid {
                     display: grid;
                     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
                     gap: 1.5rem;
-                }
-
-                .detail-item {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 0.5rem;
-                }
-
-                .detail-item strong {
-                    color: #666;
-                    font-size: 0.95rem;
-                }
-
-                .detail-item span {
-                    color: #333;
-                    font-size: 1.1rem;
-                    font-weight: 500;
+                    margin-top: 1rem;
                 }
 
                 .status-badge {
@@ -700,35 +480,14 @@ function RastrearPedido() {
                     font-weight: 600;
                     font-size: 0.9rem;
                     display: inline-block;
-                    text-align: center;
-                }
-
-                /* LISTA DE PRODUTOS */
-                .produtos-title {
-                    font-size: 1.6rem;
-                    font-weight: 700;
-                    color: #333;
-                    margin: 2.5rem 0 1.5rem 0;
-                    padding-top: 1.5rem;
-                    border-top: 2px solid #f0f0f0;
-                    position: relative;
-                }
-
-                .produtos-title::before {
-                    content: '';
-                    position: absolute;
-                    left: 0;
-                    top: -2px;
-                    width: 60px;
-                    height: 4px;
-                    background: var(--primary-color);
-                    border-radius: 2px;
+                    margin-left: 0.5rem;
                 }
 
                 .produtos-lista {
                     display: flex;
                     flex-direction: column;
-                    gap: 1.5rem;
+                    gap: 1rem;
+                    margin: 1.5rem 0;
                 }
 
                 .produto-item {
@@ -736,29 +495,19 @@ function RastrearPedido() {
                     border: 2px solid #f8f9fa;
                     border-radius: 1rem;
                     padding: 1.5rem;
-                    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
-                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                }
-
-                .produto-item:hover {
-                    border-color: var(--primary-color);
-                    transform: translateY(-2px);
-                    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
                 }
 
                 .produto-header {
                     display: flex;
                     justify-content: space-between;
-                    align-items: flex-start;
+                    align-items: center;
                     margin-bottom: 1rem;
                 }
 
                 .produto-nome {
                     font-weight: 600;
-                    color: #333;
                     font-size: 1.1rem;
-                    flex: 1;
-                    line-height: 1.4;
+                    color: #000000;
                 }
 
                 .produto-status-badge {
@@ -766,85 +515,42 @@ function RastrearPedido() {
                     border-radius: 9999px;
                     color: white;
                     font-weight: 600;
-                    font-size: 0.85rem;
-                    white-space: nowrap;
                 }
 
                 .produto-detalhes {
-                    display: grid;
-                    gap: 0.75rem;
-                    margin-bottom: 1rem;
+                    color: #000000;
                 }
 
-                .detalhe-item {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    padding: 0.5rem 0;
-                }
-
-                .detalhe-item strong {
-                    color: #666;
-                    font-size: 0.9rem;
-                }
-
-                .detalhe-item span {
-                    color: #333;
-                    font-weight: 500;
-                }
-
-                /* 🎯 BOTÕES DE AÇÃO DOS PRODUTOS */
                 .produto-actions {
                     display: flex;
                     gap: 1rem;
                     margin-top: 1rem;
-                    padding-top: 1rem;
-                    border-top: 1px solid #f0f0f0;
                 }
 
                 .edit-button {
-                    flex: 1;
                     background: #007bff;
                     color: white;
                     border: none;
                     padding: 0.75rem;
                     border-radius: 0.75rem;
-                    font-weight: 600;
-                    font-size: 0.95rem;
                     cursor: pointer;
-                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                }
-
-                .edit-button:hover {
-                    background: #0056b3;
-                    transform: translateY(-1px);
+                    flex: 1;
+                    font-weight: 600;
                 }
 
                 .delete-button {
-                    flex: 1;
                     background: #dc3545;
                     color: white;
                     border: none;
                     padding: 0.75rem;
                     border-radius: 0.75rem;
-                    font-weight: 600;
-                    font-size: 0.95rem;
                     cursor: pointer;
-                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    flex: 1;
+                    font-weight: 600;
                 }
 
-                .delete-button:hover {
-                    background: #c82333;
-                    transform: translateY(-1px);
-                }
-
-                /* 🎯 SEÇÃO DE ENTREGA */
                 .entrega-section {
-                    margin-top: 2.5rem;
-                    padding: 1.5rem;
-                    background: #e8f5e8;
-                    border-radius: 1rem;
-                    border: 2px solid #28a745;
+                    margin: 2rem 0;
                     text-align: center;
                 }
 
@@ -857,365 +563,114 @@ function RastrearPedido() {
                     font-size: 1.1rem;
                     font-weight: 700;
                     cursor: pointer;
-                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                    margin-bottom: 1rem;
-                    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
                 }
 
-                .confirmar-entrega-button:hover {
-                    background: #218838;
-                    transform: translateY(-2px);
-                    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
-                }
-
-                .entrega-info {
-                    color: #155724;
-                    font-size: 0.9rem;
-                    margin: 0;
-                    line-height: 1.5;
-                }
-
-                /* BOTÕES DE AÇÃO GERAIS */
                 .action-buttons {
                     display: flex;
                     gap: 1.5rem;
-                    margin-top: 3rem;
+                    margin-top: 2rem;
                     justify-content: center;
-                    flex-wrap: wrap;
                 }
 
                 .back-button {
                     padding: 1rem 2rem;
                     background: transparent;
-                    color: #333;
+                    color: #000000;
                     border: 2px solid #333;
                     border-radius: 1rem;
-                    font-weight: 600;
-                    font-size: 1rem;
                     cursor: pointer;
-                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                    font-weight: 600;
                 }
 
                 .back-button:hover {
                     background: #333;
                     color: white;
-                    transform: translateY(-2px);
-                    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
                 }
 
                 .rastrear-button {
                     padding: 1rem 2rem;
-                    background: var(--primary-color);
                     color: white;
                     border: none;
                     border-radius: 1rem;
                     font-weight: 600;
-                    font-size: 1rem;
                     cursor: pointer;
-                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                    box-shadow: 0 4px 15px rgba(var(--primary-color-rgb), 0.3);
                 }
 
-                .rastrear-button:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 6px 20px rgba(var(--primary-color-rgb), 0.4);
-                    filter: brightness(1.05);
+                .centered-container {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    height: 100vh;
+                    flex-direction: column;
+                    gap: 1rem;
+                }
+
+                .action-button {
+                    padding: 0.75rem 1.5rem;
+                    color: white;
+                    border: none;
+                    border-radius: 0.5rem;
+                    cursor: pointer;
                 }
 
                 .no-products {
                     text-align: center;
-                    color: #666;
+                    color: #000000;
                     font-style: italic;
                     padding: 2rem;
-                    background: #fafafa;
-                    border-radius: 1rem;
-                    border: 2px dashed #e9ecef;
                 }
 
-                /* 🔥 RESPONSIVIDADE AVANÇADA - IGUAL AOS OUTROS COMPONENTES */
-                
-                /* Tablets Grandes (1200px) */
-                @media (max-width: 1200px) {
-                    .main-content-card {
-                        max-width: 95%;
-                    }
-                    
-                    .title {
-                        font-size: 2.5rem;
-                    }
-                }
-                
-                /* Tablets (968px) */
-                @media (max-width: 968px) {
-                    .main-content-card {
-                        padding: 2rem;
-                        margin: 1.5rem auto;
-                    }
-                    
-                    .title {
-                        font-size: 2.3rem;
-                    }
-                    
-                    .subtitle {
-                        font-size: 1.05rem;
-                    }
-                    
-                    .input-group {
-                        flex-direction: column;
-                        max-width: 500px;
-                    }
-                    
-                    .search-button {
-                        width: 100%;
-                    }
-                    
-                    .pedido-title {
-                        font-size: 2rem;
-                    }
-                    
-                    .produtos-title {
-                        font-size: 1.4rem;
-                    }
-                }
-                
-                /* Tablets Pequenos e Mobile Grande (768px) */
+                /* RESPONSIVO */
                 @media (max-width: 768px) {
                     .page-container {
-                        padding-top: 4.5rem;
+                        padding-top: 4.5rem; /* Ajuste para navbar mobile */
                         padding-bottom: 1rem;
+                        min-height: calc(100vh - 180px);
                     }
                     
                     .main-content-card {
                         padding: 1.5rem;
                         margin: 1rem auto;
-                        border-radius: 1.2rem;
                     }
                     
                     .title {
                         font-size: 2rem;
                     }
                     
-                    .subtitle {
-                        font-size: 1rem;
-                        margin-bottom: 1.5rem;
-                    }
-                    
-                    .user-info-card {
-                        padding: 1.2rem;
-                        max-width: 100%;
-                    }
-                    
-                    .user-info-card p {
-                        font-size: 0.95rem;
-                    }
-                    
                     .input-group {
-                        max-width: 100%;
-                    }
-                    
-                    .search-input {
-                        padding: 0.9rem;
-                    }
-                    
-                    .search-button {
-                        padding: 0.9rem;
-                        font-size: 1rem;
-                    }
-                    
-                    .resultado-card {
-                        padding: 1.5rem;
-                        margin-top: 1.5rem;
-                    }
-                    
-                    .pedido-title {
-                        font-size: 1.8rem;
-                        margin-bottom: 1.2rem;
+                        flex-direction: column;
                     }
                     
                     .pedido-details-grid {
                         grid-template-columns: 1fr;
-                        gap: 1rem;
-                    }
-                    
-                    .detail-item strong {
-                        font-size: 0.9rem;
-                    }
-                    
-                    .detail-item span {
-                        font-size: 1rem;
-                    }
-                    
-                    .produtos-title {
-                        font-size: 1.3rem;
-                        margin: 2rem 0 1rem 0;
-                    }
-                    
-                    .produto-item {
-                        padding: 1.2rem;
-                    }
-                    
-                    .produto-nome {
-                        font-size: 1rem;
-                    }
-                    
-                    .produto-status-badge {
-                        font-size: 0.8rem;
-                        padding: 0.4rem 0.8rem;
-                    }
-                    
-                    .detalhe-item {
-                        flex-direction: column;
-                        align-items: flex-start;
-                        gap: 0.25rem;
                     }
                     
                     .produto-actions {
                         flex-direction: column;
                     }
                     
-                    .edit-button,
-                    .delete-button {
-                        width: 100%;
-                    }
-                    
                     .action-buttons {
                         flex-direction: column;
                         align-items: center;
-                        gap: 1rem;
                     }
                     
-                    .back-button,
-                    .rastrear-button {
+                    .back-button, .rastrear-button {
                         width: 100%;
                         max-width: 300px;
                     }
-                    
-                    .confirmar-entrega-button {
-                        padding: 0.9rem 1.5rem;
-                        font-size: 1rem;
-                    }
                 }
-                
-                /* Mobile Médio (640px) */
-                @media (max-width: 640px) {
+
+                @media (max-width: 480px) {
                     .main-content-card {
-                        padding: 1.2rem;
-                        border-radius: 1rem;
+                        padding: 1rem;
                     }
                     
                     .title {
                         font-size: 1.8rem;
                     }
                     
-                    .subtitle {
-                        font-size: 0.95rem;
-                    }
-                    
-                    .search-input {
-                        padding: 0.8rem;
-                        font-size: 0.95rem;
-                    }
-                    
-                    .search-button {
-                        padding: 0.8rem;
-                        font-size: 0.95rem;
-                    }
-                    
-                    .resultado-card {
-                        padding: 1.2rem;
-                    }
-                    
-                    .pedido-title {
-                        font-size: 1.6rem;
-                    }
-                    
-                    .produtos-title {
-                        font-size: 1.2rem;
-                    }
-                    
-                    .produto-item {
-                        padding: 1rem;
-                    }
-                }
-                
-                /* Mobile Pequeno (480px) */
-                @media (max-width: 480px) {
-                    .main-content-card {
-                        padding: 1rem;
-                        margin: 0.5rem auto;
-                    }
-                    
-                    .title {
-                        font-size: 1.6rem;
-                    }
-                    
-                    .subtitle {
-                        font-size: 0.9rem;
-                        margin-bottom: 1rem;
-                    }
-                    
-                    .user-info-card {
-                        padding: 1rem;
-                    }
-                    
-                    .user-info-card p {
-                        font-size: 0.9rem;
-                    }
-                    
-                    .search-input {
-                        font-size: 0.9rem;
-                    }
-                    
-                    .pedido-title {
-                        font-size: 1.4rem;
-                    }
-                    
-                    .produtos-title {
-                        font-size: 1.1rem;
-                    }
-                    
-                    .produto-nome {
-                        font-size: 0.95rem;
-                    }
-                    
-                    .produto-status-badge {
-                        font-size: 0.75rem;
-                        padding: 0.35rem 0.7rem;
-                    }
-                    
-                    .back-button,
-                    .rastrear-button {
-                        font-size: 0.95rem;
-                        padding: 0.9rem;
-                    }
-                }
-                
-                /* Mobile Muito Pequeno (360px) */
-                @media (max-width: 360px) {
-                    .title {
-                        font-size: 1.4rem;
-                    }
-                    
-                    .subtitle {
-                        font-size: 0.85rem;
-                    }
-                    
-                    .search-button {
-                        font-size: 0.9rem;
-                    }
-                    
-                    .pedido-title {
-                        font-size: 1.3rem;
-                    }
-                    
-                    .produtos-title {
-                        font-size: 1rem;
-                    }
-                    
-                    .confirmar-entrega-button {
-                        font-size: 0.95rem;
-                        padding: 0.8rem 1.2rem;
+                    .search-button, .confirmar-entrega-button {
+                        width: 100%;
                     }
                 }
             `}</style>

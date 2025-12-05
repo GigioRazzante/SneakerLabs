@@ -61,7 +61,8 @@ function App() {
             {/* Rota separada para Meus Pedidos */}
             <Route path="/meus-pedidos" element={<MeusPedidos />} />
             
-            {/* Rota para Rastrear Pedido */}
+            {/* Rota para Rastrear Pedido com navbar e footer */}
+            <Route path="/rastreamento" element={<RastrearPedido />} />
             <Route path="/rastrear-pedido/:codigoRastreio" element={<RastrearPedido />} />
           </Routes>
         </Router>

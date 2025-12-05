@@ -80,8 +80,9 @@ const AlterarDadosUsuario = () => {
     };
 
     const handleTrackOrder = () => {
-        setActiveView(VIEWS.TRACKING);
-        console.log('>>> Ação: Navegar para Rastreamento');
+        // Mude para navegar para página separada em vez de mudar view
+        navigate('/rastreamento');
+        console.log('>>> Ação: Navegar para página de rastreamento');
     };
 
     const handleBackToProfile = () => {
@@ -929,7 +930,11 @@ const AlterarDadosUsuario = () => {
                             <button type="button" onClick={handleAccessOrders} className="secondary-button">
                                 Acessar Meus Pedidos
                             </button>
-                            <button type="button" onClick={handleTrackOrder} className="secondary-button">
+                            <button 
+                                type="button" 
+                                onClick={handleTrackOrder} 
+                                className="secondary-button"
+                            >
                                 Rastrear um Pedido
                             </button>
                         </div>

@@ -1,7 +1,6 @@
-// src/pages/PaginaLogin.jsx
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext.jsx'; // 👈 IMPORTAR O HOOK
+import { useAuth } from '../context/AuthContext.jsx';
 import ImagemTenis from '../assets/ImgPagLogin.png';
 
 const PaginaLogin = () => {
@@ -9,7 +8,7 @@ const PaginaLogin = () => {
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     
-    const { login } = useAuth(); // 👈 USAR O HOOK
+    const { login } = useAuth();
     const navigate = useNavigate();
 
     const handleLogin = async (e) => {
@@ -32,10 +31,13 @@ const PaginaLogin = () => {
         <>
             <style>
                 {`
+                @import url('https://fonts.googleapis.com/css2?family=Rubik+Glitch&display=swap');
+                @import url('https://fonts.googleapis.com/css2?family=Sedgwick+Ave+Display&display=swap');
+                
                 .login-main-container {
                     display: flex;
                     min-height: 100vh;
-                    font-family: Arial, sans-serif;
+                    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
                     background-color: #fff;
                 }
 
@@ -51,15 +53,34 @@ const PaginaLogin = () => {
                 
                 .login-logo {
                     font-size: 2.5rem;
-                    font-weight: bold;
+                    font-weight: 400;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 0;
                 }
 
-                .login-logo-black {
-                    color: #000;
+                .login-logo-creative {
+                    font-family: 'Rubik Glitch', system-ui;
+                    font-size: 2.5rem;
+                    font-weight: 400;
+                    letter-spacing: 2px;
+                    background: linear-gradient(135deg, #000 0%, #333 100%);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    background-clip: text;
+                    transition: all 0.3s ease;
+                    text-shadow: 3px 3px 0px rgba(0,0,0,0.1);
                 }
 
-                .login-logo-orange {
+                .login-logo-colored {
+                    font-family: 'Rubik Glitch', system-ui;
+                    font-size: 2.5rem;
+                    font-weight: 400;
+                    letter-spacing: 2px;
                     color: #FF9D00;
+                    transition: all 0.3s ease;
+                    text-shadow: 3px 3px 0px rgba(0,0,0,0.1);
                 }
 
                 .sneaker-image {
@@ -69,15 +90,21 @@ const PaginaLogin = () => {
                 }
                 
                 .text-slogan-1 {
-                    font-size: 2.25rem;
-                    font-weight: bold;
+                    font-size: 2rem;
                     color: #FF9D00;
-                    margin-top: 2rem;
+                    font-family: 'Sedgwick Ave Display', cursive;
+                    margin-top: 1.5rem;
+                    line-height: 1.2;
+                    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+                    letter-spacing: 1px;
                 }
 
                 .text-slogan-2 {
                     color: #666;
                     margin-top: 0.5rem;
+                    font-size: 1rem;
+                    line-height: 1.5;
+                    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
                 }
 
                 .login-right-div {
@@ -99,8 +126,10 @@ const PaginaLogin = () => {
 
                 .text-login-slogan {
                     font-size: 2.25rem;
-                    font-weight: bold;
+                    font-weight: 700;
                     margin-bottom: 2rem;
+                    line-height: 1.2;
+                    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
                 }
 
                 .input-group {
@@ -111,7 +140,8 @@ const PaginaLogin = () => {
                     display: block;
                     text-align: left;
                     margin-bottom: 0.5rem;
-                    font-weight: bold;
+                    font-weight: 600;
+                    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
                 }
 
                 .input-group input {
@@ -122,6 +152,8 @@ const PaginaLogin = () => {
                     background-color: transparent;
                     color: #fff;
                     outline: none;
+                    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+                    font-size: 1rem;
                 }
                 
                 .input-group input::placeholder {
@@ -134,6 +166,10 @@ const PaginaLogin = () => {
                     margin-bottom: 1.5rem;
                 }
 
+                .remember-me label {
+                    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+                }
+
                 .login-button {
                     width: 100%;
                     padding: 1rem;
@@ -141,9 +177,11 @@ const PaginaLogin = () => {
                     border: none;
                     border-radius: 9999px;
                     color: #FF9D00;
-                    font-weight: bold;
+                    font-weight: 600;
                     cursor: pointer;
                     transition: background-color 0.3s;
+                    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+                    font-size: 1rem;
                 }
                 
                 .login-button:hover:not(:disabled) {
@@ -158,12 +196,15 @@ const PaginaLogin = () => {
                 .register-link-text {
                     margin-top: 1.5rem;
                     color: #fff;
+                    font-size: 0.95rem;
+                    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
                 }
 
                 .register-link {
                     color: #fff;
-                    font-weight: bold;
+                    font-weight: 600;
                     text-decoration: underline;
+                    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
                 }
                 
                 @media (max-width: 768px) {
@@ -173,8 +214,31 @@ const PaginaLogin = () => {
                     .login-left-div {
                         padding: 1rem;
                     }
-                    .text-slogan-1, .text-login-slogan {
+                    .text-login-slogan {
                         font-size: 1.75rem;
+                    }
+                    .login-logo-creative,
+                    .login-logo-colored {
+                        font-size: 2rem;
+                    }
+                    .text-slogan-1 {
+                        font-size: 1.6rem;
+                    }
+                    .text-slogan-2 {
+                        font-size: 0.95rem;
+                    }
+                }
+                
+                @media (max-width: 480px) {
+                    .login-logo-creative,
+                    .login-logo-colored {
+                        font-size: 1.8rem;
+                    }
+                    .text-slogan-1 {
+                        font-size: 1.4rem;
+                    }
+                    .text-login-slogan {
+                        font-size: 1.5rem;
                     }
                 }
                 `}
@@ -182,8 +246,8 @@ const PaginaLogin = () => {
             <div className="login-main-container">
                 <div className="login-left-div">
                     <h1 className="login-logo">
-                        <span className="login-logo-black">SNEAK</span>
-                        <span className="login-logo-orange">LAB</span>
+                        <span className="login-logo-creative">Sneak</span>
+                        <span className="login-logo-colored">Lab</span>
                     </h1>
                     <img 
                         src={ImagemTenis}
@@ -227,7 +291,7 @@ const PaginaLogin = () => {
                             </div>
                             <div className="remember-me">
                                 <input type="checkbox" id="remember" />
-                                <label htmlFor="remember" style={{ marginLeft: '0.5rem', fontWeight: 'normal' }}>Lembre-me</label>
+                                <label htmlFor="remember" style={{ marginLeft: '0.5rem', fontWeight: '500' }}>Lembre-me</label>
                             </div>
                             <button 
                                 type="submit" 
