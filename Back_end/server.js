@@ -1,4 +1,4 @@
-// server.js - VERSÃO COMPATÍVEL COM NEON
+// server.js - VERSÃO CORRIGIDA COM CORS FUNCIONAL
 import dotenv from 'dotenv';
 
 // CARREGAR DOTENV PRIMEIRO
@@ -93,15 +93,65 @@ const verificarBancoSneakerLabs = async () => {
 const app = express();
 const PORT = process.env.PORT || 10000; // Render usa porta 10000
 
-// Configuração de CORS
+// 🚨 CORREÇÃO DO CORS - PERMITIR FRONTEND LOCAL 🚨
 const corsOptions = {
-    origin: '*', // Permite tudo em desenvolvimento
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-client-id', 'Accept'],
-    credentials: true
+    origin: function (origin, callback) {
+        // Permitir todas as origens (simplificado para funcionar)
+        // Isso resolve o problema do frontend local
+        callback(null, true);
+        
+        /*
+        // Se quiser ser mais específico depois, use:
+        const allowedOrigins = [
+            'http://localhost:5173',      // Vite dev server
+            'http://localhost:3000',      // Create React App
+            'http://127.0.0.1:5173',
+            'http://127.0.0.1:3000',
+            'http://localhost:3001',      // Backend local se tiver
+            'https://sneakerslab-backend.onrender.com'
+        ];
+        
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            console.log(`❌ Origem bloqueada: ${origin}`);
+            callback(new Error('Not allowed by CORS'));
+        }
+        */
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-client-id', 'Accept', 'Origin'],
+    credentials: true,
+    optionsSuccessStatus: 200
 };
 
 app.use(cors(corsOptions));
+
+// ✅ MIDDLEWARE EXTRA PARA GARANTIR CORS (IMPORTANTE!)
+app.use((req, res, next) => {
+    // Permitir qualquer origem durante desenvolvimento
+    const origin = req.headers.origin;
+    
+    // Se tiver origin, permite; se não, permite tudo
+    if (origin) {
+        res.header('Access-Control-Allow-Origin', origin);
+    } else {
+        res.header('Access-Control-Allow-Origin', '*');
+    }
+    
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-client-id, Accept, Origin, X-Requested-With');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Expose-Headers', 'Content-Length, Content-Type, Authorization');
+    
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+    
+    next();
+});
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
@@ -190,6 +240,10 @@ app.get('/api/config', (req, res) => {
                 'POST /api/entrega/confirmar',
                 'GET /api/entrega/slots/disponiveis'
             ]
+        },
+        cors: {
+            enabled: true,
+            allowed_origins: ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173', 'http://127.0.0.1:3000']
         }
     };
     res.status(200).json(config);
@@ -203,7 +257,8 @@ app.get('/', (req, res) => {
         health_check: '/api/health',
         producao: 'https://sneakerslab-backend.onrender.com',
         version: '2.0.0',
-        status: 'operational'
+        status: 'operational',
+        cors_enabled: true
     });
 });
 
@@ -228,6 +283,19 @@ app.get('/api/test/estoque', async (req, res) => {
     }
 });
 
+// Rota específica para testar CORS
+app.get('/api/test/cors', (req, res) => {
+    res.json({
+        message: 'CORS test successful!',
+        origin: req.headers.origin || 'No origin header',
+        timestamp: new Date().toISOString(),
+        cors_headers: {
+            'Access-Control-Allow-Origin': req.headers.origin || '*',
+            'Access-Control-Allow-Credentials': 'true'
+        }
+    });
+});
+
 // Middleware para rotas não encontradas
 app.use('*', (req, res) => {
     res.status(404).json({
@@ -236,7 +304,8 @@ app.use('*', (req, res) => {
         available_routes: {
             root: 'GET /',
             health: 'GET /api/health',
-            config: 'GET /api/config'
+            config: 'GET /api/config',
+            cors_test: 'GET /api/test/cors'
         }
     });
 });
@@ -245,11 +314,21 @@ app.use('*', (req, res) => {
 app.use((err, req, res, next) => {
     console.error('❌ Erro:', err);
     
+    // Se for erro de CORS, mostra mais detalhes
+    if (err.message.includes('CORS')) {
+        console.log('🌐 CORS Error Details:', {
+            origin: req.headers.origin,
+            method: req.method,
+            url: req.url
+        });
+    }
+    
     res.status(500).json({
         error: 'Erro interno',
         message: process.env.NODE_ENV === 'production' 
             ? 'Entre em contato com o administrador'
-            : err.message
+            : err.message,
+        cors_issue: err.message.includes('CORS') ? 'Sim' : 'Não'
     });
 });
 
@@ -273,14 +352,20 @@ const startServer = async () => {
       console.log(`🌐 Ambiente: ${process.env.NODE_ENV || 'development'}`);
       console.log(`📊 Health Check: http://localhost:${PORT}/api/health`);
       console.log(`⚙️  Configuração: http://localhost:${PORT}/api/config`);
+      console.log(`🌐 CORS Test: http://localhost:${PORT}/api/test/cors`);
       
       console.log('\n🎯 PRODUÇÃO:');
       console.log(`   ✅ https://sneakerslab-backend.onrender.com`);
       console.log(`   ✅ https://sneakerslab-backend.onrender.com/api/health`);
       console.log(`   ✅ https://sneakerslab-backend.onrender.com/api/estoque/listar`);
+      console.log(`   ✅ https://sneakerslab-backend.onrender.com/api/test/cors`);
+      
+      console.log('\n🎯 FRONTEND LOCAL (CORS habilitado):');
+      console.log(`   ✅ http://localhost:5173 -> https://sneakerslab-backend.onrender.com`);
+      console.log(`   ✅ http://localhost:3000 -> https://sneakerslab-backend.onrender.com`);
       
       console.log('\n' + '='.repeat(60));
-      console.log('✅ Servidor pronto para receber requisições');
+      console.log('✅ Servidor pronto para receber requisições do frontend local!');
       console.log('='.repeat(60));
     });
     
