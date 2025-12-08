@@ -1,4 +1,4 @@
-// server.js - VERSÃO CORRIGIDA
+// server.js - VERSÃO COMPATÍVEL COM NEON
 import dotenv from 'dotenv';
 
 // CARREGAR DOTENV PRIMEIRO
@@ -23,133 +23,20 @@ import mensagemRoutes from './routes/mensagemRoutes.js';
 import estoqueRoutes from './routes/estoqueRoutes.js';
 import produtoRoutes from './routes/produtoRoutes.js';
 
-// Importar pool do database.js (SÓ UM POOL!)
+// Importar pool do database.js
 import pool from './config/database.js';
 
 // ============================================
-// INICIALIZAÇÃO AUTOMÁTICA DO BANCO
+// VERIFICAÇÃO DO BANCO (NÃO CRIAÇÃO!)
 // ============================================
 
-const inicializarBancoSneakerLabs = async () => {
-  console.log('🔧 Inicializando banco de dados SneakerLabs...');
+const verificarBancoSneakerLabs = async () => {
+  console.log('🔍 Verificando banco de dados...');
   
   try {
     const client = await pool.connect();
     
-    // 1. CLIENTES
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS clientes (
-        id SERIAL PRIMARY KEY,
-        email VARCHAR(100) UNIQUE NOT NULL,
-        senha VARCHAR(255) NOT NULL,
-        nome_usuario VARCHAR(50) UNIQUE NOT NULL,
-        data_nascimento DATE,
-        telefone VARCHAR(20),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        cor_perfil VARCHAR(7) DEFAULT '#3498db'
-      )
-    `);
-    console.log('✅ Tabela "clientes" criada/verificada');
-
-    // 2. ESTOQUE_MAQUINA
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS estoque_maquina (
-        id SERIAL PRIMARY KEY,
-        nome_produto VARCHAR(100) NOT NULL,
-        quantidade INTEGER NOT NULL DEFAULT 0,
-        quantidade_minima INTEGER DEFAULT 10,
-        localizacao VARCHAR(50),
-        categoria VARCHAR(50),
-        codigo VARCHAR(50) UNIQUE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    console.log('✅ Tabela "estoque_maquina" criada/verificada');
-
-    // 3. PEDIDOS
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS pedidos (
-        id SERIAL PRIMARY KEY,
-        cliente_id INTEGER NOT NULL,
-        status_geral VARCHAR(50) DEFAULT 'pendente',
-        valor_total DECIMAL(10,2) DEFAULT 0.00,
-        data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
-      )
-    `);
-    console.log('✅ Tabela "pedidos" criada/verificada');
-
-    // 4. PRODUTOS_DO_PEDIDO
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS produtos_do_pedido (
-        id SERIAL PRIMARY KEY,
-        pedido_id INTEGER NOT NULL,
-        passo_um VARCHAR(100),
-        passo_dois VARCHAR(100),
-        passo_tres VARCHAR(100),
-        passo_quatro VARCHAR(100),
-        passo_cinco VARCHAR(100),
-        status_producao VARCHAR(50) DEFAULT 'aguardando',
-        valor DECIMAL(10,2) DEFAULT 0.00,
-        codigo_rastreio VARCHAR(100),
-        sneaker_config JSONB,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        imagem_url TEXT,
-        imagem_nome_arqui VARCHAR(255),
-        imagem_caminho TEXT,
-        slot_expedicao INTEGER,
-        mensagem_personalizada TEXT,
-        FOREIGN KEY (pedido_id) REFERENCES pedidos(id) ON DELETE CASCADE
-      )
-    `);
-    console.log('✅ Tabela "produtos_do_pedido" criada/verificada');
-
-    // 5. SLOTS_EXPEDICAO
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS slots_expedicao (
-        id SERIAL PRIMARY KEY,
-        status VARCHAR(50),
-        pedido_id INTEGER,
-        data_ocupacao TIMESTAMP,
-        data_liberacao TIMESTAMP,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (pedido_id) REFERENCES pedidos(id) ON DELETE SET NULL
-      )
-    `);
-    console.log('✅ Tabela "slots_expedicao" criada/verificada');
-
-    // 🎯 INSERIR DADOS INICIAIS NO ESTOQUE
-    console.log('📦 Inserindo dados iniciais no estoque...');
-    await client.query(`
-      INSERT INTO estoque_maquina 
-        (nome_produto, quantidade, quantidade_minima, categoria, codigo, localizacao) 
-      VALUES
-        ('Bloco Caixa Casual - 1 Andar', 50, 10, 'bloco', 'B1', 'Área de Blocos'),
-        ('Bloco Caixa Corrida - 2 Andares', 40, 8, 'bloco', 'B2', 'Área de Blocos'),
-        ('Bloco Caixa Skate - 3 Andares', 30, 6, 'bloco', 'B3', 'Área de Blocos'),
-        ('Lâmina Ilustrativa - Couro', 100, 20, 'material', 'M1', 'Gaveta Lâminas'),
-        ('Lâmina Ilustrativa - Camurça', 90, 18, 'material', 'M2', 'Gaveta Lâminas'),
-        ('Lâmina Ilustrativa - Tecido', 120, 24, 'material', 'M3', 'Gaveta Lâminas'),
-        ('Lâmina Ilustrativa - Solado Borracha', 80, 16, 'solado', 'S1', 'Gaveta Solados'),
-        ('Lâmina Colorida - Branco', 150, 30, 'cor', 'L1', 'Gaveta Cores'),
-        ('Lâmina Colorida - Preto', 140, 28, 'cor', 'L2', 'Gaveta Cores'),
-        ('Adesivo Ilustrativo - Cadarço Normal', 200, 40, 'detalhe', 'D1', 'Caixa Adesivos')
-      ON CONFLICT (codigo) DO NOTHING
-    `);
-    console.log('✅ 10 itens inseridos no estoque');
-
-    // 🎯 CRIAR SLOTS VAZIOS
-    await client.query(`
-      INSERT INTO slots_expedicao (status) VALUES 
-        (NULL), (NULL), (NULL), (NULL), (NULL)
-      ON CONFLICT DO NOTHING
-    `);
-    console.log('✅ 5 slots de expedição criados');
-
-    // 🎯 VERIFICAÇÃO FINAL
+    // ✅ APENAS VERIFICAR TABELAS - NÃO CRIAR!
     const tabelas = await client.query(`
       SELECT table_name 
       FROM information_schema.tables 
@@ -157,20 +44,45 @@ const inicializarBancoSneakerLabs = async () => {
       ORDER BY table_name
     `);
     
-    console.log('\n📊 TABELAS CRIADAS NO BANCO:');
-    tabelas.rows.forEach(t => console.log(`   ✅ ${t.table_name}`));
+    console.log('\n📊 TABELAS ENCONTRADAS NO BANCO:');
     
-    // Verificar dados no estoque
-    const estoqueCount = await client.query('SELECT COUNT(*) FROM estoque_maquina');
-    console.log(`\n📦 ESTOQUE: ${estoqueCount.rows[0].count} itens cadastrados`);
+    // Verificar tabelas essenciais
+    const tabelasEsperadas = ['clientes', 'estoque_maquina', 'pedidos', 'produtos_do_pedido', 'slots_expedicao'];
+    const tabelasEncontradas = tabelas.rows.map(t => t.table_name);
+    
+    tabelasEsperadas.forEach(tabela => {
+      if (tabelasEncontradas.includes(tabela)) {
+        console.log(`   ✅ ${tabela}`);
+      } else {
+        console.log(`   ❌ ${tabela} (NÃO ENCONTRADA!)`);
+      }
+    });
+    
+    // Verificar dados iniciais
+    try {
+      const estoqueCount = await client.query('SELECT COUNT(*) as total FROM estoque_maquina');
+      console.log(`\n📦 ESTOQUE: ${estoqueCount.rows[0].total} itens cadastrados`);
+      
+      const slotsCount = await client.query('SELECT COUNT(*) as total FROM slots_expedicao');
+      console.log(`🕒 SLOTS: ${slotsCount.rows[0].total} slots de expedição`);
+      
+      const clientesCount = await client.query('SELECT COUNT(*) as total FROM clientes');
+      console.log(`👥 CLIENTES: ${clientesCount.rows[0].total} clientes cadastrados`);
+    } catch (err) {
+      console.log('ℹ️  Dados iniciais ainda não carregados');
+    }
     
     client.release();
-    console.log('\n🎉 BANCO DE DADOS INICIALIZADO COM SUCESSO!');
+    console.log('\n🎉 VERIFICAÇÃO DO BANCO CONCLUÍDA!');
     console.log('============================================');
     
   } catch (error) {
-    console.error('❌ ERRO AO INICIALIZAR BANCO:', error.message);
-    console.error('💡 O sistema iniciará, mas rotas de banco podem falhar');
+    console.error('⚠️  AVISO: Não foi possível verificar o banco:', error.message);
+    console.log('💡 O sistema continuará, mas funcionalidades de banco podem falhar');
+    console.log('🔧 Verifique:');
+    console.log('   1. Conexão com o Neon');
+    console.log('   2. Tabelas foram criadas pelo script SQL');
+    console.log('   3. Variáveis de ambiente no Render');
   }
 };
 
@@ -179,7 +91,7 @@ const inicializarBancoSneakerLabs = async () => {
 // ============================================
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 10000; // Render usa porta 10000
 
 // Configuração de CORS
 const corsOptions = {
@@ -342,13 +254,13 @@ app.use((err, req, res, next) => {
 });
 
 // ============================================
-// INICIAR SERVIDOR E BANCO
+// INICIAR SERVIDOR E VERIFICAR BANCO
 // ============================================
 
 const startServer = async () => {
   try {
-    // Inicializar banco de dados
-    await inicializarBancoSneakerLabs();
+    // Verificar banco de dados (NÃO criar)
+    await verificarBancoSneakerLabs();
     
     // Iniciar servidor
     app.listen(PORT, () => {
@@ -374,12 +286,12 @@ const startServer = async () => {
     
   } catch (error) {
     console.error('❌ ERRO AO INICIAR SERVIDOR:', error);
-    console.log('💡 Iniciando servidor SEM banco...');
+    console.log('💡 Iniciando servidor mesmo com erro...');
     
-    // Inicia mesmo sem banco
+    // Inicia mesmo com erro
     app.listen(PORT, () => {
-      console.log(`🚀 Servidor rodando na porta ${PORT} (modo sem banco)`);
-      console.log(`💡 Use a versão em produção: https://sneakerslab-backend.onrender.com`);
+      console.log(`🚀 Servidor rodando na porta ${PORT} (modo com limitações)`);
+      console.log(`💡 Verifique a conexão com o Neon`);
     });
   }
 };

@@ -1,0 +1,36 @@
+[33mdeffbca[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{Wed Dec 3 16:49:03 2025}: reset: moving to origin/main
+[33mdeffbca[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{Wed Dec 3 16:46:17 2025}: reset: moving to origin/main
+[33m6aeca34[m HEAD@{Wed Dec 3 16:36:57 2025}: commit: implementação do render
+[33m796050f[m HEAD@{Wed Dec 3 16:33:47 2025}: reset: moving to 796050f21f156606f0d7a5271bccae0a43a2fa16
+[33m796050f[m HEAD@{Wed Dec 3 16:25:41 2025}: commit: render
+[33m40ad86f[m HEAD@{Wed Dec 3 15:44:11 2025}: commit: implementação do render
+[33mdeffbca[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{Mon Dec 1 17:13:29 2025}: commit: att
+[33m89500aa[m HEAD@{Thu Nov 27 17:03:05 2025}: commit: att
+[33m7d930e8[m HEAD@{Wed Nov 26 16:48:31 2025}: commit: att
+[33m8d3f699[m HEAD@{Tue Nov 25 17:11:42 2025}: commit: ok
+[33me227b90[m HEAD@{Tue Nov 25 16:57:24 2025}: commit: ok
+[33me30efea[m HEAD@{Tue Nov 25 15:41:31 2025}: commit: ok
+[33m34d9a27[m HEAD@{Tue Nov 25 15:30:28 2025}: commit: ok
+[33m13aa768[m HEAD@{Wed Nov 19 16:56:02 2025}: commit: att
+[33ma41c6d4[m HEAD@{Mon Nov 17 17:16:34 2025}: commit: att
+[33mff146ec[m HEAD@{Thu Nov 13 17:07:32 2025}: commit: att
+[33m6addc5b[m HEAD@{Tue Nov 11 17:02:43 2025}: commit: att
+[33m6ded358[m HEAD@{Mon Nov 10 17:15:00 2025}: commit: att
+[33m66fcbe7[m HEAD@{Mon Nov 10 14:22:16 2025}: pull: Fast-forward
+[33m6233187[m HEAD@{Wed Nov 5 17:09:39 2025}: commit: att
+[33mc7cb3bd[m HEAD@{Wed Nov 5 17:06:28 2025}: commit (merge): att
+[33m36888eb[m HEAD@{Wed Nov 5 17:04:37 2025}: commit: att
+[33m69d8b53[m HEAD@{Tue Oct 28 16:47:48 2025}: commit: att
+[33m071350d[m HEAD@{Thu Oct 23 17:15:38 2025}: commit: att
+[33md16fc1d[m HEAD@{Wed Oct 22 17:04:44 2025}: commit: att
+[33ma51aabb[m HEAD@{Tue Oct 21 17:12:42 2025}: commit: att
+[33m73734f5[m HEAD@{Wed Oct 8 17:15:41 2025}: commit: att
+[33m2ff151f[m HEAD@{Tue Oct 7 17:11:52 2025}: commit: att
+[33m19ad198[m HEAD@{Mon Oct 6 17:05:20 2025}: commit: ok
+[33m91437fb[m HEAD@{Thu Oct 2 17:16:31 2025}: commit: att
+[33m6dae6c0[m HEAD@{Tue Sep 30 17:05:37 2025}: commit: att
+[33m8495426[m HEAD@{Tue Sep 23 17:11:51 2025}: commit: att
+[33mf5bcebf[m HEAD@{Tue Sep 23 15:55:35 2025}: commit: att
+[33m79dba0d[m HEAD@{Tue Sep 16 17:14:32 2025}: commit: att
+[33m67e7681[m HEAD@{Mon Sep 15 16:38:47 2025}: commit: att
+[33mcab5c69[m HEAD@{Mon Sep 15 14:18:56 2025}: clone: from https://github.com/GigioRazzante/SneakerLabs.git
