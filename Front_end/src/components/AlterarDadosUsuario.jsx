@@ -5,6 +5,8 @@ import { useTheme } from '../context/ThemeContext.jsx';
 import MeusPedidos from './MeusPedidos'; 
 import RastrearPedido from './RastrearPedido';
 
+const API_BASE_URL = 'https://sneakerslab-backend.onrender.com';
+
 const VIEWS = {
     PROFILE: 'profile',
     ORDERS: 'orders',
@@ -251,7 +253,7 @@ const AlterarDadosUsuario = () => {
                 cor_perfil: profileColor
             });
 
-            const response = await fetch(`http://localhost:3001/api/cliente/${user.id}`, {
+            const response = await fetch(`${API_BASE_URL}/api/cliente/${user.id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

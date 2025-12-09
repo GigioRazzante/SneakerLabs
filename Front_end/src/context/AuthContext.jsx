@@ -1,6 +1,9 @@
 // src/context/AuthContext.jsx
 import React, { createContext, useState, useContext, useEffect } from 'react';
 
+// ⬇️⬇️⬇️ ADICIONE ESTA LINHA AQUI ⬇️⬇️⬇️
+const API_BASE_URL = 'https://sneakerslab-backend.onrender.com';
+
 // 1. Criar o Context
 const AuthContext = createContext();
 
@@ -12,7 +15,7 @@ export const AuthProvider = ({ children }) => {
     // 3. Função para buscar dados do usuário
     const fetchUserData = async (clienteId) => {
         try {
-            const response = await fetch(`http://localhost:3001/api/cliente/${clienteId}`);
+            const response = await fetch(`${API_BASE_URL}/api/cliente/${clienteId}`);
             if (response.ok) {
                 const userData = await response.json();
                 return { ...userData, id: clienteId };
@@ -51,7 +54,7 @@ export const AuthProvider = ({ children }) => {
     // 5. Função de Login
     const login = async (email, password) => {
         try {
-            const response = await fetch('http://localhost:3001/api/auth/login', {
+            const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',

@@ -7,6 +7,7 @@ import Footer from '../components/Footer';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx'; // 🎨 NOVO IMPORT
 
+const API_BASE_URL = 'https://sneakerslab-backend.onrender.com';
 // Mantenha o passos igual ao seu original
 const passos = [
   {
@@ -262,7 +263,7 @@ const PaginaCriarSneaker = () => {
     try {
         console.log("🚀 Enviando requisição para /api/orders...");
         
-        const response = await fetch('http://localhost:3001/api/orders', {
+        const response = await fetch(`${API_BASE_URL}/api/orders`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

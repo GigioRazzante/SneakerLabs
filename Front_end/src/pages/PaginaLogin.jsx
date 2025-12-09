@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import ImagemTenis from '../assets/ImgPagLogin.png';
 
+
+
 const PaginaLogin = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');

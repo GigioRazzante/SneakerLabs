@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import ImagemTenis from '../assets/ImgPagLogin.png';
 
+const API_BASE_URL = 'https://sneakerslab-backend.onrender.com';
+
 const PaginaCadastro = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -10,6 +12,7 @@ const PaginaCadastro = () => {
     const [phone, setPhone] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    
 
     const handleCadastro = async (e) => {
         e.preventDefault();
@@ -22,7 +25,7 @@ const PaginaCadastro = () => {
         setLoading(true);
 
         try {
-            const response = await fetch('http://localhost:3001/api/auth/register', {
+            const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

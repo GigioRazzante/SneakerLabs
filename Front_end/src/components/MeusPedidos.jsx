@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import Navbar from '../components/Navbar';
 
+const API_BASE_URL = 'https://sneakerslab-backend.onrender.com';
+
 const MeusPedidos = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
@@ -29,7 +31,7 @@ const MeusPedidos = () => {
             }
 
             try {
-                const response = await fetch(`http://localhost:3001/api/orders/cliente/${user.id}/detalhado`);
+                const response = await fetch(`${API_BASE_URL}/api/orders/cliente/${user.id}/detalhado`);
                 if (!response.ok) throw new Error('Falha ao buscar pedidos');
                 
                 const data = await response.json();
@@ -55,7 +57,7 @@ const MeusPedidos = () => {
 
     const handleConfirmarEntrega = async (pedidoId) => {
         try {
-            const response = await fetch(`http://localhost:3001/api/entrega/confirmar`, {
+            const response = await fetch(`${API_BASE_URL}/api/entrega/confirmar`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ pedidoId })

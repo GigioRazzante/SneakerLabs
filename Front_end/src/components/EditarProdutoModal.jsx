@@ -1,6 +1,8 @@
 // components/EditarProdutoModal.jsx
 import React, { useState, useEffect } from 'react';
 
+const API_BASE_URL = 'https://sneakerslab-backend.onrender.com';
+
 const EditarProdutoModal = ({ produto, pedidoId, onSave, onClose }) => {
   const [selections, setSelections] = useState({});
   const [loading, setLoading] = useState(false);
@@ -121,7 +123,7 @@ const EditarProdutoModal = ({ produto, pedidoId, onSave, onClose }) => {
       });
 
       // Chamar API para atualizar
-      const response = await fetch(`http://localhost:3001/api/produtos/editar/${produto.id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/produtos/editar/${produto.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

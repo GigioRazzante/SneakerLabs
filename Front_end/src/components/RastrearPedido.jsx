@@ -7,7 +7,8 @@ import { useTheme } from '../context/ThemeContext.jsx';
 import EditarProdutoModal from '../components/EditarProdutoModal';
 import ConfirmarRemocaoModal from '../components/ConfirmarRemocaoModal';
 
-const BACKEND_URL = 'http://localhost:3001'; 
+
+const API_BASE_URL = 'https://sneakerslab-backend.onrender.com';
 
 // ✅ FUNÇÕES AUXILIARES SIMPLIFICADAS
 const formatarData = (dataString) => {

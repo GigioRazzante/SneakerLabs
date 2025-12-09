@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext.jsx';
 
+const API_BASE_URL = 'https://sneakerslab-backend.onrender.com';
+
 const EstoqueManager = () => {
   const { primaryColor } = useTheme();
   const [estoque, setEstoque] = useState([]);
@@ -16,7 +18,7 @@ const EstoqueManager = () => {
       setError(null);
       
       console.log('📦 Buscando estoque da API...');
-      const response = await fetch('http://localhost:3001/api/estoque/listar');
+      const response = await fetch(`${API_BASE_URL}/api/estoque/listar`);
       
       if (!response.ok) {
         throw new Error(`Erro HTTP ${response.status}`);
@@ -99,7 +101,7 @@ const EstoqueManager = () => {
     try {
       console.log(`🔄 Repondo item ${itemId} com ${quantidade} unidades`);
       
-      const response = await fetch(`http://localhost:3001/api/estoque/repor/${itemId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/estoque/repor/${itemId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

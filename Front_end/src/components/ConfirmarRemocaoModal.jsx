@@ -1,10 +1,12 @@
 // components/ConfirmarRemocaoModal.jsx
 import React from 'react';
 
+const API_BASE_URL = 'https://sneakerslab-backend.onrender.com';
+
 const ConfirmarRemocaoModal = ({ produto, onConfirm, onCancel }) => {
   const handleConfirm = async () => {
     try {
-      const response = await fetch(`http://localhost:3001/api/produtos/remover/${produto.id}`, {
+     const response = await fetch(`${API_BASE_URL}/api/produtos/remover/${produto.id}`, {
         method: 'DELETE',
       });
 
