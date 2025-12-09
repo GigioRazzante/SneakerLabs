@@ -1,4 +1,4 @@
-// server.js - VERSÃO CORRIGIDA COM CORS FUNCIONAL
+// server.js - VERSÃO FINAL PARA DEPLOY NO RENDER
 import dotenv from 'dotenv';
 
 // CARREGAR DOTENV PRIMEIRO
@@ -27,124 +27,49 @@ import produtoRoutes from './routes/produtoRoutes.js';
 import pool from './config/database.js';
 
 // ============================================
-// VERIFICAÇÃO DO BANCO (NÃO CRIAÇÃO!)
+// CONFIGURAÇÕES GLOBAIS
 // ============================================
 
-const verificarBancoSneakerLabs = async () => {
-  console.log('🔍 Verificando banco de dados...');
-  
-  try {
-    const client = await pool.connect();
-    
-    // ✅ APENAS VERIFICAR TABELAS - NÃO CRIAR!
-    const tabelas = await client.query(`
-      SELECT table_name 
-      FROM information_schema.tables 
-      WHERE table_schema = 'public'
-      ORDER BY table_name
-    `);
-    
-    console.log('\n📊 TABELAS ENCONTRADAS NO BANCO:');
-    
-    // Verificar tabelas essenciais
-    const tabelasEsperadas = ['clientes', 'estoque_maquina', 'pedidos', 'produtos_do_pedido', 'slots_expedicao'];
-    const tabelasEncontradas = tabelas.rows.map(t => t.table_name);
-    
-    tabelasEsperadas.forEach(tabela => {
-      if (tabelasEncontradas.includes(tabela)) {
-        console.log(`   ✅ ${tabela}`);
-      } else {
-        console.log(`   ❌ ${tabela} (NÃO ENCONTRADA!)`);
-      }
-    });
-    
-    // Verificar dados iniciais
-    try {
-      const estoqueCount = await client.query('SELECT COUNT(*) as total FROM estoque_maquina');
-      console.log(`\n📦 ESTOQUE: ${estoqueCount.rows[0].total} itens cadastrados`);
-      
-      const slotsCount = await client.query('SELECT COUNT(*) as total FROM slots_expedicao');
-      console.log(`🕒 SLOTS: ${slotsCount.rows[0].total} slots de expedição`);
-      
-      const clientesCount = await client.query('SELECT COUNT(*) as total FROM clientes');
-      console.log(`👥 CLIENTES: ${clientesCount.rows[0].total} clientes cadastrados`);
-    } catch (err) {
-      console.log('ℹ️  Dados iniciais ainda não carregados');
-    }
-    
-    client.release();
-    console.log('\n🎉 VERIFICAÇÃO DO BANCO CONCLUÍDA!');
-    console.log('============================================');
-    
-  } catch (error) {
-    console.error('⚠️  AVISO: Não foi possível verificar o banco:', error.message);
-    console.log('💡 O sistema continuará, mas funcionalidades de banco podem falhar');
-    console.log('🔧 Verifique:');
-    console.log('   1. Conexão com o Neon');
-    console.log('   2. Tabelas foram criadas pelo script SQL');
-    console.log('   3. Variáveis de ambiente no Render');
-  }
-};
+const MIDDLEWARE_URL = process.env.MIDDLEWARE_URL || 'http://52.72.137.244:3000';
+const BACKEND_URL = process.env.BACKEND_URL || 'https://sneakerslab-backend.onrender.com';
+const PORT = process.env.PORT || 10000;
+
+// ============================================
+// LOG DE INICIALIZAÇÃO
+// ============================================
+
+console.log('\n' + '='.repeat(60));
+console.log('🚀 SNEAKERLABS BACKEND - INICIANDO...');
+console.log('='.repeat(60));
+
+console.log('\n🔧 CONFIGURAÇÕES:');
+console.log(`   🌐 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+console.log(`   📡 Porta: ${PORT}`);
+console.log(`   🔗 Middleware: ${MIDDLEWARE_URL}`);
+console.log(`   🚀 Backend URL: ${BACKEND_URL}`);
+console.log(`   📊 Banco: ${process.env.DATABASE_URL ? 'CONFIGURADO ✓' : 'NÃO CONFIGURADO ✗'}`);
 
 // ============================================
 // CONFIGURAÇÃO DO EXPRESS
 // ============================================
 
 const app = express();
-const PORT = process.env.PORT || 10000; // Render usa porta 10000
 
-// 🚨 CORREÇÃO DO CORS - PERMITIR FRONTEND LOCAL 🚨
-const corsOptions = {
-    origin: function (origin, callback) {
-        // Permitir todas as origens (simplificado para funcionar)
-        // Isso resolve o problema do frontend local
-        callback(null, true);
-        
-        /*
-        // Se quiser ser mais específico depois, use:
-        const allowedOrigins = [
-            'http://localhost:5173',      // Vite dev server
-            'http://localhost:3000',      // Create React App
-            'http://127.0.0.1:5173',
-            'http://127.0.0.1:3000',
-            'http://localhost:3001',      // Backend local se tiver
-            'https://sneakerslab-backend.onrender.com'
-        ];
-        
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            console.log(`❌ Origem bloqueada: ${origin}`);
-            callback(new Error('Not allowed by CORS'));
-        }
-        */
-    },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-client-id', 'Accept', 'Origin'],
+// CORS SIMPLIFICADO E FUNCIONAL
+app.use(cors({
+    origin: true,
     credentials: true,
-    optionsSuccessStatus: 200
-};
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-client-id', 'Accept', 'Origin']
+}));
 
-app.use(cors(corsOptions));
-
-// ✅ MIDDLEWARE EXTRA PARA GARANTIR CORS (IMPORTANTE!)
+// HEADERS EXTRAS PARA CORS
 app.use((req, res, next) => {
-    // Permitir qualquer origem durante desenvolvimento
-    const origin = req.headers.origin;
-    
-    // Se tiver origin, permite; se não, permite tudo
-    if (origin) {
-        res.header('Access-Control-Allow-Origin', origin);
-    } else {
-        res.header('Access-Control-Allow-Origin', '*');
-    }
-    
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-client-id, Accept, Origin, X-Requested-With');
     res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Expose-Headers', 'Content-Length, Content-Type, Authorization');
     
-    // Handle preflight requests
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
@@ -152,15 +77,15 @@ app.use((req, res, next) => {
     next();
 });
 
+// MIDDLEWARES
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-
-// Servir arquivos estáticos
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ============================================
-// CONFIGURAÇÃO DAS ROTAS
+// ROTAS PRINCIPAIS
 // ============================================
+
 app.use('/api/auth', authRoutes);
 app.use('/api/cliente', clienteRoutes);
 app.use('/api/orders', pedidoRoutes);
@@ -171,215 +96,359 @@ app.use('/api/estoque', estoqueRoutes);
 app.use('/api/produtos', produtoRoutes);
 
 // ============================================
+// 🎯 ENDPOINTS DE TESTE PARA QUEUE SMART
+// ============================================
+
+// TESTE 1: Configuração do Middleware
+app.get('/api/test/middleware-config', (req, res) => {
+    res.json({
+        success: true,
+        config: {
+            MIDDLEWARE_URL: MIDDLEWARE_URL,
+            BACKEND_URL: BACKEND_URL,
+            NODE_ENV: process.env.NODE_ENV || 'development',
+            PORT: PORT
+        },
+        endpoints: {
+            callback: `${BACKEND_URL}/api/callback`,
+            health: `${BACKEND_URL}/api/health`
+        },
+        timestamp: new Date().toISOString()
+    });
+});
+
+// TESTE 2: Ping direto no Middleware
+app.get('/api/test/middleware-ping', async (req, res) => {
+    try {
+        console.log(`🔗 Testando conexão com: ${MIDDLEWARE_URL}/health`);
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
+        const response = await fetch(`${MIDDLEWARE_URL}/health`, {
+            signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        res.json({
+            success: true,
+            middleware: MIDDLEWARE_URL,
+            status: 'CONECTADO',
+            response: data,
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error('❌ Falha na conexão:', error.message);
+        res.status(500).json({
+            success: false,
+            middleware: MIDDLEWARE_URL,
+            error: error.message,
+            status: 'OFFLINE',
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+// TESTE 3: Conexão completa com Queue Smart
+app.get('/api/test/queue-smart', async (req, res) => {
+    try {
+        console.log('🧪 Testando integração completa...');
+        
+        // Teste 1: Verificar se o serviço existe
+        let queueService;
+        try {
+            const module = await import('./services/queueMiddlewareService.js');
+            queueService = module.default;
+            console.log('   ✅ Serviço importado');
+        } catch (error) {
+            console.log('   ⚠️  Serviço não disponível, testando conexão direta...');
+            
+            // Teste direto se o serviço não existe
+            const pingResponse = await fetch(`${MIDDLEWARE_URL}/health`);
+            if (pingResponse.ok) {
+                return res.json({
+                    success: true,
+                    status: 'MIDDLEWARE_ONLINE',
+                    message: 'Queue Smart está online, mas serviço local não configurado',
+                    middleware_url: MIDDLEWARE_URL,
+                    timestamp: new Date().toISOString()
+                });
+            }
+            throw new Error('Serviço Queue Smart não disponível');
+        }
+        
+        // Teste 2: Testar conexão via serviço
+        const testeConexao = await queueService.testarConexao();
+        
+        res.json({
+            success: true,
+            status: 'INTEGRADO',
+            teste: testeConexao,
+            middleware_url: MIDDLEWARE_URL,
+            backend_url: BACKEND_URL,
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error('❌ Teste falhou:', error.message);
+        res.status(500).json({
+            success: false,
+            status: 'FALHA',
+            error: error.message,
+            middleware_url: MIDDLEWARE_URL,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+// TESTE 4: Verificar estoque específico
+app.get('/api/test/estoque-queue/:cor', async (req, res) => {
+    const { cor } = req.params;
+    
+    try {
+        console.log(`📦 Verificando estoque para cor: ${cor}`);
+        
+        // Tentar usar o serviço
+        try {
+            const module = await import('./services/queueMiddlewareService.js');
+            const queueService = module.default;
+            const estoque = await queueService.verificarEstoqueQueueSmart(cor);
+            
+            res.json({
+                success: true,
+                cor: cor,
+                estoque: estoque,
+                fonte: 'queue_middleware_service',
+                timestamp: new Date().toISOString()
+            });
+            
+        } catch (serviceError) {
+            // Fallback: verificar no banco local
+            console.log('   ⚠️  Usando fallback para banco local');
+            const client = await pool.connect();
+            const result = await client.query(
+                'SELECT * FROM estoque_maquina WHERE cor = $1',
+                [cor]
+            );
+            client.release();
+            
+            res.json({
+                success: true,
+                cor: cor,
+                estoque: result.rows,
+                fonte: 'banco_local_fallback',
+                timestamp: new Date().toISOString()
+            });
+        }
+        
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            cor: cor,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+// ============================================
 // ROTAS DO SISTEMA
 // ============================================
 
-// Health Check (essencial para Render)
+// Health Check
 app.get('/api/health', async (req, res) => {
     try {
-        const healthStatus = {
-            status: 'healthy',
-            timestamp: new Date().toISOString(),
-            uptime: process.uptime(),
-            service: 'SneakerLabs Backend',
-            version: '2.0.0',
-            environment: process.env.NODE_ENV || 'development',
-            node_version: process.version,
-            database: 'connected',
-            tables: []
-        };
-        
-        // Verificar tabelas no banco
         const client = await pool.connect();
         const tabelas = await client.query(
             "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"
         );
-        healthStatus.tables = tabelas.rows.map(t => t.table_name);
         client.release();
         
-        res.status(200).json(healthStatus);
+        res.status(200).json({
+            status: 'healthy',
+            service: 'SneakerLabs Backend',
+            version: '3.0.0',
+            timestamp: new Date().toISOString(),
+            uptime: process.uptime(),
+            environment: process.env.NODE_ENV || 'development',
+            database: 'connected',
+            tables_count: tabelas.rows.length,
+            middleware: MIDDLEWARE_URL,
+            backend_url: BACKEND_URL
+        });
     } catch (error) {
         res.status(200).json({
-            status: 'warning',
-            message: 'Banco offline',
+            status: 'degraded',
+            service: 'SneakerLabs Backend',
+            error: error.message,
+            timestamp: new Date().toISOString(),
+            database: 'offline',
+            middleware: MIDDLEWARE_URL
+        });
+    }
+});
+
+// Rota de Configuração
+app.get('/api/config', (req, res) => {
+    res.json({
+        status: 'OK',
+        sistema: 'SneakerLabs Backend',
+        versao: '3.0.0',
+        ambiente: process.env.NODE_ENV || 'development',
+        porta: PORT,
+        timestamp: new Date().toISOString(),
+        urls: {
+            backend: BACKEND_URL,
+            middleware: MIDDLEWARE_URL,
+            callback: `${BACKEND_URL}/api/callback`
+        },
+        endpoints_teste: {
+            middleware_config: `${BACKEND_URL}/api/test/middleware-config`,
+            middleware_ping: `${BACKEND_URL}/api/test/middleware-ping`,
+            queue_smart: `${BACKEND_URL}/api/test/queue-smart`,
+            estoque_azul: `${BACKEND_URL}/api/test/estoque-queue/azul`
+        }
+    });
+});
+
+// Rota Raiz
+app.get('/', (req, res) => {
+    res.json({
+        message: '🚀 SneakerLabs Backend API',
+        description: 'Sistema de gestão com integração Queue Smart 4.0',
+        version: '3.0.0',
+        status: 'operational',
+        docs: `${BACKEND_URL}/api/config`,
+        health: `${BACKEND_URL}/api/health`,
+        teste_conexao: `${BACKEND_URL}/api/test/middleware-ping`
+    });
+});
+
+// Teste de Estoque Local
+app.get('/api/test/estoque', async (req, res) => {
+    try {
+        const client = await pool.connect();
+        const result = await client.query(
+            'SELECT id, cor, quantidade, em_producao FROM estoque_maquina ORDER BY id'
+        );
+        client.release();
+        
+        res.json({
+            success: true,
+            count: result.rows.length,
+            estoque: result.rows,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
             error: error.message,
             timestamp: new Date().toISOString()
         });
     }
 });
 
-// Rota de configuração simplificada
-app.get('/api/config', (req, res) => {
-    const config = {
-        status: 'OK',
-        sistema: 'SneakerLabs Backend',
-        versao: '2.0.0',
-        ambiente: process.env.NODE_ENV || 'development',
-        porta: PORT,
-        timestamp: new Date().toISOString(),
-        url_producao: 'https://sneakerslab-backend.onrender.com',
-        rotas: {
-            auth: ['POST /api/auth/register', 'POST /api/auth/login'],
-            cliente: ['GET /api/cliente/:id', 'PUT /api/cliente/:id'],
-            pedidos: [
-                'POST /api/orders',
-                'GET /api/orders/cliente/:clienteId',
-                'GET /api/orders/rastreio/:codigoRastreio'
-            ],
-            mensagens: [
-                'POST /api/mensagens/gerar-mensagem',
-                'POST /api/mensagens/salvar-no-pedido'
-            ],
-            estoque: [
-                'GET /api/estoque/listar',
-                'POST /api/estoque/repor/:id',
-                'PUT /api/estoque/editar/:id'
-            ],
-            producao: ['POST /api/callback'],
-            entrega: [
-                'POST /api/entrega/confirmar',
-                'GET /api/entrega/slots/disponiveis'
-            ]
-        },
-        cors: {
-            enabled: true,
-            allowed_origins: ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173', 'http://127.0.0.1:3000']
-        }
-    };
-    res.status(200).json(config);
-});
-
-// Rota raiz
-app.get('/', (req, res) => {
-    res.json({
-        message: '🚀 SneakerLabs Backend API',
-        documentation: 'Acesse /api/config para ver todas as rotas',
-        health_check: '/api/health',
-        producao: 'https://sneakerslab-backend.onrender.com',
-        version: '2.0.0',
-        status: 'operational',
-        cors_enabled: true
-    });
-});
-
-// Rota para verificar dados do estoque (para testes)
-app.get('/api/test/estoque', async (req, res) => {
-    try {
-        const client = await pool.connect();
-        const result = await client.query('SELECT * FROM estoque_maquina ORDER BY id LIMIT 5');
-        client.release();
-        
-        res.json({
-            success: true,
-            count: result.rows.length,
-            data: result.rows
-        });
-    } catch (error) {
-        res.json({
-            success: false,
-            error: 'Banco offline',
-            message: 'Use a versão em produção: https://sneakerslab-backend.onrender.com'
-        });
-    }
-});
-
-// Rota específica para testar CORS
+// Teste CORS
 app.get('/api/test/cors', (req, res) => {
     res.json({
-        message: 'CORS test successful!',
-        origin: req.headers.origin || 'No origin header',
+        success: true,
+        message: 'CORS funcionando!',
+        origin: req.headers.origin || 'N/A',
         timestamp: new Date().toISOString(),
-        cors_headers: {
+        headers: {
             'Access-Control-Allow-Origin': req.headers.origin || '*',
             'Access-Control-Allow-Credentials': 'true'
         }
     });
 });
 
-// Middleware para rotas não encontradas
+// ============================================
+// MANUSEIO DE ERROS
+// ============================================
+
+// Rota não encontrada
 app.use('*', (req, res) => {
     res.status(404).json({
         error: 'Rota não encontrada',
-        message: `A rota ${req.originalUrl} não existe`,
-        available_routes: {
-            root: 'GET /',
-            health: 'GET /api/health',
-            config: 'GET /api/config',
-            cors_test: 'GET /api/test/cors'
-        }
+        path: req.originalUrl,
+        available_routes: [
+            'GET /',
+            'GET /api/health',
+            'GET /api/config',
+            'GET /api/test/middleware-ping',
+            'GET /api/test/queue-smart',
+            'GET /api/test/middleware-config',
+            'POST /api/orders',
+            'POST /api/callback'
+        ],
+        timestamp: new Date().toISOString()
     });
 });
 
-// Middleware global de erro
+// Erro global
 app.use((err, req, res, next) => {
-    console.error('❌ Erro:', err);
-    
-    // Se for erro de CORS, mostra mais detalhes
-    if (err.message.includes('CORS')) {
-        console.log('🌐 CORS Error Details:', {
-            origin: req.headers.origin,
-            method: req.method,
-            url: req.url
-        });
-    }
+    console.error('❌ Erro:', err.message);
     
     res.status(500).json({
-        error: 'Erro interno',
+        error: 'Erro interno do servidor',
         message: process.env.NODE_ENV === 'production' 
-            ? 'Entre em contato com o administrador'
+            ? 'Contate o administrador' 
             : err.message,
-        cors_issue: err.message.includes('CORS') ? 'Sim' : 'Não'
+        timestamp: new Date().toISOString()
     });
 });
 
 // ============================================
-// INICIAR SERVIDOR E VERIFICAR BANCO
+// INICIALIZAÇÃO DO SERVIDOR
 // ============================================
 
 const startServer = async () => {
-  try {
-    // Verificar banco de dados (NÃO criar)
-    await verificarBancoSneakerLabs();
-    
-    // Iniciar servidor
-    app.listen(PORT, () => {
-      console.log('\n' + '='.repeat(60));
-      console.log('🚀 SNEAKERLABS BACKEND - INICIADO COM SUCESSO');
-      console.log('='.repeat(60));
-      
-      console.log(`📡 Porta: ${PORT}`);
-      console.log(`🌍 URL Local: http://localhost:${PORT}`);
-      console.log(`🌐 Ambiente: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`📊 Health Check: http://localhost:${PORT}/api/health`);
-      console.log(`⚙️  Configuração: http://localhost:${PORT}/api/config`);
-      console.log(`🌐 CORS Test: http://localhost:${PORT}/api/test/cors`);
-      
-      console.log('\n🎯 PRODUÇÃO:');
-      console.log(`   ✅ https://sneakerslab-backend.onrender.com`);
-      console.log(`   ✅ https://sneakerslab-backend.onrender.com/api/health`);
-      console.log(`   ✅ https://sneakerslab-backend.onrender.com/api/estoque/listar`);
-      console.log(`   ✅ https://sneakerslab-backend.onrender.com/api/test/cors`);
-      
-      console.log('\n🎯 FRONTEND LOCAL (CORS habilitado):');
-      console.log(`   ✅ http://localhost:5173 -> https://sneakerslab-backend.onrender.com`);
-      console.log(`   ✅ http://localhost:3000 -> https://sneakerslab-backend.onrender.com`);
-      
-      console.log('\n' + '='.repeat(60));
-      console.log('✅ Servidor pronto para receber requisições do frontend local!');
-      console.log('='.repeat(60));
-    });
-    
-  } catch (error) {
-    console.error('❌ ERRO AO INICIAR SERVIDOR:', error);
-    console.log('💡 Iniciando servidor mesmo com erro...');
-    
-    // Inicia mesmo com erro
-    app.listen(PORT, () => {
-      console.log(`🚀 Servidor rodando na porta ${PORT} (modo com limitações)`);
-      console.log(`💡 Verifique a conexão com o Neon`);
-    });
-  }
+    try {
+        // Testar conexão com banco
+        console.log('\n🔍 Testando conexão com banco...');
+        const client = await pool.connect();
+        const result = await client.query('SELECT NOW() as time');
+        console.log(`   ✅ Banco conectado: ${result.rows[0].time}`);
+        client.release();
+        
+        // Iniciar servidor
+        app.listen(PORT, () => {
+            console.log('\n' + '='.repeat(60));
+            console.log('✅ SERVIDOR INICIADO COM SUCESSO!');
+            console.log('='.repeat(60));
+            console.log(`📡 Porta: ${PORT}`);
+            console.log(`🌐 URL: http://localhost:${PORT}`);
+            console.log(`🚀 Produção: ${BACKEND_URL}`);
+            console.log(`🔗 Middleware: ${MIDDLEWARE_URL}`);
+            
+            console.log('\n🧪 TESTES DISPONÍVEIS:');
+            console.log(`   🔗 ${BACKEND_URL}/api/test/middleware-ping`);
+            console.log(`   ⚙️  ${BACKEND_URL}/api/test/middleware-config`);
+            console.log(`   🧪 ${BACKEND_URL}/api/test/queue-smart`);
+            console.log(`   📦 ${BACKEND_URL}/api/test/estoque-queue/azul`);
+            
+            console.log('\n🎯 PRONTO PARA RECEBER PEDIDOS!');
+            console.log('='.repeat(60));
+        });
+        
+    } catch (error) {
+        console.error('\n❌ ERRO AO INICIAR:', error.message);
+        console.log('💡 Iniciando sem banco...');
+        
+        app.listen(PORT, () => {
+            console.log(`\n⚠️  Servidor rodando na porta ${PORT} (modo limitado)`);
+            console.log(`🔗 Acesse: http://localhost:${PORT}`);
+        });
+    }
 };
 
-// Iniciar tudo
+// Iniciar servidor
 startServer();
