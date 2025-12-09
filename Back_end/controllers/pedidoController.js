@@ -1,4 +1,4 @@
-// controllers/pedidoController.js - VERSÃO DEFINITIVA COM QUEUE SMART 4.0
+// controllers/pedidoController.js - VERSÃO CORRIGIDA COM EXPORTS CERTOS
 import pool from '../config/database.js';
 import queueMiddlewareService from '../services/queueMiddlewareService.js';
 
@@ -75,7 +75,7 @@ async function verificarEstoqueReal(produtos) {
 // ============================================
 // 2. CRIAR PEDIDO COM INTEGRAÇÃO
 // ============================================
-export const criarPedido = async (req, res) => {
+const createOrder = async (req, res) => {
   console.log('\n🚀 ===== NOVO PEDIDO RECEBIDO =====');
   console.log('Dados recebidos:', JSON.stringify(req.body, null, 2));
   
@@ -263,7 +263,7 @@ export const criarPedido = async (req, res) => {
 // ============================================
 // 3. LISTAR PEDIDOS DO CLIENTE
 // ============================================
-export const listarPedidosCliente = async (req, res) => {
+const getClientOrders = async (req, res) => {
   const { clienteId } = req.params;
   
   try {
@@ -316,7 +316,7 @@ export const listarPedidosCliente = async (req, res) => {
 // ============================================
 // 4. BUSCAR PEDIDO POR RASTREIO
 // ============================================
-export const buscarPedidoPorRastreio = async (req, res) => {
+const getOrderByTrackingCode = async (req, res) => {
   const { codigoRastreio } = req.params;
   
   try {
@@ -373,7 +373,7 @@ export const buscarPedidoPorRastreio = async (req, res) => {
 // ============================================
 // 5. VERIFICAR ESTOQUE DE UMA COR
 // ============================================
-export const verificarEstoqueCor = async (req, res) => {
+const verificarEstoqueCor = async (req, res) => {
   const { cor } = req.params;
   
   try {
@@ -422,7 +422,7 @@ export const verificarEstoqueCor = async (req, res) => {
 // ============================================
 // 6. ATUALIZAR STATUS DO PEDIDO (para callback)
 // ============================================
-export const atualizarStatusPedido = async (pedidoId, status, dadosProducao = {}) => {
+const atualizarStatusPedido = async (pedidoId, status, dadosProducao = {}) => {
   try {
     const client = await pool.connect();
     
@@ -462,4 +462,15 @@ export const atualizarStatusPedido = async (pedidoId, status, dadosProducao = {}
     console.error(`❌ Erro ao atualizar pedido ${pedidoId}:`, error);
     throw error;
   }
+};
+
+// ============================================
+// EXPORTS CORRETOS PARA O pedidoRoutes.js
+// ============================================
+export { 
+  createOrder,                // Exporta como createOrder (pedidoRoutes espera isso)
+  getClientOrders,           // Exporta como getClientOrders  
+  getOrderByTrackingCode,    // Exporta como getOrderByTrackingCode
+  verificarEstoqueCor,       // Exporta como verificarEstoqueCor
+  atualizarStatusPedido      // Exporta para uso interno do callback
 };
