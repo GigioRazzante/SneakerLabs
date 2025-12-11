@@ -6,6 +6,7 @@
 ![Vite](https://img.shields.io/badge/Vite-5.x-646CFF)
 ![QueueSmart](https://img.shields.io/badge/Queue_Smart-4.0-blue)
 ![Gemini](https://img.shields.io/badge/Gemini_AI-Google-orange)
+![License](https://img.shields.io/badge/license-MIT-orange)
 
 ## 🎯 Visão Geral
 
@@ -30,7 +31,7 @@ text
 
 ### 🎨 **Customização Avançada** (Frontend)
 - Interface visual para personalização passo-a-passo
-- 6 categorias de customização: Estilo, Material, Cor, Solado, Detalhes, Tamanho
+- 6 categorias de customização: Estilo, Material, Cor, Solado, Detalhes
 - Preço dinâmico calculado em tempo real
 - Visualização com IA generativa
 
@@ -112,8 +113,8 @@ SneakerLabs/
 │ └── package.json # Dependências backend
 │
 ├── 📂 Database/ # Scripts SQL (se houver)
-├── 📜 README.md # Esta documentação
-└── 📜 .gitignore # Arquivos ignorados
+├── 📜 LICENSE # Licença MIT
+└── 📜 README.md # Esta documentação
 
 text
 
@@ -170,15 +171,29 @@ Material	Couro, Camurça, Tecido	+ R$ 90-120
 Cor	Branco, Preto, Azul, Vermelho, Verde, Amarelo	+ R$ 20-30
 Solado	Borracha, EVA, Air	+ R$ 40-90
 Detalhes	Cadarço normal, colorido, sem cadarço	+ R$ 20-35
-🔗 Links de Produção
-Frontend: https://sneakerslab-frontend.onrender.com
+📄 Licença MIT
+text
+MIT License
 
-Backend: https://sneakerslab-backend.onrender.com
+Copyright (c) 2025 Giovani Razzante
 
-API Docs: https://sneakerslab-backend.onrender.com/api/config
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-Health Check: https://sneakerslab-backend.onrender.com/api/health
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 🤝 Como Contribuir
 Fork este repositório
 
@@ -189,9 +204,6 @@ Commit suas mudanças: git commit -m 'Minha nova feature'
 Push: git push origin minha-feature
 
 Abra um Pull Request
-
-📄 Licença
-Este projeto está sob a licença MIT. Veja o arquivo LICENSE para mais detalhes.
 
 👥 Equipe
 Desenvolvido como projeto acadêmico/profissional com foco em:
@@ -207,3 +219,4 @@ Inteligência Artificial aplicada a produtos customizados
 Status: ✅ Em produção
 Última atualização: Dezembro 2024
 Repositório: github.com/GigioRazzante/SneakerLabs
+Licença: MIT - Veja o arquivo LICENSE para detalhes completos
