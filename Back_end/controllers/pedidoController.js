@@ -1,4 +1,4 @@
-// controllers/pedidoController.js - VERSÃO COM CORREÇÃO DEFINITIVA DE SYNTAX/COLUNA
+// controllers/pedidoController.js - VERSÃO COM CORREÇÃO DEFINITIVA DE SYNTAX/COLUNA E COMENTÁRIOS JS
 
 import pool from '../config/database.js';
 import queueMiddlewareService from '../services/queueMiddlewareService.js';
@@ -138,12 +138,12 @@ const createOrder = async (req, res) => {
         const pedidoResult = await client.query(
             `INSERT INTO pedidos (
                 "cliente_id", 
-                "status_geral",         -- ✅ CORRIGIDO de "status"
+                "status_geral",         
                 "metodo_pagamento", 
                 "observacoes", 
                 "valor_total",
                 "endereco_entrega",
-                "data_criacao",         -- ✅ CORRIGIDO de "data_pedido"
+                "data_criacao",         
                 "status_producao",
                 "sneaker_configs" 
             ) VALUES ($1, $2, $3, $4, $5, $6, NOW(), $7, $8) 
@@ -422,7 +422,7 @@ const getClientOrders = async (req, res) => {
     try {
         const client = await pool.connect();
         
-        // (✅ CORRIGIDO: Adição de aspas duplas em todos os identificadores)
+        // (✅ CORRIGIDO: O erro estava aqui. Comentário SQL `--` foi trocado por JS `//`)
         const result = await client.query(
             `SELECT 
                 p.*,
@@ -449,7 +449,7 @@ const getClientOrders = async (req, res) => {
             LEFT JOIN produtos_do_pedido pp ON p."id" = pp."pedido_id"
             WHERE p."cliente_id" = $1
             GROUP BY p."id"
-            ORDER BY p."data_criacao" DESC`, -- ✅ Ajustado data_pedido para data_criacao
+            ORDER BY p."data_criacao" DESC`, // ✅ Ajustado data_pedido para data_criacao
             [clienteId]
         );
         
@@ -482,7 +482,7 @@ const getOrderByTrackingCode = async (req, res) => {
     try {
         const client = await pool.connect();
         
-        // (✅ CORRIGIDO: Adição de aspas duplas em todos os identificadores)
+        // (✅ CORRIGIDO: Removido comentário SQL `--` de dentro da template literal para evitar problemas)
         const result = await client.query(
             `SELECT 
                 p.*,
@@ -500,7 +500,7 @@ const getOrderByTrackingCode = async (req, res) => {
                         'sneaker_config', pp."sneaker_config"
                     )
                 ) as produtos,
-                c.nome_usuario as cliente_nome, -- ✅ Usando nome_usuario do schema
+                c.nome_usuario as cliente_nome, 
                 c.email as cliente_email
             FROM pedidos p
             LEFT JOIN produtos_do_pedido pp ON p."id" = pp."pedido_id"
