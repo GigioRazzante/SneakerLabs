@@ -20,6 +20,12 @@ const MeusPedidos = () => {
         PENDENTE: '#FF9D00',
         CANCELADO: '#DC3545',
         ENTREGUE: '#6F42C1',
+        pendente: '#FF9D00',  // Adicionado para compatibilidade (API usa lowercase)
+        em_producao: '#3B82F6', // Adicionado para produção
+        em_transporte: '#8B5CF6', // Adicionado para transporte
+        concluido: '#22C55E', // Adicionado para compatibilidade
+        entregue: '#6F42C1', // Adicionado para compatibilidade
+        cancelado: '#DC3545', // Adicionado para compatibilidade
     };
 
     useEffect(() => {
@@ -31,12 +37,20 @@ const MeusPedidos = () => {
             }
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/orders/cliente/${user.id}/detalhado`);
-                if (!response.ok) throw new Error('Falha ao buscar pedidos');
+                // CORREÇÃO 1: URL corrigida - removido "/detalhado"
+                const response = await fetch(`${API_BASE_URL}/api/orders/cliente/${user.id}`);
+                if (!response.ok) throw new Error(`Falha ao buscar pedidos: ${response.status}`);
                 
                 const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Erro na resposta da API');
+                }
+                
+                // CORREÇÃO 2: A API retorna data.pedidos
                 setPedidos(data.pedidos || []);
             } catch (err) {
+                console.error('Erro ao buscar pedidos:', err);
                 setError(err.message);
             } finally {
                 setLoading(false);
@@ -46,13 +60,60 @@ const MeusPedidos = () => {
         fetchPedidos();
     }, [user]);
 
-    const formatarData = (dataString) => new Date(dataString).toLocaleDateString('pt-BR');
+    const formatarData = (dataString) => {
+        if (!dataString) return 'N/A';
+        try {
+            return new Date(dataString).toLocaleDateString('pt-BR');
+        } catch {
+            return dataString;
+        }
+    };
+
+    const formatarStatus = (status) => {
+        // Converte para uppercase para exibição
+        const statusMap = {
+            'pendente': 'PENDENTE',
+            'em_producao': 'EM PRODUÇÃO',
+            'em_transporte': 'EM TRANSPORTE',
+            'concluido': 'CONCLUÍDO',
+            'entregue': 'ENTREGUE',
+            'cancelado': 'CANCELADO'
+        };
+        return statusMap[status] || status?.toUpperCase() || 'DESCONHECIDO';
+    };
+
+    const contarProdutos = (pedido) => {
+        if (pedido.produtos && Array.isArray(pedido.produtos)) {
+            return pedido.produtos.reduce((total, produto) => total + (produto.quantidade || 1), 0);
+        }
+        return 0;
+    };
+
+    const extrairCodigosRastreio = (pedido) => {
+        if (pedido.codigo_rastreio) {
+            return [pedido.codigo_rastreio];
+        }
+        
+        // Alternativa: verificar nos produtos
+        if (pedido.produtos && Array.isArray(pedido.produtos)) {
+            const codigos = pedido.produtos
+                .map(p => p.middleware_id)
+                .filter(Boolean);
+            return codigos.length > 0 ? codigos : [];
+        }
+        
+        return [];
+    };
 
     const handleRastrearPedido = (pedido) => {
-        const codigoRastreio = pedido.codigos_rastreio?.[0];
-        codigoRastreio 
-            ? navigate(`/rastrear-pedido/${codigoRastreio}`)
-            : alert('Este pedido ainda não tem código de rastreio disponível.');
+        const codigos = extrairCodigosRastreio(pedido);
+        const codigoRastreio = codigos.length > 0 ? codigos[0] : pedido.codigo_rastreio;
+        
+        if (codigoRastreio) {
+            navigate(`/rastrear-pedido/${codigoRastreio}`);
+        } else {
+            alert('Este pedido ainda não tem código de rastreio disponível.');
+        }
     };
 
     const handleConfirmarEntrega = async (pedidoId) => {
@@ -67,13 +128,17 @@ const MeusPedidos = () => {
 
             alert('✅ Entrega confirmada com sucesso!');
             setPedidos(prev => prev.map(pedido => 
-                pedido.pedido_id === pedidoId 
-                    ? { ...pedido, status_geral: 'ENTREGUE' }
+                pedido.id === pedidoId 
+                    ? { ...pedido, status_geral: 'entregue' }
                     : pedido
             ));
         } catch (error) {
             alert('Erro ao confirmar entrega: ' + error.message);
         }
+    };
+
+    const handleDetalhesPedido = (pedidoId) => {
+        navigate(`/pedido/${pedidoId}`);
     };
 
     if (!user) {
@@ -120,21 +185,31 @@ const MeusPedidos = () => {
                         <div className="user-info">
                             <p><strong>Cliente:</strong> {user.nome_usuario}</p>
                             <p><strong>ID:</strong> {user.id}</p>
+                            <p><strong>Total de Pedidos:</strong> {pedidos.length}</p>
                         </div>
                     </div>
 
-                    {loading && <div className="loading">Carregando pedidos...</div>}
+                    {loading && (
+                        <div className="loading">
+                            <div className="spinner"></div>
+                            <p>Carregando seus pedidos...</p>
+                        </div>
+                    )}
                     
                     {error && (
                         <div className="error">
                             <p><strong>Erro:</strong> {error}</p>
-                            <p>Verifique se o seu Backend (porta 3001) está rodando.</p>
+                            <p>Verifique se o Backend está rodando corretamente.</p>
+                            <button onClick={() => window.location.reload()}>
+                                Tentar Novamente
+                            </button>
                         </div>
                     )}
                     
-                    {!loading && !pedidos.length && !error && (
+                    {!loading && !error && pedidos.length === 0 && (
                         <div className="empty">
-                            <p>Nenhum pedido encontrado para sua conta.</p>
+                            <p>🎉 Nenhum pedido encontrado para sua conta.</p>
+                            <p>Crie seu primeiro sneaker personalizado!</p>
                             <button 
                                 onClick={() => navigate('/criar-sneaker')}
                                 style={{ backgroundColor: primaryColor }}
@@ -145,61 +220,104 @@ const MeusPedidos = () => {
                     )}
 
                     <div className="pedidos-list">
-                        {pedidos.map(pedido => (
-                            <div key={pedido.pedido_id} className="pedido">
-                                <div className="pedido-header">
-                                    <h3>Pedido #{pedido.pedido_id}</h3>
-                                    <span className="status" style={{ backgroundColor: statusColors[pedido.status_geral] }}>
-                                        {pedido.status_geral}
-                                    </span>
-                                </div>
-                                
-                                <div className="pedido-detalhes">
-                                    <div className="detalhe">
-                                        <strong>Data do Pedido:</strong>
-                                        <span>{formatarData(pedido.data_criacao)}</span>
-                                    </div>
-                                    <div className="detalhe">
-                                        <strong>Total de Itens:</strong>
-                                        <span>{pedido.total_produtos}</span>
-                                    </div>
-                                    <div className="detalhe">
-                                        <strong>Valor Total:</strong>
-                                        <span className="valor">R$ {pedido.valor_total?.toFixed(2).replace('.', ',') || 'N/A'}</span>
-                                    </div>
-                                    
-                                    {pedido.codigos_rastreio?.length > 0 && (
-                                        <div className="detalhe">
-                                            <strong>Códigos de Rastreio:</strong>
-                                            <div className="codigos">
-                                                {pedido.codigos_rastreio.map((codigo, index) => (
-                                                    <span key={index} className="codigo">{codigo}</span>
-                                                ))}
-                                            </div>
+                        {pedidos.map(pedido => {
+                            const status = pedido.status_geral || pedido.status || 'pendente';
+                            const statusFormatado = formatarStatus(status);
+                            const totalProdutos = contarProdutos(pedido);
+                            const codigosRastreio = extrairCodigosRastreio(pedido);
+                            
+                            return (
+                                <div key={pedido.id} className="pedido">
+                                    <div className="pedido-header">
+                                        <div className="pedido-info">
+                                            <h3>Pedido #{pedido.id || pedido.pedido_id}</h3>
+                                            <p className="data-pedido">
+                                                {formatarData(pedido.data_criacao || pedido.data_pedido)}
+                                            </p>
                                         </div>
-                                    )}
-                                </div>
-                                
-                                <div className="acoes">
-                                    <button 
-                                        onClick={() => handleRastrearPedido(pedido)}
-                                        style={{ backgroundColor: primaryColor }}
-                                    >
-                                        📦 Rastrear Detalhes
-                                    </button>
+                                        <span 
+                                            className="status" 
+                                            style={{ 
+                                                backgroundColor: statusColors[status] || statusColors.PENDENTE 
+                                            }}
+                                        >
+                                            {statusFormatado}
+                                        </span>
+                                    </div>
                                     
-                                    {pedido.status_geral === 'CONCLUIDO' && (
-                                        <button onClick={() => handleConfirmarEntrega(pedido.pedido_id)}>
-                                            ✅ Confirmar Entrega
+                                    <div className="pedido-detalhes">
+                                        <div className="detalhe">
+                                            <strong>Valor Total:</strong>
+                                            <span className="valor">
+                                                R$ {pedido.valor_total?.toFixed(2).replace('.', ',') || 'N/A'}
+                                            </span>
+                                        </div>
+                                        <div className="detalhe">
+                                            <strong>Total de Itens:</strong>
+                                            <span>{totalProdutos}</span>
+                                        </div>
+                                        <div className="detalhe">
+                                            <strong>Método de Pagamento:</strong>
+                                            <span>{pedido.metodo_pagamento || 'Não informado'}</span>
+                                        </div>
+                                        
+                                        {codigosRastreio.length > 0 && (
+                                            <div className="detalhe">
+                                                <strong>Códigos de Rastreio:</strong>
+                                                <div className="codigos">
+                                                    {codigosRastreio.map((codigo, index) => (
+                                                        <span key={index} className="codigo">
+                                                            {codigo}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                    
+                                    <div className="acoes">
+                                        <button 
+                                            onClick={() => handleDetalhesPedido(pedido.id || pedido.pedido_id)}
+                                            style={{ backgroundColor: primaryColor }}
+                                        >
+                                            📋 Ver Detalhes
                                         </button>
-                                    )}
+                                        
+                                        <button 
+                                            onClick={() => handleRastrearPedido(pedido)}
+                                            className="rastrear-btn"
+                                        >
+                                            📦 Rastrear Pedido
+                                        </button>
+                                        
+                                        {status === 'concluido' && (
+                                            <button 
+                                                onClick={() => handleConfirmarEntrega(pedido.id || pedido.pedido_id)}
+                                                className="confirmar-btn"
+                                            >
+                                                ✅ Confirmar Entrega
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
 
                     <div className="footer-buttons">
-                        <button onClick={() => navigate('/perfil')}>← Voltar para Perfil</button>
+                        <button 
+                            onClick={() => navigate('/perfil')}
+                            className="voltar-btn"
+                        >
+                            ← Voltar para Perfil
+                        </button>
+                        <button 
+                            onClick={() => navigate('/criar-sneaker')}
+                            style={{ backgroundColor: primaryColor }}
+                            className="novo-pedido-btn"
+                        >
+                            🎨 Criar Novo Sneaker
+                        </button>
                     </div>
                 </div>
             </div>
@@ -261,10 +379,13 @@ const MeusPedidos = () => {
                     border: 1px solid var(--gray);
                     max-width: 500px;
                     margin: 0 auto;
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                    gap: 1rem;
                 }
 
                 .user-info p {
-                    margin: 0.5rem 0;
+                    margin: 0;
                 }
 
                 /* Estados */
@@ -272,19 +393,49 @@ const MeusPedidos = () => {
                     text-align: center;
                     padding: 2rem;
                     margin: 1.5rem 0;
+                    border-radius: 1rem;
+                }
+
+                .loading {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 1rem;
+                }
+
+                .spinner {
+                    width: 40px;
+                    height: 40px;
+                    border: 3px solid var(--gray);
+                    border-top: 3px solid var(--primary-color);
+                    border-radius: 50%;
+                    animation: spin 1s linear infinite;
+                }
+
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
                 }
 
                 .error {
                     color: var(--error);
                     background: #f8d7da;
                     border: 1px solid #f5c6cb;
-                    border-radius: 1rem;
+                }
+
+                .error button {
+                    margin-top: 1rem;
+                    padding: 0.5rem 1rem;
+                    background: var(--error);
+                    color: white;
+                    border: none;
+                    border-radius: 0.5rem;
+                    cursor: pointer;
                 }
 
                 .empty {
                     background: #fafafa;
                     border: 2px dashed var(--gray);
-                    border-radius: 1rem;
                 }
 
                 .empty button {
@@ -321,15 +472,24 @@ const MeusPedidos = () => {
                 .pedido-header {
                     display: flex;
                     justify-content: space-between;
-                    align-items: center;
+                    align-items: flex-start;
                     margin-bottom: 1.5rem;
                     padding-bottom: 1rem;
                     border-bottom: 2px solid var(--gray);
+                    flex-wrap: wrap;
+                    gap: 1rem;
                 }
 
-                .pedido-header h3 {
+                .pedido-info h3 {
                     margin: 0;
                     color: var(--text);
+                    font-size: 1.3rem;
+                }
+
+                .pedido-info .data-pedido {
+                    color: var(--text-light);
+                    font-size: 0.9rem;
+                    margin-top: 0.25rem;
                 }
 
                 .status {
@@ -338,6 +498,8 @@ const MeusPedidos = () => {
                     color: white;
                     font-weight: 600;
                     text-transform: uppercase;
+                    font-size: 0.8rem;
+                    white-space: nowrap;
                 }
 
                 /* Detalhes */
@@ -351,11 +513,25 @@ const MeusPedidos = () => {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
+                    flex-wrap: wrap;
+                    gap: 0.5rem;
                 }
 
-                .detalhe strong { color: var(--text-light); }
-                .detalhe span { color: var(--text); font-weight: 500; }
-                .valor { color: var(--success); font-weight: 700; font-size: 1.2rem; }
+                .detalhe strong { 
+                    color: var(--text-light); 
+                    font-weight: 600;
+                }
+                
+                .detalhe span { 
+                    color: var(--text); 
+                    font-weight: 500; 
+                }
+                
+                .valor { 
+                    color: var(--success); 
+                    font-weight: 700; 
+                    font-size: 1.2rem; 
+                }
 
                 .codigos {
                     display: flex;
@@ -369,6 +545,7 @@ const MeusPedidos = () => {
                     padding: 0.4rem 0.8rem;
                     border-radius: 0.5rem;
                     font-family: monospace;
+                    font-size: 0.85rem;
                 }
 
                 /* Botões */
@@ -377,10 +554,12 @@ const MeusPedidos = () => {
                     gap: 1rem;
                     padding-top: 1.5rem;
                     border-top: 1px solid var(--gray);
+                    flex-wrap: wrap;
                 }
 
                 .acoes button {
                     flex: 1;
+                    min-width: 150px;
                     padding: 0.9rem;
                     border: none;
                     border-radius: 0.75rem;
@@ -393,28 +572,52 @@ const MeusPedidos = () => {
                     gap: 0.5rem;
                 }
 
-                .acoes button:first-child { color: white; }
-                .acoes button:last-child { background: var(--success); color: white; }
+                .acoes button:first-child { 
+                    background: var(--primary-color); 
+                    color: white; 
+                }
+                
+                .rastrear-btn { 
+                    background: #3B82F6; 
+                    color: white; 
+                }
+                
+                .confirmar-btn { 
+                    background: var(--success); 
+                    color: white; 
+                }
 
                 .footer-buttons {
                     margin-top: 3rem;
-                    text-align: center;
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 1rem;
+                    flex-wrap: wrap;
                 }
 
                 .footer-buttons button {
                     padding: 1rem 2rem;
-                    background: transparent;
-                    color: var(--text);
-                    border: 2px solid var(--text);
                     border-radius: 1rem;
                     font-weight: 600;
                     cursor: pointer;
                     transition: all 0.3s ease;
+                    min-width: 200px;
                 }
 
-                .footer-buttons button:hover {
+                .voltar-btn {
+                    background: transparent;
+                    color: var(--text);
+                    border: 2px solid var(--text);
+                }
+
+                .voltar-btn:hover {
                     background: var(--text);
                     color: white;
+                }
+
+                .novo-pedido-btn {
+                    color: white;
+                    border: none;
                 }
 
                 /* Responsividade */
@@ -423,17 +626,20 @@ const MeusPedidos = () => {
                     .card { padding: 1.5rem; border-radius: 1.2rem; }
                     .header h1 { font-size: 2rem; }
                     .header p { font-size: 1rem; }
-                    .pedido-header { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
-                    .detalhe { flex-direction: column; align-items: flex-start; gap: 0.25rem; }
+                    .pedido-header { flex-direction: column; align-items: flex-start; }
+                    .detalhe { flex-direction: column; align-items: flex-start; }
                     .codigos { justify-content: flex-start; }
                     .acoes { flex-direction: column; }
+                    .acoes button { width: 100%; }
+                    .footer-buttons { flex-direction: column; }
+                    .footer-buttons button { width: 100%; }
                 }
 
                 @media (max-width: 480px) {
                     .card { padding: 1rem; margin: 0.5rem; }
                     .header h1 { font-size: 1.6rem; }
                     .header p { font-size: 0.9rem; }
-                    .acoes button, .footer-buttons button { width: 100%; }
+                    .user-info { grid-template-columns: 1fr; }
                 }
             `}</style>
         </>

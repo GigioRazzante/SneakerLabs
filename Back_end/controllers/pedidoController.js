@@ -1,4 +1,4 @@
-// controllers/pedidoController.js - VERSÃO COM CORREÇÃO DEFINITIVA DE SYNTAX/COLUNA E COMENTÁRIOS JS
+// controllers/pedidoController.js - VERSÃO COM CORREÇÃO DE COMENTÁRIOS SQL
 
 import pool from '../config/database.js';
 import queueMiddlewareService from '../services/queueMiddlewareService.js';
@@ -422,7 +422,7 @@ const getClientOrders = async (req, res) => {
     try {
         const client = await pool.connect();
         
-        // (✅ CORRIGIDO: O erro estava aqui. Comentário SQL `--` foi trocado por JS `//`)
+        // ✅ CORREÇÃO APLICADA: Removido comentário SQL inválido dentro da string
         const result = await client.query(
             `SELECT 
                 p.*,
@@ -435,7 +435,6 @@ const getClientOrders = async (req, res) => {
                         'valor_unitario', pp."valor_unitario",
                         'middleware_id', pp."middleware_id",
                         'estoque_pos', pp."estoque_pos",
-                        // 🎯 CONFIGURAÇÃO COMPLETA
                         'passo_um', pp."passo_um",
                         'passo_dois', pp."passo_dois",
                         'passo_tres', pp."passo_tres",
@@ -449,7 +448,7 @@ const getClientOrders = async (req, res) => {
             LEFT JOIN produtos_do_pedido pp ON p."id" = pp."pedido_id"
             WHERE p."cliente_id" = $1
             GROUP BY p."id"
-            ORDER BY p."data_criacao" DESC`, // ✅ Ajustado data_pedido para data_criacao
+            ORDER BY p."data_criacao" DESC`,
             [clienteId]
         );
         
@@ -482,7 +481,7 @@ const getOrderByTrackingCode = async (req, res) => {
     try {
         const client = await pool.connect();
         
-        // (✅ CORRIGIDO: Removido comentário SQL `--` de dentro da template literal para evitar problemas)
+        // ✅ CORREÇÃO APLICADA: Removido comentário SQL inválido
         const result = await client.query(
             `SELECT 
                 p.*,
@@ -491,7 +490,6 @@ const getOrderByTrackingCode = async (req, res) => {
                         'cor', pp."cor",
                         'tamanho', pp."tamanho",
                         'quantidade', pp."quantidade",
-                        // 🎯 CONFIGURAÇÃO COMPLETA
                         'passo_um', pp."passo_um",
                         'passo_dois', pp."passo_dois",
                         'passo_tres', pp."passo_tres",
@@ -652,7 +650,6 @@ export const verificarStatusProducao = async (req, res) => {
         });
     }
 };
-
 
 // ============================================
 // EXPORTS
