@@ -1,4 +1,3 @@
-// PaginaCriarSneaker.jsx - VERSÃO COMPLETA COM INTEGRAÇÃO QUEUE SMART 4.0
 import React, { useState } from 'react';
 import Navbar from '../components/Navbar';
 import MenuSelecao from '../components/MenuSelecao';
@@ -67,12 +66,12 @@ const extrairConfiguracaoSneaker = (items) => {
   console.log('🔍 Extraindo configuração completa do sneaker:', items);
   
   const config = {
-    estilo: 'Casual',      // padrão
-    material: 'Couro',     // padrão
-    solado: 'Borracha',    // padrão
-    cor: 'branco',         // padrão (lowercase)
+    estilo: 'Casual',       // padrão
+    material: 'Couro',      // padrão
+    solado: 'Borracha',     // padrão
+    cor: 'branco',          // padrão (lowercase)
     detalhes: 'Cadarço normal', // padrão
-    tamanho: 42            // padrão
+    tamanho: 42             // padrão
   };
   
   if (!items || !Array.isArray(items)) {
@@ -82,32 +81,62 @@ const extrairConfiguracaoSneaker = (items) => {
   
   // Mapear cada passo para a configuração
   items.forEach(item => {
-    if (!item || !item.step || !item.name) return;
+    if (!item || item.step === undefined || !item.nome) return;
     
     switch(item.step) {
+      case 0: // Passos são 0-indexados no `selections` (estilo)
       case 1: // Estilo
-        config.estilo = item.name;
+        config.estilo = item.nome;
         break;
       case 2: // Material
-        config.material = item.name;
+        config.material = item.nome;
         break;
       case 3: // Solado
-        config.solado = item.name;
+        config.solado = item.nome;
         break;
       case 4: // Cor
-        config.cor = item.name.toLowerCase(); // Salva em minúsculo para uso interno (e estoque)
+        // Encontra o objeto de opção no passos para garantir que pegamos o campo 'cor' minúsculo
+        const stepCor = passos.find(p => p.titulo.includes("Cor"));
+        const corOpcao = stepCor?.opcoes.find(o => o.nome === item.nome);
+        config.cor = corOpcao?.cor || item.nome.toLowerCase(); // Salva em minúsculo
         break;
       case 5: // Detalhes (Cadarços)
-        config.detalhes = item.name;
+        config.detalhes = item.nome;
         break;
     }
   });
-  
-  // Garantir que a cor do config seja uma cor válida se o default for 'branco'
-  if (config.cor === 'branco' && config.detalhes === 'Cadarço normal') {
-      // Ajuste caso o pedido não tenha sido configurado (todos defaults)
-  }
 
+  // Ajuste para garantir que, se for passado o objeto selections, a extração funcione
+  // Se for passado o array de items do pedido (com a estrutura {nome, acrescimo, step})
+  const stepItems = Object.values(items).filter(item => item.step !== undefined);
+  if (stepItems.length > 0) {
+    stepItems.forEach(item => {
+      if (!item || item.step === undefined || !item.nome) return;
+      
+      const stepIndex = item.step; // Índice do passo original
+      
+      switch(stepIndex) {
+        case 0: // Passos[0]: Estilo
+          config.estilo = item.nome;
+          break;
+        case 1: // Passos[1]: Material
+          config.material = item.nome;
+          break;
+        case 2: // Passos[2]: Solado
+          config.solado = item.nome;
+          break;
+        case 3: // Passos[3]: Cor
+          const stepCor = passos[3];
+          const corOpcao = stepCor.opcoes.find(o => o.nome === item.nome);
+          config.cor = corOpcao?.cor || item.nome.toLowerCase();
+          break;
+        case 4: // Passos[4]: Detalhes
+          config.detalhes = item.nome;
+          break;
+      }
+    });
+  }
+  
   console.log('✅ Configuração extraída:', config);
   return config;
 };
@@ -161,7 +190,7 @@ const traduzirParaQueueSmart = (config) => {
 };
 
 // ============================================
-// FUNÇÃO DE VERIFICAÇÃO DE ESTOQUE (MANTIDA)
+// FUNÇÃO DE VERIFICAÇÃO DE ESTOQUE
 // ============================================
 
 /**
@@ -225,7 +254,7 @@ const PaginaCriarSneaker = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [selections, setSelections] = useState({});
   const [pedidos, setPedidos] = useState([]);
-  const [enderecoEntrega, setEnderecoEntrega] = useState({
+  const [enderecoEntrega] = useState({
     rua: 'Rua Demo',
     numero: '123',
     bairro: 'Centro',
@@ -266,10 +295,10 @@ const PaginaCriarSneaker = () => {
     );
   }
 
-  const handleSelectOption = (stepId, optionId, acrescimo, nome) => {
+  const handleSelectOption = (stepIndex, optionId, acrescimo, nome) => {
     setSelections({
       ...selections,
-      [stepId]: { id: optionId, acrescimo, nome, step: stepId } // Adicionado 'step' para o payload completo
+      [stepIndex]: { id: optionId, acrescimo, nome, step: stepIndex } // stepIndex: 0 a 4
     });
   };
 
@@ -279,7 +308,7 @@ const PaginaCriarSneaker = () => {
       if (currentStep < passos.length - 1) {
         setCurrentStep(currentStep + 1);
       } else {
-        setCurrentStep(passos.length);
+        setCurrentStep(passos.length); // Vai para a tela de Resumo
       }
     } else {
       alert("Por favor, selecione uma opção para continuar.");
@@ -289,16 +318,19 @@ const PaginaCriarSneaker = () => {
   const handleFinalize = (pedidoData) => {
     const dadosRecebidos = pedidoData || { items: [], valorTotal: 0 };
     
+    // Converte o objeto de selections em um array de items para salvar no pedido
+    const itemsArray = Object.values(dadosRecebidos.items || selections);
+
     const novoPedido = {
       id: Date.now(),
-      items: dadosRecebidos.items || [],
+      items: itemsArray,
       valorTotal: dadosRecebidos.valorTotal || 0,
       dataCriacao: new Date().toLocaleString('pt-BR')
     };
     
     setPedidos([...pedidos, novoPedido]);
     setSelections({});
-    setCurrentStep(passos.length + 1);
+    setCurrentStep(passos.length + 1); // Vai para a tela de Carrinho
   };
 
   const handleIncluirMaisPedidos = () => {
@@ -365,18 +397,15 @@ const PaginaCriarSneaker = () => {
         // Campos existentes:
         cor: corParaEstoque, 
         quantidade: 1,
-        tamanho: 42,
+        tamanho: configCompleta.tamanho,
         valor_unitario: valorPedido,
-        
-        // 🎯 NOVOS CAMPOS PARA O BACKEND /api/orders
-        configuracao_completa: configCompleta, 
-        configuracao_queue_smart: configQueueSmart, 
         
         // Campos de passo a passo (para o DB)
         passo_um: configCompleta.estilo,
         passo_dois: configCompleta.material,
         passo_tres: configCompleta.solado,
-        passo_quatro: configCompleta.cor.charAt(0).toUpperCase() + configCompleta.cor.slice(1), // Salva Capitalizado
+        // Salva a cor com a primeira letra maiúscula (Branco, Preto...)
+        passo_quatro: corParaEstoque.charAt(0).toUpperCase() + corParaEstoque.slice(1), 
         passo_cinco: configCompleta.detalhes
       });
       
@@ -405,11 +434,11 @@ const PaginaCriarSneaker = () => {
         mensagem: resultadoEstoque.mensagem
       });
       
-      console.log(`    → ${resultadoEstoque.disponivel ? '✅ Disponível' : '❌ Indisponível'}: ${resultadoEstoque.mensagem}`);
+      console.log(`    → ${resultadoEstoque.disponivel ? '✅ Disponível' : '❌ Indisponível'}: ${resultadoEstoque.mensagem}`);
       
       if (!resultadoEstoque.disponivel) {
         todasCoresDisponiveis = false;
-        mensagemErroEstoque = `A cor "${itemCor.cor}" está sem estoque disponível. ${resultadoEstoque.mensagem}`;
+        mensagemErroEstoque = `A cor "${itemCor.cor.toUpperCase()}" está sem estoque disponível. ${resultadoEstoque.mensagem}`;
         break; // Para na primeira cor sem estoque
       }
     }
@@ -498,9 +527,11 @@ const PaginaCriarSneaker = () => {
         />
       );
     } else if (currentStep === passos.length) {
+      // Passa as seleções como um array para o ResumoPedido
+      const itemsArray = Object.values(selections).sort((a, b) => a.step - b.step);
       return (
         <ResumoPedido
-          selections={selections}
+          selections={itemsArray}
           passos={passos}
           onFinalize={handleFinalize}
         />
@@ -574,7 +605,7 @@ const PaginaCriarSneaker = () => {
             left: 0;
             width: 100%;
             height: 8px;
-            background-color: var(--primary-color);
+            background-color: ${primaryColor}; /* Usando a cor do tema */
             border-top-left-radius: 1.5rem;
             border-top-right-radius: 1.5rem;
             transition: background-color 0.3s ease;
