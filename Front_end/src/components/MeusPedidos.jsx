@@ -14,17 +14,16 @@ const MeusPedidos = () => {
     const [pedidos, setPedidos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [debugInfo, setDebugInfo] = useState('');
 
     const statusColors = {
-        pendente: '#FF9D00',       // Laranja
-        confirmado: '#3B82F6',     // Azul
-        na_fila: '#8B5CF6',        // Roxo - NOVO STATUS
-        em_producao: '#8B5CF6',    // Roxo
-        concluido: '#22C55E',      // Verde
-        em_transporte: '#F59E0B',  // Amarelo
-        entregue: '#10B981',       // Verde escuro
-        cancelado: '#DC3545'       // Vermelho
+        pendente: '#FF9D00',
+        confirmado: '#3B82F6',
+        na_fila: '#8B5CF6',
+        em_producao: '#8B5CF6',
+        concluido: '#22C55E',
+        em_transporte: '#F59E0B',
+        entregue: '#10B981',
+        cancelado: '#DC3545'
     };
 
     useEffect(() => {
@@ -37,36 +36,15 @@ const MeusPedidos = () => {
 
             try {
                 console.log('🔍 Buscando pedidos para cliente ID:', user.id);
-                setDebugInfo(`Buscando: ${API_BASE_URL}/api/orders/cliente/${user.id}`);
                 
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000);
-                
-                const response = await fetch(`${API_BASE_URL}/api/orders/cliente/${user.id}`, {
-                    signal: controller.signal
-                });
-                
-                clearTimeout(timeoutId);
-                
-                setDebugInfo(prev => prev + `\nStatus: ${response.status} ${response.statusText}`);
+                const response = await fetch(`${API_BASE_URL}/api/orders/cliente/${user.id}`);
                 
                 if (!response.ok) {
-                    let errorMessage = `Erro ${response.status}: `;
-                    
-                    try {
-                        const errorData = await response.json();
-                        errorMessage += errorData.error || JSON.stringify(errorData);
-                    } catch {
-                        const textError = await response.text();
-                        errorMessage += textError || 'Erro desconhecido';
-                    }
-                    
-                    throw new Error(errorMessage);
+                    throw new Error(`Erro ${response.status}: Falha ao buscar pedidos`);
                 }
                 
                 const data = await response.json();
                 console.log('✅ Dados recebidos:', data);
-                setDebugInfo(prev => prev + `\nResposta: ${JSON.stringify(data).substring(0, 200)}...`);
                 
                 if (data.success === false) {
                     throw new Error(data.error || 'API retornou success: false');
@@ -75,12 +53,8 @@ const MeusPedidos = () => {
                 setPedidos(data.pedidos || []);
                 
             } catch (err) {
-                console.error('❌ Erro completo:', err);
+                console.error('❌ Erro ao buscar pedidos:', err);
                 setError(`Erro: ${err.message}`);
-                
-                if (err.name === 'AbortError') {
-                    setError('Timeout: O servidor demorou muito para responder.');
-                }
             } finally {
                 setLoading(false);
             }
@@ -108,7 +82,7 @@ const MeusPedidos = () => {
         const statusMap = {
             'pendente': 'PENDENTE',
             'confirmado': 'CONFIRMADO',
-            'na_fila': 'NA FILA DE PRODUÇÃO',  // NOVO
+            'na_fila': 'NA FILA DE PRODUÇÃO',
             'em_producao': 'EM PRODUÇÃO',
             'concluido': 'PRODUÇÃO CONCLUÍDA',
             'em_transporte': 'EM TRANSPORTE',
@@ -118,52 +92,9 @@ const MeusPedidos = () => {
         return statusMap[status] || status?.toUpperCase() || 'PENDENTE';
     };
 
-    const contarProdutos = (pedido) => {
-        // ✅ CORRETO: Usa total_produtos da API ou conta produtos
-        if (pedido.total_produtos && pedido.total_produtos > 0) {
-            return pedido.total_produtos;
-        }
-        
-        if (pedido.produtos && Array.isArray(pedido.produtos)) {
-            return pedido.produtos.length;
-        }
-        
-        // Fallback mínimo
-        return 1;
-    };
-
-    const calcularQuantidadeTotal = (pedido) => {
-        // ✅ CORRETO: Usa quantidade_total da API ou soma
-        if (pedido.quantidade_total && pedido.quantidade_total > 0) {
-            return pedido.quantidade_total;
-        }
-        
-        if (pedido.produtos && Array.isArray(pedido.produtos)) {
-            return pedido.produtos.reduce((total, produto) => total + (produto.quantidade || 1), 0);
-        }
-        
-        return contarProdutos(pedido);
-    };
-
-    const extrairCodigosRastreio = (pedido) => {
-        if (pedido.codigos_rastreio && Array.isArray(pedido.codigos_rastreio)) {
-            return pedido.codigos_rastreio;
-        }
-        
-        const codigos = [];
-        if (pedido.codigo_rastreio) {
-            codigos.push(pedido.codigo_rastreio);
-        }
-        if (pedido.middleware_id) {
-            codigos.push(pedido.middleware_id);
-        }
-        
-        return codigos;
-    };
-
     const handleRastrearPedido = (pedido) => {
-        const codigos = extrairCodigosRastreio(pedido);
-        const codigoRastreio = codigos.length > 0 ? codigos[0] : pedido.codigo_rastreio;
+        const codigosRastreio = pedido.codigos_rastreio || [];
+        const codigoRastreio = codigosRastreio.length > 0 ? codigosRastreio[0] : pedido.codigo_rastreio;
         
         if (codigoRastreio) {
             navigate(`/rastrear-pedido/${codigoRastreio}`);
@@ -173,6 +104,8 @@ const MeusPedidos = () => {
     };
 
     const handleConfirmarEntrega = async (pedidoId) => {
+        if (!window.confirm('Deseja confirmar a entrega deste pedido?')) return;
+        
         try {
             const response = await fetch(`${API_BASE_URL}/api/entrega/confirmar`, {
                 method: 'POST',
@@ -183,6 +116,8 @@ const MeusPedidos = () => {
             if (!response.ok) throw new Error('Erro ao confirmar entrega');
 
             alert('✅ Entrega confirmada com sucesso!');
+            
+            // Atualizar localmente
             setPedidos(prev => prev.map(pedido => 
                 pedido.id === pedidoId 
                     ? { ...pedido, status_geral: 'entregue' }
@@ -193,114 +128,8 @@ const MeusPedidos = () => {
         }
     };
 
-    const handleDemonstracaoAutomatica = async (pedidoId) => {
-        if (!window.confirm('🎬 INICIAR DEMONSTRAÇÃO AUTOMÁTICA\n\nO pedido passará por todos os status automaticamente:\n1. Confirmado (1s)\n2. Na fila (2s)\n3. Em produção (3s)\n4. Concluído (4s)\n5. Em transporte (3s)\n6. Entregue (2s)\n\nDuração total: 15 segundos')) {
-            return;
-        }
-        
-        try {
-            setLoading(true);
-            
-            const response = await fetch(`${API_BASE_URL}/api/orders/demonstracao/${pedidoId}`, {
-                method: 'POST'
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                alert(`✅ DEMONSTRAÇÃO INICIADA!\n\nPedido #${pedidoId}\nDuração: ${data.duracao_total}\n\nA página será atualizada automaticamente.`);
-                
-                // Atualizar após 16 segundos
-                setTimeout(() => {
-                    window.location.reload();
-                }, 16000);
-            } else {
-                alert('Erro: ' + data.error);
-            }
-        } catch (error) {
-            alert('Erro ao iniciar demonstração: ' + error.message);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleMudarStatus = async (pedidoId, statusAtual) => {
-        const fluxo = {
-            'pendente': ['confirmado', 'cancelado'],
-            'confirmado': ['na_fila', 'cancelado'],
-            'na_fila': ['em_producao', 'cancelado'],
-            'em_producao': ['concluido', 'cancelado'],
-            'concluido': ['em_transporte'],
-            'em_transporte': ['entregue'],
-            'entregue': [],
-            'cancelado': []
-        };
-        
-        const opcoes = fluxo[statusAtual] || [];
-        
-        if (opcoes.length === 0) {
-            alert('✅ Este pedido já completou todo o fluxo!');
-            return;
-        }
-        
-        const novoStatus = prompt(
-            `Mudar status do pedido #${pedidoId}\n\n` +
-            `📊 Status atual: ${formatarStatus(statusAtual)}\n\n` +
-            `🔄 Opções disponíveis:\n${opcoes.map(op => `• ${formatarStatus(op)}`).join('\n')}\n\n` +
-            `Digite o novo status (ex: "confirmado", "na_fila", etc):`
-        );
-        
-        if (!novoStatus || !opcoes.includes(novoStatus)) {
-            alert('Status inválido ou ação cancelada');
-            return;
-        }
-        
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/orders/${pedidoId}/status`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: novoStatus })
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                alert(`✅ STATUS ALTERADO!\n\n${data.message}\n${data.descricao}`);
-                window.location.reload(); // Recarregar para ver mudanças
-            } else {
-                alert('Erro: ' + data.error);
-            }
-        } catch (error) {
-            alert('Erro ao mudar status: ' + error.message);
-        }
-    };
-
     const handleDetalhesPedido = (pedidoId) => {
         navigate(`/pedido/${pedidoId}`);
-    };
-
-    const testarBackendConnection = async () => {
-        try {
-            setLoading(true);
-            setError(null);
-            
-            const response = await fetch(`${API_BASE_URL}/api/health`);
-            const data = await response.json();
-            
-            setDebugInfo(`Health Check: ${JSON.stringify(data, null, 2)}`);
-            
-            if (data.status === 'healthy') {
-                alert('✅ Backend está funcionando perfeitamente!\n\n' +
-                      'Banco: ' + (data.database?.status || 'OK') + '\n' +
-                      'Queue Smart: ' + (data.queue_smart?.status || 'OK'));
-            } else {
-                alert(`⚠️ Backend com problemas: ${data.message}`);
-            }
-        } catch (err) {
-            setError(`Health Check falhou: ${err.message}`);
-        } finally {
-            setLoading(false);
-        }
     };
 
     if (!user) {
@@ -341,7 +170,7 @@ const MeusPedidos = () => {
             <div className="container">
                 <div className="card">
                     <div className="header">
-                        <h1>📦 Meus Pedidos - SneakerLabs</h1>
+                        <h1>📦 Meus Pedidos</h1>
                         <p className="subtitle">Acompanhe seus sneakers personalizados</p>
                         
                         <div className="user-info">
@@ -354,22 +183,8 @@ const MeusPedidos = () => {
                             <div className="info-item">
                                 <strong>📊 Total de Pedidos:</strong> {pedidos.length}
                             </div>
-                            <button 
-                                onClick={testarBackendConnection} 
-                                className="test-btn"
-                                style={{ backgroundColor: primaryColor }}
-                            >
-                                🔍 Testar Conexão
-                            </button>
                         </div>
                     </div>
-
-                    {debugInfo && (
-                        <div className="debug-info">
-                            <h4>🔧 Informações de Debug:</h4>
-                            <pre>{debugInfo}</pre>
-                        </div>
-                    )}
 
                     {loading && (
                         <div className="loading">
@@ -410,12 +225,11 @@ const MeusPedidos = () => {
                     )}
 
                     <div className="pedidos-list">
-                        {pedidos.map((pedido, index) => {
+                        {pedidos.map((pedido) => {
                             const status = pedido.status_geral || 'pendente';
                             const statusFormatado = formatarStatus(status);
-                            const totalProdutos = contarProdutos(pedido);
-                            const quantidadeTotal = calcularQuantidadeTotal(pedido);
-                            const codigosRastreio = extrairCodigosRastreio(pedido);
+                            const totalProdutos = pedido.total_produtos || 0;
+                            const quantidadeTotal = pedido.quantidade_total || totalProdutos;
                             const isConcluido = status === 'concluido' || status === 'entregue';
                             
                             return (
@@ -427,8 +241,7 @@ const MeusPedidos = () => {
                                                 📅 {formatarData(pedido.data_criacao)}
                                             </p>
                                             <p className="total-itens">
-                                                📦 {quantidadeTotal} item{quantidadeTotal !== 1 ? 's' : ''} 
-                                                {totalProdutos !== quantidadeTotal ? ` (${totalProdutos} produto${totalProdutos !== 1 ? 's' : ''})` : ''}
+                                                📦 {quantidadeTotal} item{quantidadeTotal !== 1 ? 's' : ''}
                                             </p>
                                         </div>
                                         <span 
@@ -455,10 +268,6 @@ const MeusPedidos = () => {
                                                 <strong>🏭 Produção:</strong>
                                                 <span>{formatarStatus(pedido.status_producao || status)}</span>
                                             </div>
-                                            <div className="detalhe-item">
-                                                <strong>📍 Status:</strong>
-                                                <span>{statusFormatado}</span>
-                                            </div>
                                         </div>
                                         
                                         {pedido.produtos && pedido.produtos.length > 0 && (
@@ -476,22 +285,17 @@ const MeusPedidos = () => {
                                                                 border: '1px solid #ccc'
                                                             }}></span>
                                                             <span>{produto.cor} - Tamanho {produto.tamanho || 42}</span>
-                                                            {produto.configuracoes && (
-                                                                <small className="config-info">
-                                                                    {produto.configuracoes.estilo}, {produto.configuracoes.material}
-                                                                </small>
-                                                            )}
                                                         </div>
                                                     ))}
                                                 </div>
                                             </div>
                                         )}
                                         
-                                        {codigosRastreio.length > 0 && (
+                                        {pedido.codigos_rastreio && pedido.codigos_rastreio.length > 0 && (
                                             <div className="rastreio-info">
                                                 <strong>📮 Códigos de Rastreio:</strong>
                                                 <div className="codigos-list">
-                                                    {codigosRastreio.map((codigo, idx) => (
+                                                    {pedido.codigos_rastreio.map((codigo, idx) => (
                                                         <span key={idx} className="codigo-badge">
                                                             {codigo}
                                                         </span>
@@ -516,24 +320,6 @@ const MeusPedidos = () => {
                                             style={{ backgroundColor: '#3B82F6' }}
                                         >
                                             📦 Rastrear Pedido
-                                        </button>
-                                        
-                                        <button 
-                                            onClick={() => handleDemonstracaoAutomatica(pedido.id)}
-                                            className="btn-demo"
-                                            style={{ backgroundColor: '#8B5CF6' }}
-                                            title="Mostrar fluxo completo automaticamente"
-                                        >
-                                            🎬 Demo Automática
-                                        </button>
-                                        
-                                        <button 
-                                            onClick={() => handleMudarStatus(pedido.id, status)}
-                                            className="btn-mudar-status"
-                                            style={{ backgroundColor: '#F59E0B' }}
-                                            title="Mudar status manualmente"
-                                        >
-                                            🔄 Mudar Status
                                         </button>
                                         
                                         {isConcluido && status !== 'entregue' && (
@@ -580,7 +366,6 @@ const MeusPedidos = () => {
                     --text-light: #666;
                 }
 
-                /* Layout */
                 .container {
                     padding: 5rem 1rem 2rem;
                     min-height: 100vh;
@@ -588,94 +373,53 @@ const MeusPedidos = () => {
                 }
 
                 .card {
-                    max-width: 1200px;
+                    max-width: 1000px;
                     margin: 0 auto;
                     background: white;
                     border-radius: 1.5rem;
-                    padding: 2.5rem;
-                    box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+                    padding: 2rem;
+                    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
                 }
 
-                /* Header */
                 .header {
                     text-align: center;
-                    margin-bottom: 2.5rem;
+                    margin-bottom: 2rem;
                 }
 
                 .header h1 {
-                    font-size: 2.8rem;
-                    font-weight: 800;
+                    font-size: 2.5rem;
+                    font-weight: 700;
                     margin-bottom: 0.5rem;
-                    background: linear-gradient(135deg, var(--primary-color) 0%, #ffb347 100%);
-                    -webkit-background-clip: text;
-                    -webkit-text-fill-color: transparent;
-                    background-clip: text;
+                    color: var(--primary-color);
                 }
 
                 .subtitle {
                     color: var(--text-light);
-                    max-width: 600px;
-                    margin: 0 auto 2rem;
-                    line-height: 1.6;
-                    font-size: 1.2rem;
+                    margin-bottom: 2rem;
+                    font-size: 1.1rem;
                 }
 
                 .user-info {
                     background: rgba(0,0,0,0.02);
                     border-radius: 1rem;
-                    padding: 1.5rem;
+                    padding: 1.2rem;
                     border: 1px solid var(--gray);
-                    max-width: 800px;
-                    margin: 0 auto;
                     display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
                     gap: 1rem;
-                    align-items: center;
+                    margin: 0 auto;
+                    max-width: 800px;
                 }
 
                 .info-item {
                     text-align: center;
                 }
 
-                .test-btn {
-                    padding: 0.75rem 1.5rem;
-                    color: white;
-                    border: none;
-                    border-radius: 0.75rem;
-                    font-weight: 600;
-                    cursor: pointer;
-                    transition: all 0.3s ease;
-                }
-
-                .test-btn:hover {
-                    opacity: 0.9;
-                    transform: translateY(-2px);
-                }
-
-                /* Debug Info */
-                .debug-info {
-                    background: #e9ecef;
-                    padding: 1rem;
-                    border-radius: 0.5rem;
-                    margin: 1rem 0;
-                    font-family: 'Courier New', monospace;
-                    font-size: 0.85rem;
-                    max-height: 200px;
-                    overflow-y: auto;
-                }
-
-                .debug-info pre {
-                    white-space: pre-wrap;
-                    word-wrap: break-word;
-                    margin: 0;
-                }
-
-                /* Estados */
                 .loading, .error, .empty {
                     text-align: center;
                     padding: 2rem;
-                    border-radius: 1rem;
                     margin: 1.5rem 0;
+                    border-radius: 1rem;
                 }
 
                 .loading {
@@ -735,7 +479,6 @@ const MeusPedidos = () => {
                     margin-top: 1rem;
                 }
 
-                /* Lista de pedidos */
                 .pedidos-list {
                     display: flex;
                     flex-direction: column;
@@ -744,17 +487,10 @@ const MeusPedidos = () => {
                 }
 
                 .pedido-card {
-                    border: 2px solid var(--gray);
+                    border: 1px solid var(--gray);
                     border-radius: 1rem;
                     padding: 1.5rem;
-                    transition: all 0.3s ease;
                     background: white;
-                }
-
-                .pedido-card:hover {
-                    border-color: var(--primary-color);
-                    transform: translateY(-2px);
-                    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
                 }
 
                 .pedido-header {
@@ -763,15 +499,13 @@ const MeusPedidos = () => {
                     align-items: flex-start;
                     margin-bottom: 1.5rem;
                     padding-bottom: 1rem;
-                    border-bottom: 2px solid var(--gray);
-                    flex-wrap: wrap;
-                    gap: 1rem;
+                    border-bottom: 1px solid var(--gray);
                 }
 
                 .pedido-info h3 {
                     margin: 0;
                     color: var(--text);
-                    font-size: 1.5rem;
+                    font-size: 1.3rem;
                 }
 
                 .pedido-info .data-pedido {
@@ -784,24 +518,17 @@ const MeusPedidos = () => {
                     color: var(--text);
                     font-weight: 600;
                     margin-top: 0.5rem;
-                    background: #f8f9fa;
-                    padding: 0.25rem 0.75rem;
-                    border-radius: 0.5rem;
-                    display: inline-block;
                 }
 
                 .status-badge {
-                    padding: 0.5rem 1.2rem;
+                    padding: 0.5rem 1rem;
                     border-radius: 9999px;
                     color: white;
                     font-weight: 600;
-                    text-transform: uppercase;
                     font-size: 0.8rem;
                     white-space: nowrap;
-                    letter-spacing: 0.5px;
                 }
 
-                /* Detalhes */
                 .pedido-detalhes {
                     margin-bottom: 1.5rem;
                 }
@@ -822,19 +549,17 @@ const MeusPedidos = () => {
                 .detalhe-item strong {
                     color: var(--text-light);
                     font-size: 0.9rem;
-                    font-weight: 600;
                 }
 
                 .detalhe-item span {
                     color: var(--text);
                     font-weight: 500;
-                    font-size: 1.1rem;
                 }
 
                 .valor {
                     color: var(--success);
                     font-weight: 700;
-                    font-size: 1.3rem;
+                    font-size: 1.2rem;
                 }
 
                 .produtos-info, .rastreio-info {
@@ -872,12 +597,6 @@ const MeusPedidos = () => {
                     display: inline-block;
                 }
 
-                .config-info {
-                    color: var(--text-light);
-                    font-style: italic;
-                    margin-left: 0.5rem;
-                }
-
                 .codigos-list {
                     display: flex;
                     flex-wrap: wrap;
@@ -892,7 +611,6 @@ const MeusPedidos = () => {
                     font-size: 0.85rem;
                 }
 
-                /* Botões de ação */
                 .pedido-actions {
                     display: flex;
                     gap: 0.75rem;
@@ -902,26 +620,14 @@ const MeusPedidos = () => {
                 }
 
                 .pedido-actions button {
-                    flex: 1;
-                    min-width: 140px;
-                    padding: 0.75rem;
+                    padding: 0.75rem 1.5rem;
                     border: none;
-                    border-radius: 0.75rem;
+                    border-radius: 0.5rem;
                     font-weight: 600;
                     cursor: pointer;
-                    transition: all 0.3s ease;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 0.5rem;
                     color: white;
-                }
-
-                .btn-detalhes:hover, .btn-rastrear:hover, 
-                .btn-demo:hover, .btn-mudar-status:hover,
-                .btn-entregue:hover {
-                    opacity: 0.9;
-                    transform: translateY(-2px);
+                    flex: 1;
+                    min-width: 150px;
                 }
 
                 .footer-buttons {
@@ -929,16 +635,13 @@ const MeusPedidos = () => {
                     display: flex;
                     justify-content: space-between;
                     gap: 1rem;
-                    flex-wrap: wrap;
                 }
 
                 .footer-buttons button {
                     padding: 1rem 2rem;
-                    border-radius: 1rem;
+                    border-radius: 0.75rem;
                     font-weight: 600;
                     cursor: pointer;
-                    transition: all 0.3s ease;
-                    min-width: 200px;
                 }
 
                 .btn-voltar {
@@ -959,17 +662,14 @@ const MeusPedidos = () => {
 
                 .btn-novo:hover {
                     opacity: 0.9;
-                    transform: translateY(-2px);
                 }
 
-                /* Responsividade */
                 @media (max-width: 768px) {
                     .container { padding-top: 4.5rem; }
-                    .card { padding: 1.5rem; border-radius: 1.2rem; }
+                    .card { padding: 1.5rem; }
                     .header h1 { font-size: 2rem; }
-                    .subtitle { font-size: 1rem; }
                     .user-info { grid-template-columns: 1fr; }
-                    .pedido-header { flex-direction: column; }
+                    .pedido-header { flex-direction: column; gap: 1rem; }
                     .detalhe-grid { grid-template-columns: 1fr; }
                     .pedido-actions { flex-direction: column; }
                     .pedido-actions button { width: 100%; }
@@ -978,9 +678,8 @@ const MeusPedidos = () => {
                 }
 
                 @media (max-width: 480px) {
-                    .card { padding: 1rem; margin: 0.5rem; }
+                    .card { padding: 1rem; }
                     .header h1 { font-size: 1.6rem; }
-                    .status-badge { font-size: 0.7rem; padding: 0.4rem 0.8rem; }
                 }
             `}</style>
         </>
