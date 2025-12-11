@@ -219,4 +219,6 @@ Inteligência Artificial aplicada a produtos customizados
 Status: ✅ Em produção
 Última atualização: Dezembro 2024
 Repositório: github.com/GigioRazzante/SneakerLabs
-Licença: MIT - Veja o arquivo LICENSE para detalhes completos
+## 📄 Licença
+
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
