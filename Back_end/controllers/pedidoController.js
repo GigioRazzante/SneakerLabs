@@ -134,18 +134,18 @@ const createOrder = async (req, res) => {
     
     console.log('\n📝 2. CRIANDO PEDIDO NO BANCO...');
     
-    // Criar pedido
+    // Criar pedido (✅ CORRIGIDO: Adição de aspas duplas nos nomes das colunas)
     const pedidoResult = await client.query(
       `INSERT INTO pedidos (
-        cliente_id, 
-        status, 
-        metodo_pagamento, 
-        observacoes, 
-        valor_total,
-        endereco_entrega,
-        data_pedido,
-        status_producao,
-        sneaker_configs 
+        "cliente_id", 
+        "status", 
+        "metodo_pagamento", 
+        "observacoes", 
+        "valor_total",
+        "endereco_entrega",
+        "data_pedido",
+        "status_producao",
+        "sneaker_configs" 
       ) VALUES ($1, $2, $3, $4, $5, $6, NOW(), $7, $8) 
       RETURNING id, codigo_rastreio`,
       [
@@ -173,23 +173,23 @@ const createOrder = async (req, res) => {
       
       console.log(`📦 Inserindo produto ${i + 1} com configuração:`, sneakerConfig);
       
+      // (✅ CORRIGIDO: Adição de aspas duplas nos nomes das colunas)
       await client.query(
         `INSERT INTO produtos_do_pedido (
-          pedido_id, 
-          cor, 
-          tamanho, 
-          quantidade, 
-          valor_unitario,
-          middleware_id,
-          estoque_pos,
-          // 🎯 CAMPOS DE CONFIGURAÇÃO COMPLETA
-          passo_um,
-          passo_dois,
-          passo_tres,
-          passo_quatro,
-          passo_cinco,
-          sneaker_config,
-          config_queue_smart
+          "pedido_id", 
+          "cor", 
+          "tamanho", 
+          "quantidade", 
+          "valor_unitario",
+          "middleware_id",
+          "estoque_pos",
+          "passo_um",
+          "passo_dois",
+          "passo_tres",
+          "passo_quatro",
+          "passo_cinco",
+          "sneaker_config",
+          "config_queue_smart"
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
         [
           pedidoId,
@@ -197,16 +197,15 @@ const createOrder = async (req, res) => {
           produto.tamanho || 42,
           produto.quantidade,
           produto.valor_unitario || 0,
-          // 🎯 CORREÇÃO: Aplica safeValue para garantir que undefined vire null
           safeValue(produto.middleware_id),
           safeValue(produto.estoque_pos),
           
-          // 🎯 CONFIGURAÇÃO COMPLETA: Aplica safeValue aqui também
-          safeValue(sneakerConfig.estilo || sneakerConfig.passo_um),
-          safeValue(sneakerConfig.material || sneakerConfig.passo_dois),
-          safeValue(sneakerConfig.solado || sneakerConfig.passo_tres),
-          safeValue(sneakerConfig.cor || sneakerConfig.passo_quatro),
-          safeValue(sneakerConfig.detalhes || sneakerConfig.passo_cinco),
+          // ✅ LÓGICA CORRIGIDA: Prioriza as propriedades do objeto 'produto', depois o 'sneakerConfig' como fallback
+          safeValue(produto.passo_um || sneakerConfig.estilo),
+          safeValue(produto.passo_dois || sneakerConfig.material),
+          safeValue(produto.passo_tres || sneakerConfig.solado),
+          safeValue(produto.passo_quatro || sneakerConfig.cor),
+          safeValue(produto.passo_cinco || sneakerConfig.detalhes),
           
           sneakerConfig ? JSON.stringify(sneakerConfig) : null,
           configQueueSmart ? JSON.stringify(configQueueSmart) : null
