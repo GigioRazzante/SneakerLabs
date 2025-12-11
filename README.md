@@ -1,108 +1,209 @@
-**SneakLab** é uma plataforma de personalização de tênis que permite aos usuários escolher estilo, material, cor, solado, detalhes e até o "tamanho estrutural" do seu tênis — tudo isso com uma visualização gerada por **IA generativa**, que cria uma imagem realista do modelo personalizado em tempo real.
+# 👟 SneakLab - Plataforma Completa de Tênis Personalizados
 
+![React](https://img.shields.io/badge/React-18-61DAFB)
+![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-green)
+![Vite](https://img.shields.io/badge/Vite-5.x-646CFF)
+![QueueSmart](https://img.shields.io/badge/Queue_Smart-4.0-blue)
+![Gemini](https://img.shields.io/badge/Gemini_AI-Google-orange)
 
+## 🎯 Visão Geral
 
-----
+**SneakLab** é uma plataforma completa de personalização e produção de tênis que integra **frontend interativo**, **backend robusto** e **sistemas de produção inteligente**. Os usuários criam tênis únicos com IA generativa e acompanham todo o processo de fabricação em tempo real.
 
-## 🚀 Funcionalidades
+## 🏗️ Arquitetura do Sistema
+┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│ Frontend │ │ Backend API │ │ Queue Smart │
+│ React + Vite │◄──►│ Node.js │◄──►│ 4.0 │
+│ Dashboard │ │ Express │ │ Produção │
+└─────────────────┘ └─────────────────┘ └─────────────────┘
+│ │ │
+│ ▼ ▼
+│ ┌─────────────────┐ ┌─────────────────┐
+│ │ PostgreSQL │ │ Gemini AI │
+└──────────────►│ (Neon) │ │ (Google) │
+└─────────────────┘ └─────────────────┘
 
-Personalização por:
-Estilo: Casual, Corrida, Skate
-Material: Couro, Camurça, Tecido
-Solado: Borracha, EVA, Air
-Cor: Branco, Preto, Azul, Vermelho, Verde, Amarelo
-Detalhes: Cadarço normal, colorido ou sem cadarço
-Tamanho estrutural: Simples (1 andar), Dupla (2 andares), Tripla (3 andares)
-Preço dinâmico com base nas escolhas
-Geração de visual do tênis via **IA generativa**
-Interface amigável para o usuário
+text
 
----
+## ✨ Funcionalidades Principais
 
-## 🧠 Uso de IA Generativa
+### 🎨 **Customização Avançada** (Frontend)
+- Interface visual para personalização passo-a-passo
+- 6 categorias de customização: Estilo, Material, Cor, Solado, Detalhes, Tamanho
+- Preço dinâmico calculado em tempo real
+- Visualização com IA generativa
 
-A IA é utilizada para gerar uma imagem realista do tênis personalizado com base nas seleções feitas pelo usuário.
+### 🤖 **IA Generativa** (Integração)
+- Geração de imagens realistas dos tênis customizados
+- Stable Diffusion + ControlNet para alta qualidade
+- Visualização instantânea das combinações
 
-Modelo usado: Stable Diffusion com ajustes via ControlNet
-Integração: API externa (ex: Replicate ou Hugging Face)
-Geração baseada em prompts dinâmicos construídos conforme os atributos selecionados
+### 🏭 **Sistema de Produção** (Backend + Queue Smart)
+- **Backend**: API REST com Node.js + Express
+- **Banco**: PostgreSQL Neon (serverless)
+- **Integração**: Queue Smart 4.0 para produção automatizada
+- **Rastreamento**: Status em tempo real do pedido
 
----
+### 📱 **Dashboard do Cliente** (Frontend)
+- Painel personalizado para cada usuário
+- Histórico completo de pedidos
+- Rastreamento detalhado da produção
+- Gestão de perfil e preferências
 
-## 💵 Variações e Preços
+## 🛠️ Tecnologias Utilizadas
 
-### 1. Estilo (preço base)
-**Casual** – R$ 200
-Para uso diário e combinações simples
-**Corrida** – R$ 350
-Design leve e pensado para performance
-**Skate** – R$ 300
-Mais resistente e com reforço para manobras
+### **Frontend** (`/Front_end`)
+- **React 18** com Hooks modernos
+- **Vite 5** para build ultra-rápido
+- **Tailwind CSS** para estilização
+- **Context API** para gerenciamento de estado
+- **React Router** para navegação
+- **TypeScript** para tipagem segura
 
----
+### **Backend** (`/Back_end`)
+- **Node.js 18+** com ES Modules
+- **Express.js** para API REST
+- **PostgreSQL** (Neon) para banco de dados
+- **Queue Smart 4.0** para integração de produção
+- **Google Gemini AI** para mensagens personalizadas
+- **Render** para hosting e deploy
 
-### 2. Material (acréscimo)
-**Couro** – + R$ 100
-Durável, elegante e com ótimo acabamento
-**Camurça** – + R$ 120
-Toque aveludado e visual moderno
-**Tecido** – + R$ 90
-Leve, respirável e confortável
+### **Integrações**
+- **Queue Smart 4.0**: Sistema de fila de produção
+- **Neon PostgreSQL**: Banco de dados serverless
+- **Google Gemini**: Inteligência Artificial
+- **Render**: Deploy automático
 
----
+## 🚀 Implantação
 
-### 3. Solado (acréscimo)
-**Borracha** – + R$ 40
-Clássico, com boa aderência
-**EVA** – + R$ 60
-Mais leve e com maior amortecimento
-**Air** – + R$ 90
-Tecnologia de amortecimento com bolha de ar
+### **Frontend** (Render)
+- Build automático com Vite
+- Deploy contínuo do GitHub
+- HTTPS automático
+- Domain personalizado
 
----
+### **Backend** (Render)
+- Web Service Node.js
+- Banco Neon PostgreSQL
+- Variáveis de ambiente seguras
+- Health checks automáticos
 
-### 4. Cor (acréscimo)
+### **Banco de Dados** (Neon)
+- PostgreSQL serverless
+- 3GB storage gratuito
+- Branching automático
+- Connection pooling
 
-**Branco** – + R$ 20
-Limpo, versátil e minimalista
-**Preto** – + R$ 30
-Sofisticado e fácil de combinar
-**Azul** – + R$ 25
-Estilo com um toque de personalidade
-**Vermelho** – + R$ 28
-Chamativo e cheio de atitude
-**Verde** – + R$ 23
-Fresco e moderno
-**Amarelo** – + R$ 30
-Vibrante e ousado
+## 📁 Estrutura do Repositório
+SneakerLabs/
+├── 📂 Front_end/ # Aplicação React
+│ ├── src/ # Código fonte
+│ ├── public/ # Assets estáticos
+│ ├── package.json # Dependências frontend
+│ └── vite.config.js # Configuração Vite
+│
+├── 📂 Back_end/ # API Node.js
+│ ├── config/ # Configurações
+│ ├── controllers/ # Lógica de negócio
+│ ├── routes/ # Endpoints API
+│ ├── services/ # Integrações externas
+│ ├── server.js # Ponto de entrada
+│ └── package.json # Dependências backend
+│
+├── 📂 Database/ # Scripts SQL (se houver)
+├── 📜 README.md # Esta documentação
+└── 📜 .gitignore # Arquivos ignorados
 
----
+text
 
-### 5. Detalhes (cadarço – acréscimo)
-**Cadarço normal** – + R$ 20
-Visual tradicional e prático
-**Cadarço colorido** – + R$ 30
-Mais ousado, com contraste visual
-**Sem cadarço** – + R$ 35
-Design limpo com fácil calce
+## 🔧 Configuração Rápida
 
----
+### **1. Frontend Local**
+```bash
+cd Front_end
+npm install
+npm run dev
+# Acesse: http://localhost:5173
+2. Backend Local
+bash
+cd Back_end
+npm install
+cp .env.example .env
+# Configure suas variáveis
+npm run dev
+# API em: http://localhost:10000
+3. Variáveis de Ambiente
+env
+# Backend (.env)
+DATABASE_URL=postgresql://...
+MIDDLEWARE_URL=http://52.72.137.244:3000
+GEMINI_API_KEY=your_key_here
 
+# Frontend (.env.local)
+VITE_API_URL=https://sneakerslab-backend.onrender.com
+📡 API Endpoints Principais
+Autenticação
+POST /api/auth/register - Registrar usuário
 
+POST /api/auth/login - Login
 
-<img width="512" height="321" alt="unnamed" src="https://github.com/user-attachments/assets/c728c672-3d3c-4d06-8ea2-5561ff2adfac" />
+Pedidos
+POST /api/orders - Criar pedido personalizado
 
+GET /api/orders/cliente/:id - Pedidos do cliente
 
+GET /api/orders/estoque/cor/:cor - Verificar estoque
 
-<img width="951" height="592" alt="unnamed" src="https://github.com/user-attachments/assets/dff6773b-838d-4549-89ca-49bd1180f9fc" />
+Produção
+POST /api/callback - Webhook do Queue Smart
 
+Sistema
+GET /api/health - Health check completo
 
+GET /api/config - Configuração do sistema
 
+🎨 Customização Disponível
+Categoria	Opções	Preço Base
+Estilo	Casual, Corrida, Skate	R$ 200-350
+Material	Couro, Camurça, Tecido	+ R$ 90-120
+Cor	Branco, Preto, Azul, Vermelho, Verde, Amarelo	+ R$ 20-30
+Solado	Borracha, EVA, Air	+ R$ 40-90
+Detalhes	Cadarço normal, colorido, sem cadarço	+ R$ 20-35
+🔗 Links de Produção
+Frontend: https://sneakerslab-frontend.onrender.com
 
+Backend: https://sneakerslab-backend.onrender.com
 
-<img width="956" height="603" alt="unnamed" src="https://github.com/user-attachments/assets/2ed9018d-c36a-40aa-8013-fe13f3a4f740" />
+API Docs: https://sneakerslab-backend.onrender.com/api/config
 
+Health Check: https://sneakerslab-backend.onrender.com/api/health
 
-## 📄 Licença
+🤝 Como Contribuir
+Fork este repositório
 
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+Crie uma branch: git checkout -b minha-feature
+
+Commit suas mudanças: git commit -m 'Minha nova feature'
+
+Push: git push origin minha-feature
+
+Abra um Pull Request
+
+📄 Licença
+Este projeto está sob a licença MIT. Veja o arquivo LICENSE para mais detalhes.
+
+👥 Equipe
+Desenvolvido como projeto acadêmico/profissional com foco em:
+
+Integração de sistemas (Frontend + Backend + Produção)
+
+Experiência do usuário com personalização visual
+
+Automação industrial através de Queue Smart 4.0
+
+Inteligência Artificial aplicada a produtos customizados
+
+Status: ✅ Em produção
+Última atualização: Dezembro 2024
+Repositório: github.com/GigioRazzante/SneakerLabs
