@@ -1,16 +1,21 @@
-// controllers/pedidoController.js - VERSÃO COMPLETA COM INTEGRAÇÃO QUEUE SMART + SIMULAÇÃO DUPLA
+// controllers/pedidoController.js - VERSÃO COM CORREÇÃO DE SYNTAX ERROR NO INSERT
+
 import pool from '../config/database.js';
 import queueMiddlewareService from '../services/queueMiddlewareService.js';
 
+// Função auxiliar para garantir que 'undefined' seja convertido para 'null', 
+// prevenindo erros de sintaxe SQL.
+const safeValue = (val) => val === undefined ? null : val;
+
 // ============================================
-// 1. VERIFICAÇÃO DE ESTOQUE REAL (COM SIMULAÇÃO) - USADO DENTRO DO createOrder
+// 1. VERIFICAÇÃO DE ESTOQUE REAL (COM SIMULAÇÃO)
 // ============================================
 async function verificarEstoqueReal(produtos) {
   console.log('🔍 VERIFICAÇÃO DE ESTOQUE REAL COM QUEUE SMART');
   console.log('Produtos a verificar:', produtos);
 
   // 🎯 INÍCIO DO BLOCO DE SIMULAÇÃO DE ESTOQUE
-  const SIMULATION_MODE = true; // <--- MUDANÇA: Habilita o modo de simulação
+  const SIMULATION_MODE = true; 
   const SIMULATED_QUANTITY = 100;
   // 🎯 FIM DO BLOCO DE SIMULAÇÃO DE ESTOQUE
   
@@ -92,7 +97,7 @@ async function verificarEstoqueReal(produtos) {
 }
 
 // ============================================
-// 2. CRIAR PEDIDO COM INTEGRAÇÃO COMPLETA
+// 2. CRIAR PEDIDO COM INTEGRAÇÃO COMPLETA (createOrder)
 // ============================================
 const createOrder = async (req, res) => {
   console.log('\n🚀 ===== NOVO PEDIDO RECEBIDO =====');
@@ -124,6 +129,7 @@ const createOrder = async (req, res) => {
     await client.query('BEGIN');
     
     console.log('\n🔍 1. VERIFICANDO ESTOQUE REAL...');
+    // O `produtos` do corpo da requisição é usado aqui (com as cores)
     const { verificacoes, produtosComEstoque } = await verificarEstoqueReal(produtos);
     
     console.log('\n📝 2. CRIANDO PEDIDO NO BANCO...');
@@ -139,7 +145,7 @@ const createOrder = async (req, res) => {
         endereco_entrega,
         data_pedido,
         status_producao,
-        sneaker_configs  -- 🎯 ARMAZENAR CONFIGURAÇÕES
+        sneaker_configs 
       ) VALUES ($1, $2, $3, $4, $5, $6, NOW(), $7, $8) 
       RETURNING id, codigo_rastreio`,
       [
@@ -191,14 +197,17 @@ const createOrder = async (req, res) => {
           produto.tamanho || 42,
           produto.quantidade,
           produto.valor_unitario || 0,
-          produto.middleware_id,
-          produto.estoque_pos,
-          // 🎯 CONFIGURAÇÃO COMPLETA
-          sneakerConfig.estilo || sneakerConfig.passo_um,
-          sneakerConfig.material || sneakerConfig.passo_dois,
-          sneakerConfig.solado || sneakerConfig.passo_tres,
-          sneakerConfig.cor || sneakerConfig.passo_quatro,
-          sneakerConfig.detalhes || sneakerConfig.passo_cinco,
+          // 🎯 CORREÇÃO: Aplica safeValue para garantir que undefined vire null
+          safeValue(produto.middleware_id),
+          safeValue(produto.estoque_pos),
+          
+          // 🎯 CONFIGURAÇÃO COMPLETA: Aplica safeValue aqui também
+          safeValue(sneakerConfig.estilo || sneakerConfig.passo_um),
+          safeValue(sneakerConfig.material || sneakerConfig.passo_dois),
+          safeValue(sneakerConfig.solado || sneakerConfig.passo_tres),
+          safeValue(sneakerConfig.cor || sneakerConfig.passo_quatro),
+          safeValue(sneakerConfig.detalhes || sneakerConfig.passo_cinco),
+          
           sneakerConfig ? JSON.stringify(sneakerConfig) : null,
           configQueueSmart ? JSON.stringify(configQueueSmart) : null
         ]
@@ -250,11 +259,11 @@ const createOrder = async (req, res) => {
             middleware_id = $1,
             status_producao = 'em_producao',
             data_inicio_producao = NOW(),
-            integracao_completa = $2  -- 🎯 MARCAR INTEGRAÇÃO COMPLETA
+            integracao_completa = $2 
           WHERE id = $3`,
           [
             ordemProducao.middleware_id || ordemProducao.ordens?.[0]?.middleware_id,
-            configs_queue_smart.length > 0, // true se teve integração completa
+            configs_queue_smart.length > 0, 
             pedidoId
           ]
         );
@@ -356,7 +365,7 @@ const verificarEstoqueCor = async (req, res) => {
     if (SIMULATION_MODE) {
       console.log(`⚠️ MODO DE SIMULAÇÃO ATIVO. Estoque forçado para: ${SIMULATED_QUANTITY}`);
       estoqueQueue = {
-        disponivel: true,
+        disponivel: true, 
         quantidade: SIMULATED_QUANTITY,
         middleware_id: `SIM_MID_${cor}_${Math.random().toString(36).substring(7)}`,
         estoque_pos: 'SIM-POS-1',
@@ -367,7 +376,7 @@ const verificarEstoqueCor = async (req, res) => {
       estoqueQueue = await queueMiddlewareService.verificarEstoqueQueueSmart(cor);
     }
     
-    // Verificar no banco local também
+    // Verificar no banco local também (para complementar a resposta)
     const client = await pool.connect();
     const localResult = await client.query(
       'SELECT * FROM estoque_maquina WHERE cor = $1',
@@ -390,7 +399,7 @@ const verificarEstoqueCor = async (req, res) => {
       },
       recomendacao: estoqueQueue.disponivel 
         ? `Estoque disponível: ${estoqueQueue.quantidade} unidades (Simulado)`
-        : 'Estoque indisponível no momento',
+        : 'Estoque indisponível no momento', 
       timestamp: new Date().toISOString()
     });
     
@@ -570,7 +579,7 @@ const atualizarStatusPedido = async (pedidoId, status, dadosProducao = {}) => {
 };
 
 // ============================================
-// 5. NOVOS ENDPOINTS PARA INTEGRAÇÃO QUEUE SMART
+// 4. NOVOS ENDPOINTS PARA INTEGRAÇÃO QUEUE SMART
 // ============================================
 
 export const testarIntegracaoQueue = async (req, res) => {
