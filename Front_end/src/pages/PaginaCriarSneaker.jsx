@@ -1,3 +1,4 @@
+// PaginaCriarSneaker.jsx - VERSÃO COMPLETA COM VERIFICAÇÃO DE ESTOQUE QUEUE SMART
 import React, { useState } from 'react';
 import Navbar from '../components/Navbar';
 import MenuSelecao from '../components/MenuSelecao';
@@ -55,146 +56,71 @@ const passos = [
   },
 ];
 
-// ============================================
-// 🎯 NOVAS FUNÇÕES DE EXTRAÇÃO E TRADUÇÃO
-// ============================================
-
 /**
- * Função auxiliar para extrair configuração completa do sneaker a partir dos passos.
+ * Extrai a cor corretamente dos itens do pedido
+ * @param {Array} items - Itens do pedido
+ * @returns {string} - Cor em minúsculo (branco, preto, azul, etc.)
  */
-const extrairConfiguracaoSneaker = (items) => {
-  console.log('🔍 Extraindo configuração completa do sneaker:', items);
-  
-  const config = {
-    estilo: 'Casual',       // padrão
-    material: 'Couro',      // padrão
-    solado: 'Borracha',     // padrão
-    cor: 'branco',          // padrão (lowercase)
-    detalhes: 'Cadarço normal', // padrão
-    tamanho: 42             // padrão
-  };
+const extrairCorDoPedido = (items) => {
+  console.log('🔍 Extraindo cor do pedido:', items);
   
   if (!items || !Array.isArray(items)) {
     console.warn('⚠️ Items inválidos ou vazios');
-    return config;
+    return 'branco'; // fallback padrão
   }
   
-  // Mapear cada passo para a configuração
-  items.forEach(item => {
-    if (!item || item.step === undefined || !item.nome) return;
-    
-    switch(item.step) {
-      case 0: // Passos são 0-indexados no `selections` (estilo)
-      case 1: // Estilo
-        config.estilo = item.nome;
-        break;
-      case 2: // Material
-        config.material = item.nome;
-        break;
-      case 3: // Solado
-        config.solado = item.nome;
-        break;
-      case 4: // Cor
-        // Encontra o objeto de opção no passos para garantir que pegamos o campo 'cor' minúsculo
-        const stepCor = passos.find(p => p.titulo.includes("Cor"));
-        const corOpcao = stepCor?.opcoes.find(o => o.nome === item.nome);
-        config.cor = corOpcao?.cor || item.nome.toLowerCase(); // Salva em minúsculo
-        break;
-      case 5: // Detalhes (Cadarços)
-        config.detalhes = item.nome;
-        break;
+  // Encontrar item do passo 4 (cor)
+  const itemCor = items.find(item => item && item.step === 4);
+  
+  if (!itemCor || !itemCor.nome) {
+    console.warn('⚠️ Item de cor não encontrado no passo 4');
+    return 'branco'; // fallback
+  }
+  
+  console.log('✅ Item da cor encontrado:', itemCor);
+  
+  // Mapeamento direto dos nomes para códigos do Queue Smart
+  const mapeamentoCores = {
+    'Branco': 'branco',
+    'Preto': 'preto',
+    'Azul': 'azul',
+    'Vermelho': 'vermelho',
+    'Verde': 'verde',
+    'Amarelo': 'amarelo'
+  };
+  
+  // Verificar mapeamento direto
+  const corMapeada = mapeamentoCores[itemCor.nome];
+  
+  if (corMapeada) {
+    console.log(`✅ Cor mapeada: ${itemCor.nome} → ${corMapeada}`);
+    return corMapeada;
+  }
+  
+  // Se não encontrou no mapeamento, tentar converter para minúsculo
+  const corMinuscula = itemCor.nome.toLowerCase();
+  console.log(`ℹ️ Usando cor em minúsculo: ${corMinuscula}`);
+  
+  // Verificar se a cor minúscula existe no mapeamento de valores
+  const coresValidas = Object.values(mapeamentoCores);
+  if (coresValidas.includes(corMinuscula)) {
+    return corMinuscula;
+  }
+  
+  // Fallback: buscar correspondência parcial
+  for (const [nome, codigo] of Object.entries(mapeamentoCores)) {
+    if (itemCor.nome.toLowerCase().includes(codigo)) {
+      console.log(`✅ Cor encontrada por correspondência: ${itemCor.nome} → ${codigo}`);
+      return codigo;
     }
-  });
-
-  // Ajuste para garantir que, se for passado o objeto selections, a extração funcione
-  // Se for passado o array de items do pedido (com a estrutura {nome, acrescimo, step})
-  const stepItems = Object.values(items).filter(item => item.step !== undefined);
-  if (stepItems.length > 0) {
-    stepItems.forEach(item => {
-      if (!item || item.step === undefined || !item.nome) return;
-      
-      const stepIndex = item.step; // Índice do passo original
-      
-      switch(stepIndex) {
-        case 0: // Passos[0]: Estilo
-          config.estilo = item.nome;
-          break;
-        case 1: // Passos[1]: Material
-          config.material = item.nome;
-          break;
-        case 2: // Passos[2]: Solado
-          config.solado = item.nome;
-          break;
-        case 3: // Passos[3]: Cor
-          const stepCor = passos[3];
-          const corOpcao = stepCor.opcoes.find(o => o.nome === item.nome);
-          config.cor = corOpcao?.cor || item.nome.toLowerCase();
-          break;
-        case 4: // Passos[4]: Detalhes
-          config.detalhes = item.nome;
-          break;
-      }
-    });
   }
   
-  console.log('✅ Configuração extraída:', config);
-  return config;
+  console.warn(`⚠️ Cor não mapeada: "${itemCor.nome}". Usando fallback: branco`);
+  return 'branco'; // fallback seguro
 };
 
 /**
- * Mapeamento de tradução do formato local para o Queue Smart 4.0.
- */
-const traduzirParaQueueSmart = (config) => {
-  const traducoes = {
-    // Estilos
-    'Casual': 'CASUAL',
-    'Corrida': 'RUNNING', 
-    'Skate': 'SKATE',
-    
-    // Materiais
-    'Couro': 'LEATHER',
-    'Camurça': 'SUEDE',
-    'Tecido': 'TEXTILE',
-    
-    // Solados
-    'Borracha': 'RUBBER_SOLE',
-    'EVA': 'EVA_SOLE',
-    'Air': 'AIR_SOLE',
-    
-    // Cores (Espera string Capitalizada)
-    'Branco': 'WHITE',
-    'Preto': 'BLACK',
-    'Azul': 'BLUE',
-    'Vermelho': 'RED',
-    'Verde': 'GREEN',
-    'Amarelo': 'YELLOW',
-    
-    // Cadarços
-    'Cadarço normal': 'STANDARD_LACES',
-    'Cadarço colorido': 'COLORED_LACES',
-    'Sem cadarço': 'NO_LACES'
-  };
-  
-  // A cor no objeto config está em minúsculo ('branco', 'preto', etc.)
-  // O mapeamento `traducoes` espera a cor Capitalizada ('Branco', 'Preto', etc.)
-  const corCapitalizada = config.cor.charAt(0).toUpperCase() + config.cor.slice(1);
-
-  return {
-    style: traducoes[config.estilo] || 'CASUAL',
-    material: traducoes[config.material] || 'LEATHER',
-    sole: traducoes[config.solado] || 'RUBBER_SOLE',
-    color: traducoes[corCapitalizada] || 'WHITE',
-    laces: traducoes[config.detalhes] || 'STANDARD_LACES',
-    size: config.tamanho || 42
-  };
-};
-
-// ============================================
-// FUNÇÃO DE VERIFICAÇÃO DE ESTOQUE
-// ============================================
-
-/**
- * Verifica estoque no Queue Smart antes de enviar (apenas por cor).
+ * Verifica estoque no Queue Smart antes de enviar
  * @param {string} cor - Cor a verificar
  * @returns {Promise<{disponivel: boolean, quantidade: number, mensagem: string}>}
  */
@@ -202,7 +128,6 @@ const verificarEstoqueQueueSmart = async (cor) => {
   console.log(`📦 Verificando estoque para cor: ${cor}`);
   
   try {
-    // Note: Usamos a cor extraída (minúscula) para a verificação do backend
     const response = await fetch(`${API_BASE_URL}/api/orders/estoque/cor/${cor}`, {
       method: 'GET',
       headers: {
@@ -254,7 +179,7 @@ const PaginaCriarSneaker = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [selections, setSelections] = useState({});
   const [pedidos, setPedidos] = useState([]);
-  const [enderecoEntrega] = useState({
+  const [enderecoEntrega, setEnderecoEntrega] = useState({
     rua: 'Rua Demo',
     numero: '123',
     bairro: 'Centro',
@@ -295,10 +220,10 @@ const PaginaCriarSneaker = () => {
     );
   }
 
-  const handleSelectOption = (stepIndex, optionId, acrescimo, nome) => {
+  const handleSelectOption = (stepId, optionId, acrescimo, nome) => {
     setSelections({
       ...selections,
-      [stepIndex]: { id: optionId, acrescimo, nome, step: stepIndex } // stepIndex: 0 a 4
+      [stepId]: { id: optionId, acrescimo, nome }
     });
   };
 
@@ -308,7 +233,7 @@ const PaginaCriarSneaker = () => {
       if (currentStep < passos.length - 1) {
         setCurrentStep(currentStep + 1);
       } else {
-        setCurrentStep(passos.length); // Vai para a tela de Resumo
+        setCurrentStep(passos.length);
       }
     } else {
       alert("Por favor, selecione uma opção para continuar.");
@@ -318,19 +243,16 @@ const PaginaCriarSneaker = () => {
   const handleFinalize = (pedidoData) => {
     const dadosRecebidos = pedidoData || { items: [], valorTotal: 0 };
     
-    // Converte o objeto de selections em um array de items para salvar no pedido
-    const itemsArray = Object.values(dadosRecebidos.items || selections);
-
     const novoPedido = {
       id: Date.now(),
-      items: itemsArray,
+      items: dadosRecebidos.items || [],
       valorTotal: dadosRecebidos.valorTotal || 0,
       dataCriacao: new Date().toLocaleString('pt-BR')
     };
     
     setPedidos([...pedidos, novoPedido]);
     setSelections({});
-    setCurrentStep(passos.length + 1); // Vai para a tela de Carrinho
+    setCurrentStep(passos.length + 1);
   };
 
   const handleIncluirMaisPedidos = () => {
@@ -339,7 +261,7 @@ const PaginaCriarSneaker = () => {
   };
 
   const handleConfirmarPedidos = async () => {
-    console.log('🚀 INICIANDO ENVIO DE PEDIDO PARA BACKEND (Integração Completa)');
+    console.log('🚀 INICIANDO ENVIO DE PEDIDO PARA BACKEND');
     
     if (!user || !user.id) {
       alert('❌ ERRO: Usuário não identificado.');
@@ -351,26 +273,19 @@ const PaginaCriarSneaker = () => {
       return;
     }
 
+    console.log('👤 Usuário:', user);
+    console.log('📦 Pedidos no carrinho:', pedidos.length);
+
     // ============================================
-    // 1. EXTRAIR CONFIGURAÇÃO COMPLETA, CORES E VALORES
+    // 1. EXTRAIR CORES E VERIFICAR ESTOQUE
     // ============================================
     const coresParaVerificar = [];
     const produtosParaEnvio = [];
-    const configsParaEnvio = []; // 🎯 Configurações para o Queue Smart (traduzido)
-    const sneakerConfigsCompletas = []; // 🎯 Configurações no formato local (original)
     let valorTotal = 0;
     
-    // Coletar todas as cores e configurações dos pedidos
+    // Primeiro: coletar todas as cores dos pedidos
     pedidos.forEach((pedido, index) => {
-      // 🎯 EXTRAIR CONFIGURAÇÃO COMPLETA (formato local)
-      const configCompleta = extrairConfiguracaoSneaker(pedido.items);
-      
-      // 🎯 TRADUZIR PARA QUEUE SMART (formato Queue Smart 4.0)
-      const configQueueSmart = traduzirParaQueueSmart(configCompleta);
-
-      // A cor para o estoque é a cor em minúsculo
-      const corParaEstoque = configCompleta.cor; 
-      
+      const cor = extrairCorDoPedido(pedido.items);
       let valorPedido = pedido.valorTotal || 0;
       
       if (pedido.items && Array.isArray(pedido.items)) {
@@ -379,34 +294,21 @@ const PaginaCriarSneaker = () => {
         }, 0);
       }
       
-      console.log(`🎨 Pedido ${index + 1}: Cor = ${corParaEstoque}, Valor = R$ ${valorPedido.toFixed(2)}`);
+      console.log(`🎨 Pedido ${index + 1}: Cor = ${cor}, Valor = R$ ${valorPedido.toFixed(2)}`);
       
-      // Armazenar para verificação de estoque (por cor)
+      // Armazenar para verificação
       coresParaVerificar.push({
-        cor: corParaEstoque,
+        cor: cor,
         quantidade: 1,
         index: index
       });
       
-      // Armazenar as configurações para envio ao backend
-      configsParaEnvio.push(configQueueSmart);
-      sneakerConfigsCompletas.push(configCompleta);
-
-      // 🎯 Preparar produto para envio (COM CAMPOS COMPLETOS PARA O BACKEND)
+      // Preparar produto para envio
       produtosParaEnvio.push({
-        // Campos existentes:
-        cor: corParaEstoque, 
+        cor: cor,
         quantidade: 1,
-        tamanho: configCompleta.tamanho,
-        valor_unitario: valorPedido,
-        
-        // Campos de passo a passo (para o DB)
-        passo_um: configCompleta.estilo,
-        passo_dois: configCompleta.material,
-        passo_tres: configCompleta.solado,
-        // Salva a cor com a primeira letra maiúscula (Branco, Preto...)
-        passo_quatro: corParaEstoque.charAt(0).toUpperCase() + corParaEstoque.slice(1), 
-        passo_cinco: configCompleta.detalhes
+        tamanho: 42,
+        valor_unitario: valorPedido
       });
       
       valorTotal += valorPedido;
@@ -424,7 +326,6 @@ const PaginaCriarSneaker = () => {
     for (const itemCor of coresParaVerificar) {
       console.log(`📦 Verificando estoque para: ${itemCor.cor}`);
       
-      // Usa a cor em minúsculo para a chamada de verificação
       const resultadoEstoque = await verificarEstoqueQueueSmart(itemCor.cor);
       
       verificacoesEstoque.push({
@@ -434,11 +335,11 @@ const PaginaCriarSneaker = () => {
         mensagem: resultadoEstoque.mensagem
       });
       
-      console.log(`    → ${resultadoEstoque.disponivel ? '✅ Disponível' : '❌ Indisponível'}: ${resultadoEstoque.mensagem}`);
+      console.log(`   → ${resultadoEstoque.disponivel ? '✅ Disponível' : '❌ Indisponível'}: ${resultadoEstoque.mensagem}`);
       
       if (!resultadoEstoque.disponivel) {
         todasCoresDisponiveis = false;
-        mensagemErroEstoque = `A cor "${itemCor.cor.toUpperCase()}" está sem estoque disponível. ${resultadoEstoque.mensagem}`;
+        mensagemErroEstoque = `A cor "${itemCor.cor}" está sem estoque disponível. ${resultadoEstoque.mensagem}`;
         break; // Para na primeira cor sem estoque
       }
     }
@@ -457,18 +358,14 @@ const PaginaCriarSneaker = () => {
     console.log('📊 Verificações completas:', verificacoesEstoque);
 
     // ============================================
-    // 4. MONTAR REQUEST PARA BACKEND (COMPLETO)
+    // 4. MONTAR REQUEST PARA BACKEND
     // ============================================
     const requestData = {
       cliente_id: user.id,
-      produtos: produtosParaEnvio, 
-      // 🎯 NOVOS CAMPOS PARA INTEGRAÇÃO COMPLETA
-      configs_queue_smart: configsParaEnvio, 
-      sneaker_configs: sneakerConfigsCompletas, 
-      
+      produtos: produtosParaEnvio,
       endereco_entrega: enderecoEntrega,
       metodo_pagamento: "cartao",
-      observacoes: "Pedido com configuração completa para Queue Smart 4.0",
+      observacoes: "Pedido criado via sistema de personalização SneakerLabs",
       valor_total: valorTotal
     };
 
@@ -527,11 +424,9 @@ const PaginaCriarSneaker = () => {
         />
       );
     } else if (currentStep === passos.length) {
-      // Passa as seleções como um array para o ResumoPedido
-      const itemsArray = Object.values(selections).sort((a, b) => a.step - b.step);
       return (
         <ResumoPedido
-          selections={itemsArray}
+          selections={selections}
           passos={passos}
           onFinalize={handleFinalize}
         />
@@ -605,7 +500,7 @@ const PaginaCriarSneaker = () => {
             left: 0;
             width: 100%;
             height: 8px;
-            background-color: ${primaryColor}; /* Usando a cor do tema */
+            background-color: var(--primary-color);
             border-top-left-radius: 1.5rem;
             border-top-right-radius: 1.5rem;
             transition: background-color 0.3s ease;

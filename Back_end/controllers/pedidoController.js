@@ -1,4 +1,4 @@
-// controllers/pedidoController.js - VERSÃO CORRIGIDA COMPLETA
+// controllers/pedidoController.js - VERSÃO COMPLETA PARA APRESENTAÇÃO SENAI
 
 import pool from '../config/database.js';
 import queueMiddlewareService from '../services/queueMiddlewareService.js';
@@ -152,10 +152,11 @@ const createOrder = async (req, res) => {
         );
         
         const pedidoId = pedidoResult.rows[0].id;
-        const codigoRastreio = pedidoResult.rows[0].codigo_rastreio;
+        const codigoRastreio = pedidoResult.rows[0].codigo_rastreio || `SNK${pedidoId.toString().padStart(6, '0')}`;
         
         console.log(`✅ Pedido criado: ID ${pedidoId}, Rastreio: ${codigoRastreio}`);
         
+        // INSERIR PRODUTOS DO PEDIDO
         for (let i = 0; i < produtosComEstoque.length; i++) {
             const produto = produtosComEstoque[i];
             const sneakerConfig = sneaker_configs[i] || {};
@@ -199,6 +200,24 @@ const createOrder = async (req, res) => {
             );
         }
         
+        // ============================================
+        // 🎯 FLUXO AUTOMÁTICO PARA DEMONSTRAÇÃO SENAI
+        // ============================================
+        console.log('\n🎬 CONFIGURANDO FLUXO AUTOMÁTICO PARA APRESENTAÇÃO...');
+        
+        // 1. STATUS INICIAL: confirmado + na_fila (para demonstração)
+        await client.query(
+            `UPDATE pedidos SET 
+                "status_geral" = 'confirmado',
+                "status_producao" = 'na_fila',
+                "codigo_rastreio" = $1
+            WHERE "id" = $2`,
+            [codigoRastreio, pedidoId]
+        );
+        
+        console.log(`✅ Pedido ${pedidoId} confirmado e colocado na fila de produção`);
+        
+        // 2. ENVIAR PARA PRODUÇÃO NO QUEUE SMART
         console.log('\n🏭 3. ENVIANDO PARA PRODUÇÃO NO QUEUE SMART...');
         
         try {
@@ -238,8 +257,6 @@ const createOrder = async (req, res) => {
                 await client.query(
                     `UPDATE pedidos SET 
                         "middleware_id" = $1,
-                        "status_producao" = 'em_producao',
-                        "data_inicio_producao" = NOW(),
                         "integracao_completa" = $2 
                     WHERE "id" = $3`,
                     [
@@ -262,6 +279,50 @@ const createOrder = async (req, res) => {
         
         console.log('\n🎉 PEDIDO CRIADO COM SUCESSO!');
         
+        // ============================================
+        // 🔄 FLUXO AUTOMÁTICO EM BACKGROUND
+        // ============================================
+        const iniciarFluxoDemonstracao = async () => {
+            try {
+                const demoClient = await pool.connect();
+                
+                // AGUARDAR 3 SEGUNDOS → EM PRODUÇÃO
+                await new Promise(resolve => setTimeout(resolve, 3000));
+                
+                await demoClient.query(
+                    `UPDATE pedidos SET 
+                        "status_geral" = 'em_producao',
+                        "status_producao" = 'em_producao',
+                        "data_inicio_producao" = NOW()
+                    WHERE "id" = $1`,
+                    [pedidoId]
+                );
+                console.log(`🔄 Pedido ${pedidoId} em produção (após 3 segundos)`);
+                
+                // AGUARDAR 7 SEGUNDOS → PRODUÇÃO CONCLUÍDA
+                await new Promise(resolve => setTimeout(resolve, 7000));
+                
+                await demoClient.query(
+                    `UPDATE pedidos SET 
+                        "status_geral" = 'concluido',
+                        "status_producao" = 'concluido',
+                        "data_conclusao_producao" = NOW()
+                    WHERE "id" = $1`,
+                    [pedidoId]
+                );
+                console.log(`✅ Pedido ${pedidoId} produção concluída (após 10 segundos)`);
+                
+                demoClient.release();
+                
+            } catch (fluxoError) {
+                console.warn('⚠️ Erro no fluxo automático:', fluxoError.message);
+            }
+        };
+        
+        // INICIAR FLUXO EM BACKGROUND
+        iniciarFluxoDemonstracao();
+        
+        // GERAR MENSAGEM PERSONALIZADA (opcional)
         try {
             const mensagemService = await import('../services/mensagemService.js');
             const mensagem = await mensagemService.default.gerarMensagemPedido(pedidoId, cliente_id);
@@ -275,18 +336,24 @@ const createOrder = async (req, res) => {
             console.log('ℹ️ Mensagem personalizada não gerada:', msgError.message);
         }
         
+        // RESPOSTA AO FRONTEND
         res.status(201).json({
             success: true,
-            message: 'Pedido criado com sucesso!',
+            message: 'Pedido criado com sucesso! O fluxo automático começará em 3 segundos.',
             pedido: {
                 id: pedidoId,
                 codigo_rastreio: codigoRastreio,
                 cliente_id,
-                status_geral: 'pendente',
-                status_producao: 'em_producao',
+                status_geral: 'confirmado', // ✅ Já começa confirmado
+                status_producao: 'na_fila',  // ✅ Já na fila
                 data_criacao: new Date().toISOString(),
                 verificacao_estoque: verificacoes,
-                integracao_completa: configs_queue_smart.length > 0
+                integracao_completa: configs_queue_smart.length > 0,
+                fluxo_automatico: {
+                    em_3_segundos: 'Mudará para "em_producao"',
+                    em_10_segundos: 'Mudará para "concluido"',
+                    observacao: 'Para demonstração acadêmica SENAI'
+                }
             },
             producao: {
                 enviado_para_producao: true,
@@ -386,7 +453,7 @@ const verificarEstoqueCor = async (req, res) => {
 };
 
 // ============================================
-// 4. FUNÇÃO GET CLIENT ORDERS - SIMPLIFICADA
+// 4. FUNÇÃO GET CLIENT ORDERS - COMPLETA E CORRIGIDA
 // ============================================
 const getClientOrders = async (req, res) => {
     const { clienteId } = req.params;
@@ -398,64 +465,170 @@ const getClientOrders = async (req, res) => {
     try {
         console.log('🔍 Executando query de pedidos...');
         
+        // BUSCAR TODOS OS DADOS DOS PEDIDOS
         const pedidosResult = await client.query(
             `SELECT 
-                "id",
-                "cliente_id",
-                "status_geral",
-                "status_producao",
-                "valor_total",
-                "codigo_rastreio",
-                "metodo_pagamento",
-                "endereco_entrega",
-                "observacoes",
-                "data_criacao"
-            FROM pedidos 
-            WHERE "cliente_id" = $1
-            ORDER BY "data_criacao" DESC`,
+                p."id",
+                p."cliente_id",
+                p."status_geral",
+                p."status_producao",
+                p."valor_total",
+                p."codigo_rastreio",
+                p."metodo_pagamento",
+                p."endereco_entrega",
+                p."observacoes",
+                p."middleware_id",
+                p."estoque_pos",
+                p."integracao_completa",
+                p."sneaker_configs",
+                p."mensagem_personalizada",
+                p."data_criacao",
+                p."data_inicio_producao",
+                p."data_conclusao_producao"
+            FROM pedidos p
+            WHERE p."cliente_id" = $1
+            ORDER BY p."data_criacao" DESC`,
             [clienteId]
         );
         
         console.log(`✅ ${pedidosResult.rows.length} pedidos encontrados`);
         
-        const pedidos = pedidosResult.rows.map(pedido => {
+        const pedidosCompletos = [];
+        
+        for (const pedido of pedidosResult.rows) {
+            console.log(`🛒 Processando pedido ${pedido.id}...`);
+            
+            // 1. CONTAR PRODUTOS E SOMAR QUANTIDADES
+            const countResult = await client.query(
+                `SELECT 
+                    COUNT(*) as total_produtos,
+                    SUM("quantidade") as quantidade_total,
+                    SUM("valor_unitario" * "quantidade") as valor_itens
+                FROM produtos_do_pedido 
+                WHERE "pedido_id" = $1`,
+                [pedido.id]
+            );
+            
+            const totalProdutos = parseInt(countResult.rows[0].total_produtos) || 0;
+            const quantidadeTotal = parseInt(countResult.rows[0].quantidade_total) || totalProdutos;
+            const valorItens = parseFloat(countResult.rows[0].valor_itens) || pedido.valor_total || 0;
+            
+            // 2. BUSCAR DETALHES DOS PRODUTOS
+            const produtosResult = await client.query(
+                `SELECT 
+                    "id",
+                    "cor",
+                    "tamanho",
+                    "quantidade",
+                    "valor_unitario",
+                    "passo_um",
+                    "passo_dois",
+                    "passo_tres",
+                    "passo_quatro",
+                    "passo_cinco",
+                    "sneaker_config",
+                    "config_queue_smart"
+                FROM produtos_do_pedido 
+                WHERE "pedido_id" = $1
+                ORDER BY "id"`,
+                [pedido.id]
+            );
+            
+            const produtos = produtosResult.rows.map(produto => {
+                // Parsear configurações JSON
+                let sneakerConfig = {};
+                let configQueueSmart = {};
+                
+                try {
+                    if (produto.sneaker_config && typeof produto.sneaker_config === 'string') {
+                        sneakerConfig = JSON.parse(produto.sneaker_config);
+                    }
+                    if (produto.config_queue_smart && typeof produto.config_queue_smart === 'string') {
+                        configQueueSmart = JSON.parse(produto.config_queue_smart);
+                    }
+                } catch (e) {
+                    console.warn(`⚠️ Erro ao parsear configurações do produto ${produto.id}:`, e.message);
+                }
+                
+                return {
+                    id: produto.id,
+                    cor: produto.cor,
+                    tamanho: produto.tamanho,
+                    quantidade: produto.quantidade,
+                    valor_unitario: produto.valor_unitario,
+                    configuracoes: {
+                        estilo: produto.passo_um,
+                        material: produto.passo_dois,
+                        solado: produto.passo_tres,
+                        cor: produto.passo_quatro,
+                        detalhes: produto.passo_cinco
+                    },
+                    sneaker_config: sneakerConfig,
+                    config_queue_smart: configQueueSmart
+                };
+            });
+            
+            // 3. PARSEAR DADOS JSON DO PEDIDO
             let enderecoEntrega = {};
+            let sneakerConfigs = [];
+            
             try {
                 if (pedido.endereco_entrega && typeof pedido.endereco_entrega === 'string') {
                     enderecoEntrega = JSON.parse(pedido.endereco_entrega);
-                } else if (pedido.endereco_entrega && typeof pedido.endereco_entrega === 'object') {
-                    enderecoEntrega = pedido.endereco_entrega;
+                }
+                
+                if (pedido.sneaker_configs && typeof pedido.sneaker_configs === 'string') {
+                    sneakerConfigs = JSON.parse(pedido.sneaker_configs);
                 }
             } catch (error) {
-                console.warn(`⚠️ Erro ao parsear endereço do pedido ${pedido.id}:`, error.message);
+                console.warn(`⚠️ Erro ao parsear JSON do pedido ${pedido.id}:`, error.message);
             }
             
-            return {
+            // 4. GERAR CÓDIGOS DE RASTREIO (se não existir)
+            const codigosRastreio = [];
+            if (pedido.codigo_rastreio) {
+                codigosRastreio.push(pedido.codigo_rastreio);
+            }
+            if (pedido.middleware_id) {
+                codigosRastreio.push(pedido.middleware_id);
+            }
+            
+            // 5. CRIAR OBJETO COMPLETO DO PEDIDO
+            pedidosCompletos.push({
                 id: pedido.id,
                 pedido_id: pedido.id,
                 cliente_id: pedido.cliente_id,
                 status_geral: pedido.status_geral || 'pendente',
                 status_producao: pedido.status_producao || 'aguardando_producao',
-                valor_total: parseFloat(pedido.valor_total) || 0,
-                codigo_rastreio: pedido.codigo_rastreio || '',
+                valor_total: valorItens, // ✅ Usa valor calculado dos itens
+                codigo_rastreio: pedido.codigo_rastreio || `SNK${pedido.id.toString().padStart(6, '0')}`,
+                codigos_rastreio: codigosRastreio,
                 metodo_pagamento: pedido.metodo_pagamento || 'cartao',
                 endereco_entrega: enderecoEntrega,
                 observacoes: pedido.observacoes || '',
+                middleware_id: pedido.middleware_id,
+                estoque_pos: pedido.estoque_pos,
+                integracao_completa: pedido.integracao_completa || false,
+                sneaker_configs: sneakerConfigs,
+                mensagem_personalizada: pedido.mensagem_personalizada,
                 data_criacao: pedido.data_criacao,
-                data_pedido: pedido.data_criacao,
-                total_produtos: 1,
-                produtos: []
-            };
-        });
+                data_inicio_producao: pedido.data_inicio_producao,
+                data_conclusao_producao: pedido.data_conclusao_producao,
+                total_produtos: totalProdutos, // ✅ CORRETO: Número de produtos
+                quantidade_total: quantidadeTotal, // ✅ CORRETO: Soma das quantidades
+                valor_itens: valorItens,
+                produtos: produtos // ✅ LISTA COMPLETA DE PRODUTOS
+            });
+        }
         
         client.release();
         
-        console.log(`🎉 Retornando ${pedidos.length} pedidos`);
+        console.log(`🎉 Retornando ${pedidosCompletos.length} pedidos com ${pedidosCompletos.reduce((sum, p) => sum + p.total_produtos, 0)} produtos totais`);
         
         res.json({
             success: true,
-            count: pedidos.length,
-            pedidos: pedidos
+            count: pedidosCompletos.length,
+            pedidos: pedidosCompletos
         });
         
     } catch (error) {
@@ -579,7 +752,161 @@ const atualizarStatusPedido = async (pedidoId, status, dadosProducao = {}) => {
 };
 
 // ============================================
-// 7. ENDPOINTS PARA INTEGRAÇÃO QUEUE SMART
+// 7. FUNÇÕES PARA DEMONSTRAÇÃO SENAI
+// ============================================
+export const iniciarDemonstracaoPedido = async (req, res) => {
+    const { pedidoId } = req.params;
+    
+    console.log(`🎬 INICIANDO DEMONSTRAÇÃO COMPLETA PARA PEDIDO ${pedidoId}`);
+    
+    try {
+        const client = await pool.connect();
+        
+        const fluxo = [
+            { status: 'confirmado', tempo: 1000, mensagem: 'Pedido confirmado' },
+            { status: 'na_fila', tempo: 2000, mensagem: 'Na fila de produção' },
+            { status: 'em_producao', tempo: 3000, mensagem: 'Em produção na fábrica' },
+            { status: 'concluido', tempo: 4000, mensagem: 'Produção concluída' },
+            { status: 'em_transporte', tempo: 3000, mensagem: 'Saiu para entrega' },
+            { status: 'entregue', tempo: 2000, mensagem: 'Pedido entregue!' }
+        ];
+        
+        const resultados = [];
+        
+        for (const passo of fluxo) {
+            await new Promise(resolve => setTimeout(resolve, passo.tempo));
+            
+            await client.query(
+                `UPDATE pedidos SET 
+                    "status_geral" = $1,
+                    "status_producao" = $1
+                WHERE "id" = $2`,
+                [passo.status, pedidoId]
+            );
+            
+            resultados.push({
+                passo: passo.status,
+                tempo: `${passo.tempo / 1000} segundos`,
+                mensagem: passo.mensagem
+            });
+            
+            console.log(`✅ ${passo.mensagem}`);
+        }
+        
+        client.release();
+        
+        res.json({
+            success: true,
+            message: 'Demonstração do fluxo completo concluída!',
+            pedido_id: pedidoId,
+            fluxo: resultados,
+            duracao_total: '15 segundos',
+            para_apresentacao: 'Ideal para mostrar o ciclo completo do pedido na apresentação SENAI'
+        });
+        
+    } catch (error) {
+        console.error('❌ Erro na demonstração:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+};
+
+export const mudarStatusPedido = async (req, res) => {
+    const { pedidoId } = req.params;
+    const { status } = req.body;
+    
+    console.log(`🔄 Mudando status do pedido ${pedidoId} para: ${status}`);
+    
+    const statusValidos = {
+        'pendente': 'Status inicial',
+        'confirmado': 'Pedido confirmado', 
+        'na_fila': 'Na fila de produção',
+        'em_producao': 'Em produção na fábrica',
+        'concluido': 'Produção concluída',
+        'em_transporte': 'Saiu para entrega',
+        'entregue': 'Entregue ao cliente',
+        'cancelado': 'Pedido cancelado'
+    };
+    
+    if (!statusValidos[status]) {
+        return res.status(400).json({
+            success: false,
+            error: `Status inválido. Use: ${Object.keys(statusValidos).join(', ')}`
+        });
+    }
+    
+    try {
+        const client = await pool.connect();
+        
+        let query = 'UPDATE pedidos SET "status_geral" = $1, "status_producao" = $1';
+        const values = [status, pedidoId];
+        
+        if (status === 'em_producao') {
+            query += ', "data_inicio_producao" = NOW()';
+        } else if (status === 'concluido') {
+            query += ', "data_conclusao_producao" = NOW()';
+        } else if (status === 'entregue') {
+            query += ', "data_entrega" = NOW()';
+        }
+        
+        query += ' WHERE "id" = $2 RETURNING *';
+        
+        const result = await client.query(query, values);
+        client.release();
+        
+        console.log(`✅ Pedido ${pedidoId} atualizado para: ${status}`);
+        
+        res.json({
+            success: true,
+            message: `Status alterado para: ${status}`,
+            descricao: statusValidos[status],
+            pedido: result.rows[0],
+            proximo_passo: getProximoPasso(status)
+        });
+        
+    } catch (error) {
+        console.error('❌ Erro ao mudar status:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+};
+
+// Função auxiliar para sugerir próximo passo
+const getProximoPasso = (statusAtual) => {
+    const fluxo = {
+        'pendente': 'confirmado',
+        'confirmado': 'na_fila', 
+        'na_fila': 'em_producao',
+        'em_producao': 'concluido',
+        'concluido': 'em_transporte',
+        'em_transporte': 'entregue',
+        'entregue': 'finalizado',
+        'cancelado': 'encerrado'
+    };
+    
+    const descricoes = {
+        'confirmado': 'O pedido foi confirmado e vai para fila de produção',
+        'na_fila': 'Na fila aguardando vaga na linha de produção',
+        'em_producao': 'O sneaker está sendo fabricado na linha de produção',
+        'concluido': 'Produção finalizada, pronto para envio',
+        'em_transporte': 'Saiu para entrega',
+        'entregue': 'Cliente recebeu o produto',
+        'finalizado': 'Processo completo!'
+    };
+    
+    const proximo = fluxo[statusAtual];
+    return {
+        proximo_status: proximo,
+        descricao: descricoes[proximo] || 'Fluxo completo'
+    };
+};
+
+// ============================================
+// 8. ENDPOINTS PARA INTEGRAÇÃO QUEUE SMART
 // ============================================
 export const testarIntegracaoQueue = async (req, res) => {
     try {
