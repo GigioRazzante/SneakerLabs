@@ -6,13 +6,12 @@ import queueMiddlewareService from '../services/queueMiddlewareService.js';
 const safeValue = (val) => val === undefined ? null : val;
 
 // ============================================
-// 1. VERIFICAÇÃO DE ESTOQUE REAL (COM SIMULAÇÃO)
-// A função foi alterada para ser uma exportação nomeada
+// 1. VERIFICAÇÃO DE ESTOQUE REAL
 // ============================================
 export async function verificarEstoqueReal(produtos) {
   console.log('🔍 VERIFICAÇÃO DE ESTOQUE REAL COM QUEUE SMART');
-  console.log('Produtos a verificar:', produtos);
-
+  // ... (restante da implementação de verificarEstoqueReal)
+  
   // 🎯 INÍCIO DO BLOCO DE SIMULAÇÃO DE ESTOQUE
   const SIMULATION_MODE = true; 
   const SIMULATED_QUANTITY = 100;
@@ -96,11 +95,12 @@ export async function verificarEstoqueReal(produtos) {
 }
 
 // ============================================
-// 2. CRIAR PEDIDO COM INTEGRAÇÃO COMPLETA (createOrder)
-// A função foi alterada para ser uma exportação nomeada
+// 2. CRIAR PEDIDO COM INTEGRAÇÃO COMPLETA
 // ============================================
 export const createOrder = async (req, res) => {
   console.log('\n🚀 ===== NOVO PEDIDO RECEBIDO =====');
+  // ... (restante da implementação de createOrder)
+  
   console.log('Dados recebidos:', JSON.stringify(req.body, null, 2));
   
   const {
@@ -110,12 +110,10 @@ export const createOrder = async (req, res) => {
     metodo_pagamento = 'cartao',
     observacoes = '',
     valor_total,
-    // 🎯 NOVOS CAMPOS PARA CONFIGURAÇÃO COMPLETA
     configs_queue_smart = [],
     sneaker_configs = []
   } = req.body;
   
-  // Validar dados obrigatórios
   if (!cliente_id || !produtos || !endereco_entrega) {
     return res.status(400).json({
       success: false,
@@ -129,12 +127,10 @@ export const createOrder = async (req, res) => {
     await client.query('BEGIN');
     
     console.log('\n🔍 1. VERIFICANDO ESTOQUE REAL...');
-    // O `produtos` do corpo da requisição é usado aqui (com as cores)
     const { verificacoes, produtosComEstoque } = await verificarEstoqueReal(produtos);
     
     console.log('\n📝 2. CRIANDO PEDIDO NO BANCO...');
     
-    // Criar pedido
     const pedidoResult = await client.query(
       `INSERT INTO pedidos (
         cliente_id, 
@@ -165,10 +161,8 @@ export const createOrder = async (req, res) => {
     
     console.log(`✅ Pedido criado: ID ${pedidoId}, Rastreio: ${codigoRastreio}`);
     
-    // Inserir produtos do pedido COM CONFIGURAÇÃO COMPLETA
     for (let i = 0; i < produtosComEstoque.length; i++) {
       const produto = produtosComEstoque[i];
-      // Note: O frontend envia as configs no formato {passo_um: '...', passo_dois: '...'}
       const sneakerConfig = sneaker_configs[i] || {}; 
       const configQueueSmart = configs_queue_smart[i] || {};
       
@@ -183,7 +177,6 @@ export const createOrder = async (req, res) => {
           valor_unitario,
           middleware_id,
           estoque_pos,
-          // 🎯 CAMPOS DE CONFIGURAÇÃO COMPLETA
           passo_um,
           passo_dois,
           passo_tres,
@@ -198,18 +191,13 @@ export const createOrder = async (req, res) => {
           produto.tamanho || 42,
           produto.quantidade,
           produto.valor_unitario || 0,
-          
-          // 🎯 CORREÇÃO DE SYNTAX ERROR: Aplica safeValue
           safeValue(produto.middleware_id),
           safeValue(produto.estoque_pos),
-          
-          // 🎯 CONFIGURAÇÃO COMPLETA: Aplica safeValue
           safeValue(produto.passo_um || sneakerConfig.estilo), 
           safeValue(produto.passo_dois || sneakerConfig.material), 
           safeValue(produto.passo_tres || sneakerConfig.solado), 
-          safeValue(produto.passo_quatro || sneakerConfig.cor), // Cor capitalizada do FE
+          safeValue(produto.passo_quatro || sneakerConfig.cor), 
           safeValue(produto.passo_cinco || sneakerConfig.detalhes), 
-          
           sneakerConfig ? JSON.stringify(sneakerConfig) : null,
           configQueueSmart ? JSON.stringify(configQueueSmart) : null
         ]
@@ -218,14 +206,12 @@ export const createOrder = async (req, res) => {
     
     console.log('\n🏭 3. ENVIANDO PARA PRODUÇÃO NO QUEUE SMART...');
     
-    // Criar ordem de produção no Queue Smart COM CONFIGURAÇÃO COMPLETA
     try {
       let ordemProducao;
       
       if (configs_queue_smart.length > 0) {
         console.log('🎯 Enviando configuração completa para Queue Smart');
         
-        // Para cada produto, enviar configuração completa
         const ordens = [];
         for (let i = 0; i < produtosComEstoque.length; i++) {
           const config = configs_queue_smart[i];
@@ -233,7 +219,7 @@ export const createOrder = async (req, res) => {
             const ordem = await queueMiddlewareService.criarOrdemProducaoCompleta(
               pedidoId,
               config,
-              i // índice do produto
+              i 
             );
             ordens.push(ordem);
           }
@@ -246,7 +232,6 @@ export const createOrder = async (req, res) => {
         };
         
       } else {
-        // Fallback para método antigo (apenas cor)
         console.log('⚠️ Usando método antigo (apenas cor)');
         ordemProducao = await queueMiddlewareService.criarOrdemProducao(
           pedidoId,
@@ -255,7 +240,6 @@ export const createOrder = async (req, res) => {
       }
       
       if (ordemProducao.success) {
-        // Atualizar pedido com dados do middleware
         await client.query(
           `UPDATE pedidos SET 
             middleware_id = $1,
@@ -273,25 +257,21 @@ export const createOrder = async (req, res) => {
         console.log(`✅ Ordem de produção criada:`, ordemProducao);
       } else {
         console.warn('⚠️ Não foi possível criar ordem de produção:', ordemProducao.error);
-        // Continua mesmo sem ordem de produção
       }
       
     } catch (producaoError) {
       console.warn('⚠️ Erro ao criar ordem de produção:', producaoError.message);
-      // Não falha o pedido se a produção falhar
     }
     
     await client.query('COMMIT');
     
     console.log('\n🎉 PEDIDO CRIADO COM SUCESSO!');
     
-    // Gerar mensagem personalizada (opcional)
+    // Geração de mensagem personalizada (opcional)
     try {
-      // Importar dinamicamente para evitar circular dependency se houver
       const { default: mensagemService } = await import('../services/mensagemService.js');
       const mensagem = await mensagemService.gerarMensagemPedido(pedidoId, cliente_id);
       
-      // Salvar mensagem no pedido
       await client.query(
         'UPDATE pedidos SET mensagem_personalizada = $1 WHERE id = $2',
         [mensagem, pedidoId]
@@ -327,7 +307,6 @@ export const createOrder = async (req, res) => {
     console.error('\n❌ ERRO AO CRIAR PEDIDO:', error.message);
     console.error('Stack:', error.stack);
     
-    // Detectar tipo de erro
     const isEstoqueError = error.message.includes('Estoque insuficiente');
     
     res.status(isEstoqueError ? 409 : 500).json({
@@ -350,13 +329,12 @@ export const createOrder = async (req, res) => {
 };
 
 // ============================================
-// 3. VERIFICAR ESTOQUE POR COR (ENDPOINT FRONTAL) - COM SIMULAÇÃO
-// A função foi alterada para ser uma exportação nomeada
+// 3. VERIFICAR ESTOQUE POR COR (ENDPOINT FRONTAL)
 // ============================================
 export const verificarEstoqueCor = async (req, res) => {
   const { cor } = req.params;
 
-  // 🎯 INÍCIO DO BLOCO DE SIMULAÇÃO DE ESTOQUE (Também aqui!)
+  // 🎯 INÍCIO DO BLOCO DE SIMULAÇÃO DE ESTOQUE
   const SIMULATION_MODE = true; 
   const SIMULATED_QUANTITY = 100;
   // 🎯 FIM DO BLOCO DE SIMULAÇÃO DE ESTOQUE
@@ -375,7 +353,6 @@ export const verificarEstoqueCor = async (req, res) => {
             fonte: 'simulacao'
         };
     } else {
-        // Chamar o serviço Queue Smart (sem simulação)
         estoqueQueue = await queueMiddlewareService.verificarEstoqueQueueSmart(cor);
     }
 
@@ -412,7 +389,47 @@ export const verificarEstoqueCor = async (req, res) => {
 };
 
 // ============================================
-// 4. EXPORTS: Removido o `export default`
-// As funções agora são exportadas nominalmente (e.g., `export const createOrder`)
+// 4. OBTER PEDIDOS DO CLIENTE (SOLUÇÃO PARA O ERRO ATUAL)
+// Exportação nomeada para ser importada em pedidoRoutes.js
 // ============================================
-// export default { createOrder, verificarEstoqueCor, verificarEstoqueReal }; // REMOVIDO
+export const getClientOrders = async (req, res) => {
+  const { cliente_id } = req.params; // Assume que o ID do cliente vem como parâmetro de rota
+
+  if (!cliente_id) {
+    return res.status(400).json({
+      success: false,
+      error: 'ID do cliente é obrigatório na rota.'
+    });
+  }
+
+  try {
+    console.log(`\n🔎 Buscando pedidos para o cliente ID: ${cliente_id}`);
+    
+    // Consulta SQL para buscar os pedidos do cliente, ordenados pelo mais recente
+    const result = await pool.query(
+      'SELECT id, codigo_rastreio, status, valor_total, data_pedido, status_producao, endereco_entrega, observacoes, metodo_pagamento FROM pedidos WHERE cliente_id = $1 ORDER BY data_pedido DESC',
+      [cliente_id]
+    );
+
+    console.log(`✅ Encontrados ${result.rows.length} pedidos.`);
+
+    res.status(200).json({
+      success: true,
+      cliente_id,
+      pedidos: result.rows
+    });
+
+  } catch (error) {
+    console.error(`❌ Erro ao buscar pedidos para cliente ${cliente_id}:`, error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Falha ao buscar pedidos no banco de dados.',
+      detalhes: error.message
+    });
+  }
+};
+
+// ============================================
+// 5. EXPORTS: Todas as funções agora são exportadas nominalmente
+// ============================================
+// Não é necessário um bloco de exportação final
