@@ -147,7 +147,7 @@ const createOrder = async (req, res) => {
         "status_producao",
         "sneaker_configs" 
       ) VALUES ($1, $2, $3, $4, $5, $6, NOW(), $7, $8) 
-      RETURNING id, codigo_rastreio`,
+      RETURNING "id", "codigo_rastreio"`, // Retorno também com aspas
       [
         cliente_id,
         'pendente',
@@ -200,7 +200,7 @@ const createOrder = async (req, res) => {
           safeValue(produto.middleware_id),
           safeValue(produto.estoque_pos),
           
-          // ✅ LÓGICA CORRIGIDA: Prioriza as propriedades do objeto 'produto', depois o 'sneakerConfig' como fallback
+          // LÓGICA CORRIGIDA: Prioriza as propriedades do objeto 'produto' que vieram do frontend
           safeValue(produto.passo_um || sneakerConfig.estilo),
           safeValue(produto.passo_dois || sneakerConfig.material),
           safeValue(produto.passo_tres || sneakerConfig.solado),
@@ -252,14 +252,14 @@ const createOrder = async (req, res) => {
       }
       
       if (ordemProducao.success) {
-        // Atualizar pedido com dados do middleware
+        // Atualizar pedido com dados do middleware (✅ CORRIGIDO: Adição de aspas duplas)
         await client.query(
           `UPDATE pedidos SET 
-            middleware_id = $1,
-            status_producao = 'em_producao',
-            data_inicio_producao = NOW(),
-            integracao_completa = $2 
-          WHERE id = $3`,
+            "middleware_id" = $1,
+            "status_producao" = 'em_producao',
+            "data_inicio_producao" = NOW(),
+            "integracao_completa" = $2 
+          WHERE "id" = $3`,
           [
             ordemProducao.middleware_id || ordemProducao.ordens?.[0]?.middleware_id,
             configs_queue_smart.length > 0, 
@@ -287,9 +287,9 @@ const createOrder = async (req, res) => {
       const mensagemService = await import('../services/mensagemService.js');
       const mensagem = await mensagemService.default.gerarMensagemPedido(pedidoId, cliente_id);
       
-      // Salvar mensagem no pedido
+      // Salvar mensagem no pedido (✅ CORRIGIDO: Adição de aspas duplas)
       await client.query(
-        'UPDATE pedidos SET mensagem_personalizada = $1 WHERE id = $2',
+        'UPDATE pedidos SET "mensagem_personalizada" = $1 WHERE "id" = $2',
         [mensagem, pedidoId]
       );
       
@@ -377,8 +377,9 @@ const verificarEstoqueCor = async (req, res) => {
     
     // Verificar no banco local também (para complementar a resposta)
     const client = await pool.connect();
+    // (✅ CORRIGIDO: Adição de aspas duplas nas colunas do SELECT)
     const localResult = await client.query(
-      'SELECT * FROM estoque_maquina WHERE cor = $1',
+      'SELECT "quantidade", "em_producao", "estoque_pos" FROM estoque_maquina WHERE "cor" = $1',
       [cor]
     );
     client.release();
@@ -421,33 +422,34 @@ const getClientOrders = async (req, res) => {
   try {
     const client = await pool.connect();
     
+    // (✅ CORRIGIDO: Adição de aspas duplas em todos os identificadores)
     const result = await client.query(
       `SELECT 
         p.*,
         json_agg(
           json_build_object(
-            'id', pp.id,
-            'cor', pp.cor,
-            'tamanho', pp.tamanho,
-            'quantidade', pp.quantidade,
-            'valor_unitario', pp.valor_unitario,
-            'middleware_id', pp.middleware_id,
-            'estoque_pos', pp.estoque_pos,
+            'id', pp."id",
+            'cor', pp."cor",
+            'tamanho', pp."tamanho",
+            'quantidade', pp."quantidade",
+            'valor_unitario', pp."valor_unitario",
+            'middleware_id', pp."middleware_id",
+            'estoque_pos', pp."estoque_pos",
             // 🎯 CONFIGURAÇÃO COMPLETA
-            'passo_um', pp.passo_um,
-            'passo_dois', pp.passo_dois,
-            'passo_tres', pp.passo_tres,
-            'passo_quatro', pp.passo_quatro,
-            'passo_cinco', pp.passo_cinco,
-            'sneaker_config', pp.sneaker_config,
-            'config_queue_smart', pp.config_queue_smart
+            'passo_um', pp."passo_um",
+            'passo_dois', pp."passo_dois",
+            'passo_tres', pp."passo_tres",
+            'passo_quatro', pp."passo_quatro",
+            'passo_cinco', pp."passo_cinco",
+            'sneaker_config', pp."sneaker_config",
+            'config_queue_smart', pp."config_queue_smart"
           )
         ) as produtos
       FROM pedidos p
-      LEFT JOIN produtos_do_pedido pp ON p.id = pp.pedido_id
-      WHERE p.cliente_id = $1
-      GROUP BY p.id
-      ORDER BY p.data_pedido DESC`,
+      LEFT JOIN produtos_do_pedido pp ON p."id" = pp."pedido_id"
+      WHERE p."cliente_id" = $1
+      GROUP BY p."id"
+      ORDER BY p."data_pedido" DESC`,
       [clienteId]
     );
     
@@ -480,30 +482,31 @@ const getOrderByTrackingCode = async (req, res) => {
   try {
     const client = await pool.connect();
     
+    // (✅ CORRIGIDO: Adição de aspas duplas em todos os identificadores)
     const result = await client.query(
       `SELECT 
         p.*,
         json_agg(
           json_build_object(
-            'cor', pp.cor,
-            'tamanho', pp.tamanho,
-            'quantidade', pp.quantidade,
+            'cor', pp."cor",
+            'tamanho', pp."tamanho",
+            'quantidade', pp."quantidade",
             // 🎯 CONFIGURAÇÃO COMPLETA
-            'passo_um', pp.passo_um,
-            'passo_dois', pp.passo_dois,
-            'passo_tres', pp.passo_tres,
-            'passo_quatro', pp.passo_quatro,
-            'passo_cinco', pp.passo_cinco,
-            'sneaker_config', pp.sneaker_config
+            'passo_um', pp."passo_um",
+            'passo_dois', pp."passo_dois",
+            'passo_tres', pp."passo_tres",
+            'passo_quatro', pp."passo_quatro",
+            'passo_cinco', pp."passo_cinco",
+            'sneaker_config', pp."sneaker_config"
           )
         ) as produtos,
         c.nome as cliente_nome,
         c.email as cliente_email
       FROM pedidos p
-      LEFT JOIN produtos_do_pedido pp ON p.id = pp.pedido_id
-      LEFT JOIN clientes c ON p.cliente_id = c.id
-      WHERE p.codigo_rastreio = $1
-      GROUP BY p.id, c.id`,
+      LEFT JOIN produtos_do_pedido pp ON p."id" = pp."pedido_id"
+      LEFT JOIN clientes c ON p."cliente_id" = c."id"
+      WHERE p."codigo_rastreio" = $1
+      GROUP BY p."id", c."id"`,
       [codigoRastreio]
     );
     
@@ -539,31 +542,32 @@ const atualizarStatusPedido = async (pedidoId, status, dadosProducao = {}) => {
   try {
     const client = await pool.connect();
     
-    let query = 'UPDATE pedidos SET status_producao = $1';
+    // (✅ CORRIGIDO: Adição de aspas duplas)
+    let query = 'UPDATE pedidos SET "status_producao" = $1';
     const values = [status, pedidoId];
     
     if (status === 'em_producao') {
-      query += ', data_inicio_producao = NOW()';
+      query += ', "data_inicio_producao" = NOW()';
     } else if (status === 'concluido') {
-      query += ', data_conclusao_producao = NOW(), status = $3';
+      query += ', "data_conclusao_producao" = NOW(), "status" = $3';
       values.push('em_transporte');
     } else if (status === 'cancelado') {
-      query += ', status = $3';
+      query += ', "status" = $3';
       values.push('cancelado');
     }
     
-    // Adicionar dados do middleware se fornecidos
+    // Adicionar dados do middleware se fornecidos (✅ CORRIGIDO: Adição de aspas duplas)
     if (dadosProducao.middleware_id) {
-      query += ', middleware_id = $' + (values.length + 1);
+      query += ', "middleware_id" = $' + (values.length + 1);
       values.push(dadosProducao.middleware_id);
     }
     
     if (dadosProducao.estoque_pos) {
-      query += ', estoque_pos = $' + (values.length + 1);
+      query += ', "estoque_pos" = $' + (values.length + 1);
       values.push(dadosProducao.estoque_pos);
     }
     
-    query += ' WHERE id = $2 RETURNING *';
+    query += ' WHERE "id" = $2 RETURNING *';
     
     const result = await client.query(query, values);
     client.release();
