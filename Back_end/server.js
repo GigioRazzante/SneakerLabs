@@ -1,4 +1,4 @@
-// server.js - VERSÃO FINAL COMPLETA COM INTEGRAÇÃO TOTAL
+// server.js - VERSÃO CORRIGIDA (sem mensagemRoutes)
 import dotenv from 'dotenv';
 
 // CARREGAR DOTENV PRIMEIRO
@@ -19,10 +19,9 @@ import clienteRoutes from './routes/clienteRoutes.js';
 import pedidoRoutes from './routes/pedidoRoutes.js';
 import producaoRoutes from './routes/producaoRoutes.js';
 import entregaRoutes from './routes/entregaRoutes.js';
-import mensagemRoutes from './routes/mensagemRoutes.js';
 import estoqueRoutes from './routes/estoqueRoutes.js';
 import produtoRoutes from './routes/produtoRoutes.js';
-// import mensagemAiRoutes from './routes/mensagemAiRoutes.js'; // ✅ NOVO: Gemini API
+import mensagemAiRoutes from './routes/mensagemAiRoutes.js'; // ✅ APENAS ESTA (descomentada!)
 
 // Importar pool do database.js
 import pool from './config/database.js';
@@ -226,10 +225,9 @@ app.use('/api/cliente', clienteRoutes);
 app.use('/api/orders', pedidoRoutes);
 app.use('/api', producaoRoutes);
 app.use('/api/entrega', entregaRoutes);
-app.use('/api/mensagens', mensagemRoutes);
 app.use('/api/estoque', estoqueRoutes);
 app.use('/api/produtos', produtoRoutes);
-// app.use('/api/mensagem-ai', mensagemAiRoutes); // ✅ ROTAS GEMINI ADICIONADAS
+app.use('/api/mensagem-ai', mensagemAiRoutes); // ✅ DESCOMENTADA! AGORA FUNCIONA
 
 // ============================================
 // 🎯 ENDPOINTS DE CONTROLE E INTEGRAÇÃO
