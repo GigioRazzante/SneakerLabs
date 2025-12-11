@@ -7,6 +7,9 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
     const { primaryColor } = useTheme();
     const { user } = useAuth();
     const [generatedMessages, setGeneratedMessages] = useState({});
+    const [loadingMessages, setLoadingMessages] = useState({});
+
+    const API_BASE_URL = 'https://sneakerslab-backend.onrender.com';
 
     if (!pedidos || !Array.isArray(pedidos)) {
         return (
@@ -54,7 +57,61 @@ const CarrinhoPedido = ({ pedidos, onConfirmarPedidos, onIncluirMaisPedidos }) =
         return config;
     };
 
-    const createSneakerMessage = (sneakerConfig, nomeUsuario) => {
+    // ✅ NOVA FUNÇÃO: Buscar mensagem da API Gemini
+    const fetchGeminiMessage = async (sneakerConfig, pedidoIndex) => {
+        try {
+            setLoadingMessages(prev => ({ ...prev, [pedidoIndex]: true }));
+            
+            console.log('🤖 Solicitando mensagem do Gemini...', sneakerConfig);
+            
+            const response = await fetch(`${API_BASE_URL}/api/mensagem-ai/gerar`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    sneakerConfig: sneakerConfig,
+                    nomeUsuario: user?.nome_usuario || 'Cliente',
+                    produtoIndex: pedidoIndex
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Erro HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            console.log('💌 Resposta Gemini:', data.fonte);
+            
+            if (data.sucesso && data.mensagem) {
+                setGeneratedMessages(prev => ({ 
+                    ...prev, 
+                    [pedidoIndex]: data.mensagem 
+                }));
+                return data.mensagem;
+            } else {
+                throw new Error('Resposta inválida da API');
+            }
+            
+        } catch (error) {
+            console.error('❌ Erro ao buscar mensagem Gemini:', error);
+            
+            // ✅ Fallback para mensagem local se API falhar
+            const fallbackMessage = createFallbackMessage(sneakerConfig, user?.nome_usuario || 'Cliente');
+            setGeneratedMessages(prev => ({ 
+                ...prev, 
+                [pedidoIndex]: fallbackMessage 
+            }));
+            
+            return fallbackMessage;
+        } finally {
+            setLoadingMessages(prev => ({ ...prev, [pedidoIndex]: false }));
+        }
+    };
+
+    // ✅ FUNÇÃO FALLBACK (mantida para compatibilidade)
+    const createFallbackMessage = (sneakerConfig, nomeUsuario) => {
         const { estilo, material, cor, solado, detalhes } = sneakerConfig;
         
         return `🎉 Excelente, ${nomeUsuario}!
@@ -70,23 +127,36 @@ Obrigado por criar conosco no SneakLab! 👟✨`;
 
     useEffect(() => {
         if (pedidos.length > 0) {
-            const newMessages = {};
+            console.log('🔄 Iniciando geração de mensagens Gemini...');
             
-            pedidos.forEach((pedido, pedidoIndex) => {
+            pedidos.forEach(async (pedido, pedidoIndex) => {
                 if (pedido.items && Array.isArray(pedido.items)) {
                     const sneakerConfig = extractSneakerConfig(pedido.items);
-                    const message = createSneakerMessage(sneakerConfig, user?.nome_usuario || 'Cliente');
-                    newMessages[pedidoIndex] = message;
+                    
+                    // Verificar se já tem mensagem gerada
+                    if (!generatedMessages[pedidoIndex]) {
+                        // ✅ AGORA USA A API GEMINI
+                        await fetchGeminiMessage(sneakerConfig, pedidoIndex);
+                    }
                 }
             });
-            
-            setGeneratedMessages(newMessages);
         }
-    }, [pedidos, user]);
+    }, [pedidos]); // Dependência apenas de pedidos
 
     const handleConfirmarPedidos = async () => {
         try {
-            // Apenas confirma o pedido, sem salvar mensagens
+            // Salvar mensagens antes de confirmar
+            const messagesToSave = pedidos.map((pedido, index) => ({
+                pedidoIndex: index,
+                message: generatedMessages[index] || createFallbackMessage(
+                    extractSneakerConfig(pedido.items),
+                    user?.nome_usuario || 'Cliente'
+                )
+            }));
+
+            console.log('💾 Mensagens a salvar:', messagesToSave);
+            
+            // Apenas confirma o pedido
             await onConfirmarPedidos();
         } catch (error) {
             alert('Erro ao confirmar pedido. Tente novamente.');
@@ -189,6 +259,7 @@ Obrigado por criar conosco no SneakLab! 👟✨`;
                     flex-direction: column;
                     align-items: center;
                     justify-content: center;
+                    position: relative;
                 }
                 
                 .message-content {
@@ -199,6 +270,17 @@ Obrigado por criar conosco no SneakLab! 👟✨`;
                     font-size: 1rem;
                     white-space: pre-line;
                     font-weight: 500;
+                }
+                
+                .message-source {
+                    position: absolute;
+                    bottom: 8px;
+                    right: 12px;
+                    font-size: 0.7rem;
+                    color: #888;
+                    background: rgba(255, 255, 255, 0.8);
+                    padding: 2px 6px;
+                    border-radius: 4px;
                 }
                 
                 .loading-spinner {
@@ -364,8 +446,8 @@ Obrigado por criar conosco no SneakLab! 👟✨`;
                                               return sum + (item.acrescimo || 0);
                                           }, 0) : 0);
 
-                        const messageKey = pedidoIndex;
-                        const message = generatedMessages[messageKey];
+                        const message = generatedMessages[pedidoIndex];
+                        const isLoading = loadingMessages[pedidoIndex];
 
                         return (
                             <div key={pedido.id || pedidoIndex} className="pedido-item">
@@ -376,14 +458,24 @@ Obrigado por criar conosco no SneakLab! 👟✨`;
                                 
                                 <div className="sneaker-message">
                                     <div className="message-container">
-                                        {message ? (
-                                            <div className="message-content">
-                                                {message}
+                                        {isLoading ? (
+                                            <div style={{textAlign: 'center'}}>
+                                                <div className="loading-spinner"></div>
+                                                <p className="loading-text">🤖 Gerando mensagem personalizada com IA...</p>
                                             </div>
+                                        ) : message ? (
+                                            <>
+                                                <div className="message-content">
+                                                    {message}
+                                                </div>
+                                                <span className="message-source">
+                                                    ✨ Gerado com IA
+                                                </span>
+                                            </>
                                         ) : (
                                             <div style={{textAlign: 'center'}}>
                                                 <div className="loading-spinner"></div>
-                                                <p className="loading-text">Gerando mensagem personalizada...</p>
+                                                <p className="loading-text">Preparando mensagem personalizada...</p>
                                             </div>
                                         )}
                                     </div>
@@ -413,9 +505,11 @@ Obrigado por criar conosco no SneakLab! 👟✨`;
                     <button 
                         className="action-button"
                         onClick={handleConfirmarPedidos}
-                        disabled={pedidos.length === 0}
+                        disabled={pedidos.length === 0 || Object.keys(loadingMessages).some(k => loadingMessages[k])}
                     >
-                        ✅ Confirmar {pedidos.length} Pedido(s) - R$ {totalGeral.toFixed(2)}
+                        {Object.keys(loadingMessages).some(k => loadingMessages[k]) 
+                            ? '⏳ Gerando mensagens...' 
+                            : `✅ Confirmar ${pedidos.length} Pedido(s) - R$ ${totalGeral.toFixed(2)}`}
                     </button>
                     <button 
                         className="action-button secondary"

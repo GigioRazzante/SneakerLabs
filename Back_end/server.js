@@ -22,6 +22,7 @@ import entregaRoutes from './routes/entregaRoutes.js';
 import mensagemRoutes from './routes/mensagemRoutes.js';
 import estoqueRoutes from './routes/estoqueRoutes.js';
 import produtoRoutes from './routes/produtoRoutes.js';
+// import mensagemAiRoutes from './routes/mensagemAiRoutes.js'; // ✅ NOVO: Gemini API
 
 // Importar pool do database.js
 import pool from './config/database.js';
@@ -48,10 +49,15 @@ console.log(`   📡 Porta: ${PORT}`);
 console.log(`   🔗 Queue Smart: ${MIDDLEWARE_URL}`);
 console.log(`   🚀 Backend URL: ${BACKEND_URL}`);
 console.log(`   📊 Banco: ${process.env.DATABASE_URL ? 'CONECTADO ✓' : 'NÃO CONFIGURADO ✗'}`);
+console.log(`   🤖 Gemini API: ${process.env.GEMINI_API_KEY ? 'CONFIGURADA ✓' : 'NÃO CONFIGURADA ✗'}`);
 console.log(`   🔄 Callback URL: ${BACKEND_URL}/api/callback`);
 
 if (!process.env.MIDDLEWARE_URL) {
   console.warn('   ⚠️  MIDDLEWARE_URL não configurada! Usando fallback.');
+}
+
+if (!process.env.GEMINI_API_KEY) {
+  console.warn('   ⚠️  GEMINI_API_KEY não configurada! Mensagens usarão fallback.');
 }
 
 console.log('='.repeat(70));
@@ -85,14 +91,13 @@ const verificarEstruturaBanco = async () => {
         // Verificar colunas específicas
         if (tabela === 'estoque_maquina') {
           console.log('      📦 Verificando colunas do estoque...');
-          // A verificação de colunas será feita abaixo
         }
       } else {
         console.log(`   ❌ ${tabela} (AUSENTE!)`);
       }
     });
     
-    // Verificar colunas específicas do estoque_maquina
+    // Verificar colunas do estoque_maquina
     try {
       const colunasEstoque = await client.query(`
         SELECT column_name, data_type 
@@ -224,6 +229,7 @@ app.use('/api/entrega', entregaRoutes);
 app.use('/api/mensagens', mensagemRoutes);
 app.use('/api/estoque', estoqueRoutes);
 app.use('/api/produtos', produtoRoutes);
+// app.use('/api/mensagem-ai', mensagemAiRoutes); // ✅ ROTAS GEMINI ADICIONADAS
 
 // ============================================
 // 🎯 ENDPOINTS DE CONTROLE E INTEGRAÇÃO
@@ -246,6 +252,12 @@ app.get('/api/health', async (req, res) => {
       queueStatus = { status: 'offline', error: queueError.message };
     }
     
+    // Verificar Gemini API
+    let geminiStatus = { status: 'not_configured' };
+    if (process.env.GEMINI_API_KEY) {
+      geminiStatus = { status: 'configured', key_length: process.env.GEMINI_API_KEY.length };
+    }
+    
     // Verificar tabelas
     const tables = await client.query(`
       SELECT table_name 
@@ -264,28 +276,35 @@ app.get('/api/health', async (req, res) => {
       uptime: process.uptime(),
       environment: process.env.NODE_ENV || 'development',
       node_version: process.version,
-      database: {
-        status: 'connected',
-        time: dbCheck.rows[0].time,
-        version: dbCheck.rows[0].version.split(' ')[1],
-        tables_count: tables.rows.length,
-        tables: tables.rows.map(t => t.table_name)
-      },
-      queue_smart: {
-        url: MIDDLEWARE_URL,
-        status: queueStatus.status || 'unknown',
-        response: queueStatus.status === 'ok' ? queueStatus : queueStatus.error
+      services: {
+        database: {
+          status: 'connected',
+          time: dbCheck.rows[0].time,
+          version: dbCheck.rows[0].version.split(' ')[1],
+          tables_count: tables.rows.length
+        },
+        queue_smart: {
+          url: MIDDLEWARE_URL,
+          status: queueStatus.status || 'unknown'
+        },
+        gemini_ai: geminiStatus,
+        messaging: {
+          endpoint: `${BACKEND_URL}/api/mensagem-ai/gerar`,
+          status: 'active'
+        }
       },
       integration: {
         backend_url: BACKEND_URL,
         callback_url: `${BACKEND_URL}/api/callback`,
         production_flow: 'active',
-        real_inventory: 'active'
+        real_inventory: 'active',
+        ai_messaging: geminiStatus.status === 'configured' ? 'active' : 'fallback'
       },
       endpoints: {
         create_order: `${BACKEND_URL}/api/orders`,
         check_stock: `${BACKEND_URL}/api/orders/estoque/cor/:cor`,
-        production_callback: `${BACKEND_URL}/api/callback`
+        production_callback: `${BACKEND_URL}/api/callback`,
+        ai_message: `${BACKEND_URL}/api/mensagem-ai/gerar`
       }
     });
     
@@ -314,14 +333,16 @@ app.get('/api/config', (req, res) => {
       backend: BACKEND_URL,
       middleware: MIDDLEWARE_URL,
       callback: `${BACKEND_URL}/api/callback`,
-      docs: `${BACKEND_URL}/api/docs`
+      docs: `${BACKEND_URL}/api/docs`,
+      ai_messaging: `${BACKEND_URL}/api/mensagem-ai/gerar`
     },
     features: {
       queue_smart_integration: true,
       real_inventory_check: true,
       production_tracking: true,
       automatic_callback: true,
-      stock_synchronization: true
+      stock_synchronization: true,
+      ai_messaging: !!process.env.GEMINI_API_KEY
     },
     routes: {
       auth: ['POST /api/auth/register', 'POST /api/auth/login'],
@@ -336,6 +357,11 @@ app.get('/api/config', (req, res) => {
         'GET /api/estoque/listar',
         'GET /api/estoque/sync',
         'GET /api/estoque/tenis'
+      ],
+      ai_messaging: [
+        'POST /api/mensagem-ai/gerar',
+        'POST /api/mensagem-ai/salvar',
+        'GET /api/mensagem-ai/obter/:pedidoId/:produtoId'
       ],
       integration: [
         'GET /api/integration/status',
@@ -383,12 +409,22 @@ app.get('/api/integration/status', async (req, res) => {
       };
     }
     
+    // Testar Gemini
+    let geminiTest = { status: 'not_configured' };
+    if (process.env.GEMINI_API_KEY) {
+      geminiTest = {
+        status: 'configured',
+        key_length: process.env.GEMINI_API_KEY.length
+      };
+    }
+    
     res.json({
       success: true,
       timestamp: new Date().toISOString(),
       integration: {
         queue_smart: queueTest,
         database: dbTest,
+        gemini_ai: geminiTest,
         backend: {
           url: BACKEND_URL,
           status: 'running'
@@ -400,6 +436,7 @@ app.get('/api/integration/status', async (req, res) => {
       endpoints: {
         health: `${BACKEND_URL}/api/health`,
         queue_test: `${BACKEND_URL}/api/integration/test/queue`,
+        gemini_test: `${BACKEND_URL}/api/mensagem-ai/test`,
         stock_check: `${BACKEND_URL}/api/orders/estoque/cor/azul`,
         create_order: `${BACKEND_URL}/api/orders`
       }
@@ -581,6 +618,45 @@ app.get('/api/estoque/sync', async (req, res) => {
   }
 });
 
+// 8. TESTE DA API GEMINI
+app.get('/api/mensagem-ai/test', async (req, res) => {
+  try {
+    console.log('🤖 TESTE DA API GEMINI');
+    
+    const geminiService = await import('./services/geminiService.js');
+    
+    const testConfig = {
+      estilo: 'Corrida',
+      material: 'Camurça',
+      cor: 'Branco',
+      solado: 'EVA',
+      detalhes: 'Cadarço colorido'
+    };
+    
+    const mensagem = await geminiService.default.gerarMensagemPersonalizada(
+      testConfig, 
+      'Usuário Teste'
+    );
+    
+    res.json({
+      success: true,
+      message: 'API Gemini está funcionando!',
+      gemini_configured: !!process.env.GEMINI_API_KEY,
+      generated_message: mensagem,
+      message_length: mensagem.length,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ Erro no teste Gemini:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      gemini_configured: !!process.env.GEMINI_API_KEY
+    });
+  }
+});
+
 // ============================================
 // 🧪 ENDPOINTS DE TESTE E DESENVOLVIMENTO
 // ============================================
@@ -724,7 +800,32 @@ app.get('/api/test/full-integration', async (req, res) => {
       });
     }
     
-    // Teste 3: Estoque azul
+    // Teste 3: Gemini API
+    try {
+      const geminiService = await import('./services/geminiService.js');
+      const testConfig = {
+        estilo: 'Teste',
+        material: 'Teste',
+        cor: 'Teste',
+        solado: 'Teste',
+        detalhes: 'Teste'
+      };
+      const message = await geminiService.default.gerarMensagemPersonalizada(testConfig, 'Teste');
+      tests.push({
+        name: 'gemini_api',
+        status: 'connected',
+        message: 'Gemini API funcionando',
+        message_preview: message.substring(0, 50) + '...'
+      });
+    } catch (geminiError) {
+      tests.push({
+        name: 'gemini_api',
+        status: process.env.GEMINI_API_KEY ? 'failed' : 'not_configured',
+        error: geminiError.message
+      });
+    }
+    
+    // Teste 4: Estoque azul
     try {
       const stockResponse = await fetch(`${MIDDLEWARE_URL}/api/estoque/azul`);
       const stockData = stockResponse.ok ? await stockResponse.json() : null;
@@ -775,19 +876,23 @@ app.get('/', (req, res) => {
     version: '4.0.0',
     status: 'operational',
     integration: 'queue_smart_4.0_active',
+    ai_support: process.env.GEMINI_API_KEY ? 'gemini_ai_enabled' : 'ai_fallback_mode',
     features: [
       'Real-time inventory checking',
       'Automated production workflow',
       'Smart production queue integration',
       'Automatic callback system',
-      'Order tracking and management'
+      'Order tracking and management',
+      'AI-powered personalized messages'
     ],
     documentation: `${BACKEND_URL}/api/config`,
     health_check: `${BACKEND_URL}/api/health`,
+    ai_test: `${BACKEND_URL}/api/mensagem-ai/test`,
     production_url: BACKEND_URL,
     middleware_url: MIDDLEWARE_URL,
     quick_links: {
       test_connection: `${BACKEND_URL}/api/integration/test/queue`,
+      test_ai: `${BACKEND_URL}/api/mensagem-ai/test`,
       check_stock: `${BACKEND_URL}/api/orders/estoque/cor/azul`,
       create_test_order: `${BACKEND_URL}/api/test/pedido`
     }
@@ -809,8 +914,10 @@ app.use('*', (req, res) => {
       config: 'GET /api/config',
       integration: 'GET /api/integration/status',
       test_connection: 'GET /api/integration/test/queue',
+      test_ai: 'GET /api/mensagem-ai/test',
       create_order: 'POST /api/orders',
-      check_stock: 'GET /api/orders/estoque/cor/:cor'
+      check_stock: 'GET /api/orders/estoque/cor/:cor',
+      ai_message: 'POST /api/mensagem-ai/gerar'
     },
     timestamp: new Date().toISOString(),
     documentation: `${BACKEND_URL}/api/config`
@@ -836,7 +943,8 @@ app.use((err, req, res, next) => {
     timestamp: new Date().toISOString(),
     support: {
       backend: BACKEND_URL,
-      health_check: `${BACKEND_URL}/api/health`
+      health_check: `${BACKEND_URL}/api/health`,
+      ai_status: `${BACKEND_URL}/api/mensagem-ai/test`
     }
   });
 });
@@ -859,21 +967,24 @@ const startServer = async () => {
       console.log(`🌍 Local: http://localhost:${PORT}`);
       console.log(`🚀 Produção: ${BACKEND_URL}`);
       console.log(`🔗 Queue Smart: ${MIDDLEWARE_URL}`);
+      console.log(`🤖 Gemini API: ${process.env.GEMINI_API_KEY ? 'CONFIGURADA ✓' : 'FALLBACK MODE ⚠️'}`);
       
       console.log('\n🎯 ENDPOINTS PRINCIPAIS:');
       console.log(`   🔗 Health Check: ${BACKEND_URL}/api/health`);
       console.log(`   ⚙️  Configuração: ${BACKEND_URL}/api/config`);
       console.log(`   🔄 Status Integração: ${BACKEND_URL}/api/integration/status`);
       console.log(`   🧪 Teste Conexão: ${BACKEND_URL}/api/integration/test/queue`);
+      console.log(`   🤖 Teste Gemini: ${BACKEND_URL}/api/mensagem-ai/test`);
       console.log(`   📦 Estoque Azul: ${BACKEND_URL}/api/orders/estoque/cor/azul`);
       console.log(`   🚚 Criar Pedido: ${BACKEND_URL}/api/orders`);
+      console.log(`   💌 Mensagem IA: ${BACKEND_URL}/api/mensagem-ai/gerar`);
       
       console.log('\n🧪 TESTES RÁPIDOS:');
       console.log(`   🔗 ${BACKEND_URL}/api/test/cors`);
       console.log(`   🔗 ${BACKEND_URL}/api/test/estoque`);
       console.log(`   🔗 ${BACKEND_URL}/api/test/full-integration`);
       
-      console.log('\n🎯 SISTEMA 100% INTEGRADO COM QUEUE SMART 4.0!');
+      console.log('\n🎯 SISTEMA 100% INTEGRADO COM QUEUE SMART 4.0 + GEMINI AI!');
       console.log('='.repeat(70));
       console.log('\n🚀 PRONTO PARA PRODUÇÃO REAL!');
       console.log('='.repeat(70));
