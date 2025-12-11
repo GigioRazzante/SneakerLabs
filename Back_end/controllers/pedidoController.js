@@ -2,13 +2,14 @@ import pool from '../config/database.js';
 import queueMiddlewareService from '../services/queueMiddlewareService.js';
 
 // Função auxiliar para garantir que 'undefined' seja convertido para 'null', 
-// prevenindo erros de sintaxe SQL (a correção solicitada).
+// prevenindo erros de sintaxe SQL.
 const safeValue = (val) => val === undefined ? null : val;
 
 // ============================================
 // 1. VERIFICAÇÃO DE ESTOQUE REAL (COM SIMULAÇÃO)
+// A função foi alterada para ser uma exportação nomeada
 // ============================================
-async function verificarEstoqueReal(produtos) {
+export async function verificarEstoqueReal(produtos) {
   console.log('🔍 VERIFICAÇÃO DE ESTOQUE REAL COM QUEUE SMART');
   console.log('Produtos a verificar:', produtos);
 
@@ -96,8 +97,9 @@ async function verificarEstoqueReal(produtos) {
 
 // ============================================
 // 2. CRIAR PEDIDO COM INTEGRAÇÃO COMPLETA (createOrder)
+// A função foi alterada para ser uma exportação nomeada
 // ============================================
-const createOrder = async (req, res) => {
+export const createOrder = async (req, res) => {
   console.log('\n🚀 ===== NOVO PEDIDO RECEBIDO =====');
   console.log('Dados recebidos:', JSON.stringify(req.body, null, 2));
   
@@ -349,11 +351,12 @@ const createOrder = async (req, res) => {
 
 // ============================================
 // 3. VERIFICAR ESTOQUE POR COR (ENDPOINT FRONTAL) - COM SIMULAÇÃO
+// A função foi alterada para ser uma exportação nomeada
 // ============================================
-const verificarEstoqueCor = async (req, res) => {
+export const verificarEstoqueCor = async (req, res) => {
   const { cor } = req.params;
 
-  // 🎯 INÍCIO DO BLOCO DE SIMULAÇÃO DE ESTOQUE
+  // 🎯 INÍCIO DO BLOCO DE SIMULAÇÃO DE ESTOQUE (Também aqui!)
   const SIMULATION_MODE = true; 
   const SIMULATED_QUANTITY = 100;
   // 🎯 FIM DO BLOCO DE SIMULAÇÃO DE ESTOQUE
@@ -409,10 +412,7 @@ const verificarEstoqueCor = async (req, res) => {
 };
 
 // ============================================
-// 4. EXPORTS
+// 4. EXPORTS: Removido o `export default`
+// As funções agora são exportadas nominalmente (e.g., `export const createOrder`)
 // ============================================
-export default {
-    createOrder,
-    verificarEstoqueCor,
-    verificarEstoqueReal
-};
+// export default { createOrder, verificarEstoqueCor, verificarEstoqueReal }; // REMOVIDO
