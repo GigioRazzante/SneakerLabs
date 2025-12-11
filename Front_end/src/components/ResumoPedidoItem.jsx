@@ -4,12 +4,49 @@ import { useTheme } from '../context/ThemeContext.jsx';
 const ResumoPedidoItem = ({ pedido, valorTotal }) => {
     const { primaryColor } = useTheme();
     
-    // 🚨 CORREÇÃO: Validar pedido antes de renderizar
-    if (!pedido || !Array.isArray(pedido.items) || pedido.items.length === 0) {
+    // 🚨 CORREÇÃO MELHORADA: Detectar estrutura do pedido
+    const getItemsFromPedido = (pedido) => {
+        // Caso 1: Se pedido já tem a estrutura items (como no checkout)
+        if (pedido && Array.isArray(pedido.items)) {
+            return pedido.items;
+        }
+        
+        // Caso 2: Se pedido é o objeto completo do histórico (pode ter produtos)
+        if (pedido && pedido.produtos) {
+            // Se produtos é um array
+            if (Array.isArray(pedido.produtos)) {
+                return pedido.produtos.map(produto => ({
+                    step: produto.step || 'Produto',
+                    name: produto.nome || produto.descricao || 'Produto',
+                    acrescimo: produto.preco || produto.valor || 0
+                }));
+            }
+            // Se produtos é string (do HTML que você mostrou)
+            if (typeof pedido.produtos === 'string') {
+                return [{
+                    step: 'Produto',
+                    name: pedido.produtos,
+                    acrescimo: 0
+                }];
+            }
+        }
+        
+        // Caso 3: Se não temos itens específicos, criamos um item genérico
+        return [{
+            step: 'Pedido',
+            name: `Pedido #${pedido?.id || 'N/A'}`,
+            acrescimo: valorTotal || 0
+        }];
+    };
+    
+    // 🚨 Use a função para obter os itens
+    const items = pedido ? getItemsFromPedido(pedido) : [];
+    
+    if (!pedido || items.length === 0) {
         return (
             <div className="resumo-container">
                 <h3 className="resumo-title">Resumo do Pedido</h3>
-                <p className="error-message">Erro: Itens do pedido não disponíveis ou estrutura inválida</p>
+                <p className="error-message">Não foi possível carregar os detalhes do pedido</p>
             </div>
         );
     }
@@ -76,6 +113,7 @@ const ResumoPedidoItem = ({ pedido, valorTotal }) => {
                     display: flex;
                     flex-direction: column;
                     gap: 0.25rem;
+                    flex: 1;
                 }
                 
                 .item-category {
@@ -99,6 +137,7 @@ const ResumoPedidoItem = ({ pedido, valorTotal }) => {
                     background: rgba(var(--primary-color-rgb), 0.1);
                     padding: 0.4rem 0.8rem;
                     border-radius: 2rem;
+                    white-space: nowrap;
                 }
                 
                 .resumo-total {
@@ -135,6 +174,26 @@ const ResumoPedidoItem = ({ pedido, valorTotal }) => {
                     background: rgba(220, 53, 69, 0.1);
                     border-radius: 0.75rem;
                     border: 1px solid rgba(220, 53, 69, 0.2);
+                }
+                
+                .resumo-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 1.5rem;
+                    padding-bottom: 1rem;
+                    border-bottom: 2px solid #e9ecef;
+                }
+                
+                .pedido-id {
+                    font-size: 1rem;
+                    color: #666;
+                    font-weight: 600;
+                }
+                
+                .pedido-data {
+                    font-size: 0.9rem;
+                    color: #999;
                 }
                 
                 /* Indicador de hover igual ao catálogo */
@@ -181,9 +240,15 @@ const ResumoPedidoItem = ({ pedido, valorTotal }) => {
                     
                     .resumo-title {
                         font-size: 1.6rem;
-                    margin-bottom: 1.2rem;
-                    padding-bottom: 0.5rem;
-                    border-bottom-width: 2px;
+                        margin-bottom: 1.2rem;
+                        padding-bottom: 0.5rem;
+                        border-bottom-width: 2px;
+                    }
+                    
+                    .resumo-header {
+                        flex-direction: column;
+                        align-items: flex-start;
+                        gap: 0.5rem;
                     }
                     
                     .resumo-item {
@@ -220,8 +285,8 @@ const ResumoPedidoItem = ({ pedido, valorTotal }) => {
                     
                     .resumo-title {
                         font-size: 1.4rem;
-                    margin-bottom: 1rem;
-                    padding-bottom: 0.5rem;
+                        margin-bottom: 1rem;
+                        padding-bottom: 0.5rem;
                     }
                     
                     .resumo-items {
@@ -261,8 +326,8 @@ const ResumoPedidoItem = ({ pedido, valorTotal }) => {
                     
                     .resumo-title {
                         font-size: 1.3rem;
-                    margin-bottom: 0.8rem;
-                    padding-bottom: 0.4rem;
+                        margin-bottom: 0.8rem;
+                        padding-bottom: 0.4rem;
                     }
                     
                     .resumo-item {
@@ -288,20 +353,30 @@ const ResumoPedidoItem = ({ pedido, valorTotal }) => {
             `}</style>
 
             <div className="resumo-container">
-                <h3 className="resumo-title">Resumo do Pedido</h3>
+                <div className="resumo-header">
+                    <h3 className="resumo-title">Resumo do Pedido</h3>
+                    <div className="pedido-info">
+                        {pedido.id && <span className="pedido-id">Pedido #{pedido.id}</span>}
+                        {pedido.data_pedido && <div className="pedido-data">📅 {pedido.data_pedido}</div>}
+                    </div>
+                </div>
+                
                 <div className="resumo-items">
-                    {pedido.items.map((item, index) => (
+                    {items.map((item, index) => (
                         <div key={index} className="resumo-item">
                             <div className="item-info">
-                                <span className="item-category">Passo {item.step}</span>
+                                <span className="item-category">{item.step || 'Item'}</span>
                                 <span className="item-choice">{item.name}</span>
                             </div>
-                            <span className="item-price">+R$ {item.acrescimo?.toFixed(2) || '0.00'}</span>
+                            <span className="item-price">
+                                {item.acrescimo > 0 ? `+R$ ${item.acrescimo.toFixed(2)}` : 'Incluso'}
+                            </span>
                         </div>
                     ))}
                 </div>
+                
                 <div className="resumo-total">
-                    <span className="total-label">Total do Sneaker:</span>
+                    <span className="total-label">Valor Total:</span>
                     <span className="total-value">R$ {valorTotal.toFixed(2)}</span>
                 </div>
             </div>

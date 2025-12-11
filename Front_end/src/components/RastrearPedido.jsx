@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import Navbar from '../components/Navbar'; // ADICIONE
-import Footer from '../components/Footer'; // ADICIONE
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import EditarProdutoModal from '../components/EditarProdutoModal';
 import ConfirmarRemocaoModal from '../components/ConfirmarRemocaoModal';
+import ResumoPedidoItem from './ResumoPedidoItem'; // ADICIONE ESTE IMPORT
 
-
-const API_BASE_URL = 'https://sneakerslab-backend.onrender.com';
+// ✅ CORREÇÃO: Definir BACKEND_URL corretamente
+const BACKEND_URL = 'https://sneakerslab-backend.onrender.com';
 
 // ✅ FUNÇÕES AUXILIARES SIMPLIFICADAS
 const formatarData = (dataString) => {
@@ -46,6 +47,25 @@ const getProdutoTitle = (config) => {
     return config || 'Sneaker Personalizado';
 };
 
+// ✅ NOVA FUNÇÃO: Transformar produtos em items para ResumoPedidoItem
+const transformarProdutosParaItems = (produtos) => {
+    if (!Array.isArray(produtos)) return [];
+    
+    return produtos.flatMap(produto => {
+        const configParts = produto.configuracao?.split('/') || [];
+        const items = [];
+        
+        // Mapear cada parte da configuração como um item
+        if (configParts[0]) items.push({ step: 'Estilo', name: configParts[0].trim(), acrescimo: 0 });
+        if (configParts[1]) items.push({ step: 'Material', name: configParts[1].trim(), acrescimo: 0 });
+        if (configParts[2]) items.push({ step: 'Solado', name: configParts[2].trim(), acrescimo: 0 });
+        if (configParts[3]) items.push({ step: 'Cor', name: configParts[3].trim(), acrescimo: 0 });
+        if (configParts[4]) items.push({ step: 'Detalhes', name: configParts[4].trim(), acrescimo: 0 });
+        
+        return items;
+    });
+};
+
 function RastrearPedido() {
     const { codigoRastreio: codigoRastreioParam } = useParams();
     const { user } = useAuth();
@@ -56,6 +76,9 @@ function RastrearPedido() {
     const [statusData, setStatusData] = useState(null);
     const [loading, setLoading] = useState(!!codigoRastreioParam);
     const [error, setError] = useState('');
+    
+    // ✅ NOVO ESTADO: Controlar visualização de detalhes
+    const [mostrarDetalhes, setMostrarDetalhes] = useState(false);
     
     // Estados para modais
     const [modalEditarAberto, setModalEditarAberto] = useState(false);
@@ -75,6 +98,7 @@ function RastrearPedido() {
 
         setLoading(true);
         setError('');
+        setMostrarDetalhes(false); // Resetar ao buscar novo pedido
 
         try {
             const headers = {
@@ -94,6 +118,7 @@ function RastrearPedido() {
             }
 
             const data = await response.json();
+            console.log('📊 Dados do pedido recebidos:', data); // DEBUG
             setStatusData(data);
             
         } catch (err) {
@@ -168,6 +193,24 @@ function RastrearPedido() {
         }
     };
 
+    // ✅ CALCULAR VALOR TOTAL DOS PRODUTOS
+    const calcularValorTotal = () => {
+        if (!statusData?.produtos || !Array.isArray(statusData.produtos)) return 0;
+        
+        // Valor base para um sneaker personalizado
+        const valorBase = 500.00;
+        
+        // Se tiver acrescimos dos produtos, somar eles
+        let total = valorBase;
+        statusData.produtos.forEach(produto => {
+            if (produto.valor) {
+                total += parseFloat(produto.valor);
+            }
+        });
+        
+        return total;
+    };
+
     if (!user) {
         return (
             <div className="login-required">
@@ -202,7 +245,7 @@ function RastrearPedido() {
 
     return (
         <>
-            <Navbar /> {/* NAVBAR ADICIONADO */}
+            <Navbar />
             
             <div className="page-container">
                 <div className="main-content-card">
@@ -256,6 +299,30 @@ function RastrearPedido() {
                                     </div>
                                     <div style={{ color: '#000000' }}><strong style={{ color: '#333' }}>Código:</strong> {statusData.codigoRastreio}</div>
                                 </div>
+                            </div>
+
+                            {/* ✅ BOTÃO PARA MOSTRAR/OCULTAR DETALHES */}
+                            <div className="detalhes-section">
+                                <button 
+                                    className="btn-detalhes"
+                                    onClick={() => setMostrarDetalhes(!mostrarDetalhes)}
+                                    style={{ backgroundColor: primaryColor }}
+                                >
+                                    {mostrarDetalhes ? '📋 Ocultar Detalhes' : '📋 Ver Detalhes'}
+                                </button>
+                                
+                                {mostrarDetalhes && statusData.produtos && (
+                                    <div className="detalhes-content">
+                                        <ResumoPedidoItem 
+                                            pedido={{ 
+                                                items: transformarProdutosParaItems(statusData.produtos),
+                                                id: statusData.pedidoId,
+                                                data_pedido: formatarData(statusData.dataCriacao)
+                                            }}
+                                            valorTotal={calcularValorTotal()}
+                                        />
+                                    </div>
+                                )}
                             </div>
 
                             <h3 style={{ color: '#333' }}>Itens de Produção ({statusData.produtos?.length || 0})</h3>
@@ -317,7 +384,7 @@ function RastrearPedido() {
                 </div>
             </div>
 
-            <Footer /> {/* FOOTER ADICIONADO */}
+            <Footer />
 
             {/* 🎯 MODAIS */}
             {modalEditarAberto && produtoSelecionado && (
@@ -342,11 +409,10 @@ function RastrearPedido() {
                     --primary-color: ${primaryColor};
                 }
                 
-                /* CONTAINER PRINCIPAL COM ESPAÇO PARA NAVBAR */
                 .page-container {
-                    padding-top: 5rem; /* Espaço para navbar */
+                    padding-top: 5rem;
                     padding-bottom: 2rem;
-                    min-height: calc(100vh - 200px); /* Ajusta altura para footer */
+                    min-height: calc(100vh - 200px);
                     display: flex;
                     justify-content: center;
                     align-items: flex-start;
@@ -482,6 +548,37 @@ function RastrearPedido() {
                     font-size: 0.9rem;
                     display: inline-block;
                     margin-left: 0.5rem;
+                }
+
+                /* ✅ NOVOS ESTILOS PARA SEÇÃO DE DETALHES */
+                .detalhes-section {
+                    margin: 2rem 0;
+                    text-align: center;
+                }
+
+                .btn-detalhes {
+                    padding: 1rem 2rem;
+                    color: white;
+                    border: none;
+                    border-radius: 1rem;
+                    font-weight: 700;
+                    font-size: 1.1rem;
+                    cursor: pointer;
+                    margin-bottom: 1.5rem;
+                    transition: transform 0.3s;
+                }
+
+                .btn-detalhes:hover {
+                    transform: translateY(-2px);
+                }
+
+                .detalhes-content {
+                    animation: fadeIn 0.3s ease;
+                }
+
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(-10px); }
+                    to { opacity: 1; transform: translateY(0); }
                 }
 
                 .produtos-lista {
@@ -624,7 +721,7 @@ function RastrearPedido() {
                 /* RESPONSIVO */
                 @media (max-width: 768px) {
                     .page-container {
-                        padding-top: 4.5rem; /* Ajuste para navbar mobile */
+                        padding-top: 4.5rem;
                         padding-bottom: 1rem;
                         min-height: calc(100vh - 180px);
                     }
@@ -644,6 +741,10 @@ function RastrearPedido() {
                     
                     .pedido-details-grid {
                         grid-template-columns: 1fr;
+                    }
+                    
+                    .btn-detalhes, .confirmar-entrega-button {
+                        width: 100%;
                     }
                     
                     .produto-actions {
@@ -670,7 +771,7 @@ function RastrearPedido() {
                         font-size: 1.8rem;
                     }
                     
-                    .search-button, .confirmar-entrega-button {
+                    .search-button {
                         width: 100%;
                     }
                 }
