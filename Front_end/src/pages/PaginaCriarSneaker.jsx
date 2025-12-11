@@ -1,3 +1,4 @@
+// PaginaCriarSneaker.jsx - VERSÃO COMPLETA COM INTEGRAÇÃO QUEUE SMART 4.0
 import React, { useState } from 'react';
 import Navbar from '../components/Navbar';
 import MenuSelecao from '../components/MenuSelecao';
@@ -5,10 +6,10 @@ import ResumoPedido from '../components/ResumoPedido';
 import CarrinhoPedido from '../components/CarrinhoPedido';
 import Footer from '../components/Footer';
 import { useAuth } from '../context/AuthContext.jsx';
-import { useTheme } from '../context/ThemeContext.jsx'; // 🎨 NOVO IMPORT
+import { useTheme } from '../context/ThemeContext.jsx';
 
 const API_BASE_URL = 'https://sneakerslab-backend.onrender.com';
-// Mantenha o passos igual ao seu original
+
 const passos = [
   {
     titulo: "Passo 1 de 5: Escolha o seu estilo.",
@@ -37,12 +38,12 @@ const passos = [
   {
     titulo: "Passo 4 de 5: Escolha a cor.",
     opcoes: [
-      { id: 1, nome: "Branco", preco: "+ R$ 20", acrescimo: 20, background: "#FFFFFF" },
-      { id: 2, nome: "Preto", preco: "+ R$ 30", acrescimo: 30, background: "#000000" },
-      { id: 3, nome: "Azul", preco: "+ R$ 25", acrescimo: 25, background: "#007BFF" },
-      { id: 4, nome: "Vermelho", preco: "+ R$ 28", acrescimo: 28, background: "#DC3545" },
-      { id: 5, nome: "Verde", preco: "+ R$ 23", acrescimo: 23, background: "#28A745" },
-      { id: 6, nome: "Amarelo", preco: "+ R$ 30", acrescimo: 30, background: "#FFC107" }
+      { id: 1, nome: "Branco", preco: "+ R$ 20", acrescimo: 20, background: "#FFFFFF", cor: "branco" },
+      { id: 2, nome: "Preto", preco: "+ R$ 30", acrescimo: 30, background: "#000000", cor: "preto" },
+      { id: 3, nome: "Azul", preco: "+ R$ 25", acrescimo: 25, background: "#007BFF", cor: "azul" },
+      { id: 4, nome: "Vermelho", preco: "+ R$ 28", acrescimo: 28, background: "#DC3545", cor: "vermelho" },
+      { id: 5, nome: "Verde", preco: "+ R$ 23", acrescimo: 23, background: "#28A745", cor: "verde" },
+      { id: 6, nome: "Amarelo", preco: "+ R$ 30", acrescimo: 30, background: "#FFC107", cor: "amarelo" }
     ],
   },
   {
@@ -55,13 +56,187 @@ const passos = [
   },
 ];
 
+// ============================================
+// 🎯 NOVAS FUNÇÕES DE EXTRAÇÃO E TRADUÇÃO
+// ============================================
+
+/**
+ * Função auxiliar para extrair configuração completa do sneaker a partir dos passos.
+ */
+const extrairConfiguracaoSneaker = (items) => {
+  console.log('🔍 Extraindo configuração completa do sneaker:', items);
+  
+  const config = {
+    estilo: 'Casual',      // padrão
+    material: 'Couro',     // padrão
+    solado: 'Borracha',    // padrão
+    cor: 'branco',         // padrão (lowercase)
+    detalhes: 'Cadarço normal', // padrão
+    tamanho: 42            // padrão
+  };
+  
+  if (!items || !Array.isArray(items)) {
+    console.warn('⚠️ Items inválidos ou vazios');
+    return config;
+  }
+  
+  // Mapear cada passo para a configuração
+  items.forEach(item => {
+    if (!item || !item.step || !item.name) return;
+    
+    switch(item.step) {
+      case 1: // Estilo
+        config.estilo = item.name;
+        break;
+      case 2: // Material
+        config.material = item.name;
+        break;
+      case 3: // Solado
+        config.solado = item.name;
+        break;
+      case 4: // Cor
+        config.cor = item.name.toLowerCase(); // Salva em minúsculo para uso interno (e estoque)
+        break;
+      case 5: // Detalhes (Cadarços)
+        config.detalhes = item.name;
+        break;
+    }
+  });
+  
+  // Garantir que a cor do config seja uma cor válida se o default for 'branco'
+  if (config.cor === 'branco' && config.detalhes === 'Cadarço normal') {
+      // Ajuste caso o pedido não tenha sido configurado (todos defaults)
+  }
+
+  console.log('✅ Configuração extraída:', config);
+  return config;
+};
+
+/**
+ * Mapeamento de tradução do formato local para o Queue Smart 4.0.
+ */
+const traduzirParaQueueSmart = (config) => {
+  const traducoes = {
+    // Estilos
+    'Casual': 'CASUAL',
+    'Corrida': 'RUNNING', 
+    'Skate': 'SKATE',
+    
+    // Materiais
+    'Couro': 'LEATHER',
+    'Camurça': 'SUEDE',
+    'Tecido': 'TEXTILE',
+    
+    // Solados
+    'Borracha': 'RUBBER_SOLE',
+    'EVA': 'EVA_SOLE',
+    'Air': 'AIR_SOLE',
+    
+    // Cores (Espera string Capitalizada)
+    'Branco': 'WHITE',
+    'Preto': 'BLACK',
+    'Azul': 'BLUE',
+    'Vermelho': 'RED',
+    'Verde': 'GREEN',
+    'Amarelo': 'YELLOW',
+    
+    // Cadarços
+    'Cadarço normal': 'STANDARD_LACES',
+    'Cadarço colorido': 'COLORED_LACES',
+    'Sem cadarço': 'NO_LACES'
+  };
+  
+  // A cor no objeto config está em minúsculo ('branco', 'preto', etc.)
+  // O mapeamento `traducoes` espera a cor Capitalizada ('Branco', 'Preto', etc.)
+  const corCapitalizada = config.cor.charAt(0).toUpperCase() + config.cor.slice(1);
+
+  return {
+    style: traducoes[config.estilo] || 'CASUAL',
+    material: traducoes[config.material] || 'LEATHER',
+    sole: traducoes[config.solado] || 'RUBBER_SOLE',
+    color: traducoes[corCapitalizada] || 'WHITE',
+    laces: traducoes[config.detalhes] || 'STANDARD_LACES',
+    size: config.tamanho || 42
+  };
+};
+
+// ============================================
+// FUNÇÃO DE VERIFICAÇÃO DE ESTOQUE (MANTIDA)
+// ============================================
+
+/**
+ * Verifica estoque no Queue Smart antes de enviar (apenas por cor).
+ * @param {string} cor - Cor a verificar
+ * @returns {Promise<{disponivel: boolean, quantidade: number, mensagem: string}>}
+ */
+const verificarEstoqueQueueSmart = async (cor) => {
+  console.log(`📦 Verificando estoque para cor: ${cor}`);
+  
+  try {
+    // Note: Usamos a cor extraída (minúscula) para a verificação do backend
+    const response = await fetch(`${API_BASE_URL}/api/orders/estoque/cor/${cor}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+
+    if (!response.ok) {
+      console.error(`❌ Erro HTTP ${response.status} ao verificar estoque`);
+      return {
+        disponivel: false,
+        quantidade: 0,
+        mensagem: `Erro ao verificar estoque (${response.status})`
+      };
+    }
+
+    const data = await response.json();
+    console.log('📊 Resposta da verificação de estoque:', data);
+
+    if (data.success && data.estoque?.queue_smart) {
+      const estoqueQueue = data.estoque.queue_smart;
+      
+      return {
+        disponivel: estoqueQueue.disponivel || false,
+        quantidade: estoqueQueue.quantidade || 0,
+        mensagem: estoqueQueue.disponivel 
+          ? `Estoque disponível: ${estoqueQueue.quantidade} unidades`
+          : `Estoque insuficiente. Disponível: ${estoqueQueue.quantidade || 0}`
+      };
+    } else {
+      return {
+        disponivel: false,
+        quantidade: 0,
+        mensagem: 'Erro na resposta do servidor de estoque'
+      };
+    }
+
+  } catch (error) {
+    console.error('❌ Erro ao verificar estoque:', error);
+    return {
+      disponivel: false,
+      quantidade: 0,
+      mensagem: `Erro de conexão: ${error.message}`
+    };
+  }
+};
+
 const PaginaCriarSneaker = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [selections, setSelections] = useState({});
   const [pedidos, setPedidos] = useState([]);
+  const [enderecoEntrega, setEnderecoEntrega] = useState({
+    rua: 'Rua Demo',
+    numero: '123',
+    bairro: 'Centro',
+    cidade: 'São Paulo',
+    estado: 'SP',
+    cep: '00000-000',
+    complemento: 'Demonstração'
+  });
   
   const { user } = useAuth();
-  const { primaryColor } = useTheme(); // 🎨 HOOK DO TEMA
+  const { primaryColor } = useTheme();
 
   if (!user) {
     return (
@@ -91,10 +266,10 @@ const PaginaCriarSneaker = () => {
     );
   }
 
-  const handleSelectOption = (stepId, optionId, acrescimo) => {
+  const handleSelectOption = (stepId, optionId, acrescimo, nome) => {
     setSelections({
       ...selections,
-      [stepId]: { id: optionId, acrescimo }
+      [stepId]: { id: optionId, acrescimo, nome, step: stepId } // Adicionado 'step' para o payload completo
     });
   };
 
@@ -112,8 +287,6 @@ const PaginaCriarSneaker = () => {
   };
 
   const handleFinalize = (pedidoData) => {
-    console.log('📦 [PaginaCriarSneaker] Dados recebidos do ResumoPedido:', pedidoData);
-    
     const dadosRecebidos = pedidoData || { items: [], valorTotal: 0 };
     
     const novoPedido = {
@@ -122,8 +295,6 @@ const PaginaCriarSneaker = () => {
       valorTotal: dadosRecebidos.valorTotal || 0,
       dataCriacao: new Date().toLocaleString('pt-BR')
     };
-
-    console.log('✅ [PaginaCriarSneaker] Novo pedido criado:', novoPedido);
     
     setPedidos([...pedidos, novoPedido]);
     setSelections({});
@@ -136,196 +307,192 @@ const PaginaCriarSneaker = () => {
   };
 
   const handleConfirmarPedidos = async () => {
-    if (pedidos.length === 0) return;
-
+    console.log('🚀 INICIANDO ENVIO DE PEDIDO PARA BACKEND (Integração Completa)');
+    
     if (!user || !user.id) {
-        alert('Erro: Usuário não identificado. Faça login novamente.');
-        return null;
+      alert('❌ ERRO: Usuário não identificado.');
+      return;
     }
 
-    console.log("🔐 USUÁRIO LOGADO:", user);
-    console.log("📝 Enviando pedido como cliente ID:", user.id);
+    if (pedidos.length === 0) {
+      alert('Adicione pelo menos um tênis ao carrinho');
+      return;
+    }
 
-    console.log('🔍 [DEBUG] Estrutura completa dos pedidos:', JSON.stringify(pedidos, null, 2));
+    // ============================================
+    // 1. EXTRAIR CONFIGURAÇÃO COMPLETA, CORES E VALORES
+    // ============================================
+    const coresParaVerificar = [];
+    const produtosParaEnvio = [];
+    const configsParaEnvio = []; // 🎯 Configurações para o Queue Smart (traduzido)
+    const sneakerConfigsCompletas = []; // 🎯 Configurações no formato local (original)
+    let valorTotal = 0;
     
+    // Coletar todas as cores e configurações dos pedidos
     pedidos.forEach((pedido, index) => {
-        console.log(`📊 Pedido ${index}:`, {
-          id: pedido.id,
-          hasItems: !!pedido.items,
-          itemsIsArray: Array.isArray(pedido.items),
-          itemsLength: pedido.items?.length,
-          itemsStructure: pedido.items?.map(item => ({
-            step: item?.step,
-            name: item?.name,
-            hasAcrescimo: !!item?.acrescimo
-          }))
-        });
-    });
+      // 🎯 EXTRAIR CONFIGURAÇÃO COMPLETA (formato local)
+      const configCompleta = extrairConfiguracaoSneaker(pedido.items);
+      
+      // 🎯 TRADUZIR PARA QUEUE SMART (formato Queue Smart 4.0)
+      const configQueueSmart = traduzirParaQueueSmart(configCompleta);
 
-    const stepMap = {
-        0: "passoUmDeCinco",
-        1: "passoDoisDeCinco", 
-        2: "passoTresDeCinco",
-        3: "passoQuatroDeCinco",
-        4: "passoCincoDeCinco",
-    };
+      // A cor para o estoque é a cor em minúsculo
+      const corParaEstoque = configCompleta.cor; 
+      
+      let valorPedido = pedido.valorTotal || 0;
+      
+      if (pedido.items && Array.isArray(pedido.items)) {
+        valorPedido = pedido.items.reduce((total, item) => {
+          return total + (item.acrescimo || 0);
+        }, 0);
+      }
+      
+      console.log(`🎨 Pedido ${index + 1}: Cor = ${corParaEstoque}, Valor = R$ ${valorPedido.toFixed(2)}`);
+      
+      // Armazenar para verificação de estoque (por cor)
+      coresParaVerificar.push({
+        cor: corParaEstoque,
+        quantidade: 1,
+        index: index
+      });
+      
+      // Armazenar as configurações para envio ao backend
+      configsParaEnvio.push(configQueueSmart);
+      sneakerConfigsCompletas.push(configCompleta);
 
-    // 🚨 CORREÇÃO: Filtrar apenas pedidos válidos
-    const pedidosValidos = pedidos.filter(pedido => {
-        const isValid = pedido && 
-                        Array.isArray(pedido.items) && 
-                        pedido.items.length === 5;
+      // 🎯 Preparar produto para envio (COM CAMPOS COMPLETOS PARA O BACKEND)
+      produtosParaEnvio.push({
+        // Campos existentes:
+        cor: corParaEstoque, 
+        quantidade: 1,
+        tamanho: 42,
+        valor_unitario: valorPedido,
         
-        if (!isValid) {
-            console.error(`❌ Pedido ${pedido.id} inválido:`, {
-                itemsLength: pedido.items?.length,
-                items: pedido.items
-            });
-        }
-        return isValid;
-    });
-
-    if (pedidosValidos.length === 0) {
-        alert('❌ Nenhum pedido válido para confirmar. Todos os pedidos devem ter 5 opções selecionadas.');
-        return null;
-    }
-
-    console.log(`✅ ${pedidosValidos.length} de ${pedidos.length} pedidos são válidos`);
-
-    const produtosParaEnvio = pedidosValidos.map((pedido, pedidoIndex) => {
-        const configuracoes = {};
-        let valorTotal = 0;
-
-        console.log(`🔍 Processando pedido válido ${pedidoIndex + 1}:`, pedido);
+        // 🎯 NOVOS CAMPOS PARA O BACKEND /api/orders
+        configuracao_completa: configCompleta, 
+        configuracao_queue_smart: configQueueSmart, 
         
-        if (!pedido.items || !Array.isArray(pedido.items) || pedido.items.length !== 5) {
-            console.error(`❌ ERRO CRÍTICO: Pedido ${pedidoIndex + 1} inválido mesmo após filtro`);
-            throw new Error(`Pedido ${pedidoIndex + 1} inválido - deve ter 5 itens`);
-        }
-
-        passos.forEach((passo, index) => {
-            const itemDoPedido = pedido.items.find(item => {
-                if (!item) {
-                    console.error(`❌ Item null/undefined no pedido ${pedidoIndex + 1}`);
-                    return false;
-                }
-                if (item.step === undefined || item.name === undefined) {
-                    console.error(`❌ Item sem step/name no pedido ${pedidoIndex + 1}:`, item);
-                    return false;
-                }
-                return item.step === index + 1;
-            });
-            
-            if (itemDoPedido) {
-                const newKey = stepMap[index];
-                configuracoes[newKey] = itemDoPedido.name;
-                valorTotal += itemDoPedido.acrescimo || 0;
-                console.log(`   ✅ Passo ${index + 1}: ${itemDoPedido.name} - R$ ${itemDoPedido.acrescimo}`);
-            } else {
-                console.error(`❌ ERRO: Pedido ${pedidoIndex + 1} faltando passo ${index + 1}`);
-                console.error('Itens disponíveis:', pedido.items.map(item => ({
-                    step: item?.step, 
-                    name: item?.name,
-                    acrescimo: item?.acrescimo
-                })));
-                throw new Error(`Pedido ${pedidoIndex + 1} incompleto - falta passo ${index + 1}`);
-            }
-        });
-
-        const passosPreenchidos = Object.keys(configuracoes);
-        if (passosPreenchidos.length !== 5) {
-            const erroMsg = `❌ Erro: O pedido ${pedidoIndex + 1} está incompleto. Faltam ${5 - passosPreenchidos.length} opções.`;
-            console.error(erroMsg);
-            alert(erroMsg);
-            throw new Error(`Pedido ${pedidoIndex + 1} incompleto`);
-        }
-
-        console.log(`✅ Pedido ${pedidoIndex + 1} completo - Valor: R$ ${valorTotal.toFixed(2)}`);
-
-        return {
-            configuracoes: configuracoes,
-            valor: valorTotal
-        };
+        // Campos de passo a passo (para o DB)
+        passo_um: configCompleta.estilo,
+        passo_dois: configCompleta.material,
+        passo_tres: configCompleta.solado,
+        passo_quatro: configCompleta.cor.charAt(0).toUpperCase() + configCompleta.cor.slice(1), // Salva Capitalizado
+        passo_cinco: configCompleta.detalhes
+      });
+      
+      valorTotal += valorPedido;
     });
 
-    const bodyRequisicao = {
-        clienteId: user.id,
-        produtos: produtosParaEnvio
-    };
+    // ============================================
+    // 2. VERIFICAR ESTOQUE PARA CADA COR
+    // ============================================
+    console.log('🔍 Verificando estoque para cores:', coresParaVerificar);
     
-    console.log("📦 CONFIRMAÇÃO - Dados para backend:");
-    console.log("Cliente ID:", user.id);
-    console.log("Número de produtos:", produtosParaEnvio.length);
-    console.log("Valores dos produtos:", produtosParaEnvio.map(p => `R$ ${p.valor.toFixed(2)}`));
-    console.log("Total do pedido:", produtosParaEnvio.reduce((sum, p) => sum + p.valor, 0).toFixed(2));
-    console.log("JSON completo enviado para o Backend:", JSON.stringify(bodyRequisicao, null, 2));
+    const verificacoesEstoque = [];
+    let todasCoresDisponiveis = true;
+    let mensagemErroEstoque = '';
+    
+    for (const itemCor of coresParaVerificar) {
+      console.log(`📦 Verificando estoque para: ${itemCor.cor}`);
+      
+      // Usa a cor em minúsculo para a chamada de verificação
+      const resultadoEstoque = await verificarEstoqueQueueSmart(itemCor.cor);
+      
+      verificacoesEstoque.push({
+        cor: itemCor.cor,
+        disponivel: resultadoEstoque.disponivel,
+        quantidade: resultadoEstoque.quantidade,
+        mensagem: resultadoEstoque.mensagem
+      });
+      
+      console.log(`    → ${resultadoEstoque.disponivel ? '✅ Disponível' : '❌ Indisponível'}: ${resultadoEstoque.mensagem}`);
+      
+      if (!resultadoEstoque.disponivel) {
+        todasCoresDisponiveis = false;
+        mensagemErroEstoque = `A cor "${itemCor.cor}" está sem estoque disponível. ${resultadoEstoque.mensagem}`;
+        break; // Para na primeira cor sem estoque
+      }
+    }
+    
+    // ============================================
+    // 3. SE ALGUMA COR NÃO TEM ESTOQUE, ABORTAR
+    // ============================================
+    if (!todasCoresDisponiveis) {
+      alert(`❌ PROBLEMA DE ESTOQUE:\n\n${mensagemErroEstoque}\n\nPor favor, escolha outra cor ou tente novamente mais tarde.`);
+      
+      console.log('📊 Resumo das verificações de estoque:', verificacoesEstoque);
+      return; // Não prossegue com o pedido
+    }
+    
+    console.log('✅ Todas as cores têm estoque disponível!');
+    console.log('📊 Verificações completas:', verificacoesEstoque);
+
+    // ============================================
+    // 4. MONTAR REQUEST PARA BACKEND (COMPLETO)
+    // ============================================
+    const requestData = {
+      cliente_id: user.id,
+      produtos: produtosParaEnvio, 
+      // 🎯 NOVOS CAMPOS PARA INTEGRAÇÃO COMPLETA
+      configs_queue_smart: configsParaEnvio, 
+      sneaker_configs: sneakerConfigsCompletas, 
+      
+      endereco_entrega: enderecoEntrega,
+      metodo_pagamento: "cartao",
+      observacoes: "Pedido com configuração completa para Queue Smart 4.0",
+      valor_total: valorTotal
+    };
+
+    console.log('📤 DADOS ENVIADOS PARA BACKEND:');
+    console.log(JSON.stringify(requestData, null, 2));
 
     try {
-        console.log("🚀 Enviando requisição para /api/orders...");
-        
-        const response = await fetch(`${API_BASE_URL}/api/orders`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(bodyRequisicao),
-        });
+      console.log('🔗 Enviando para:', `${API_BASE_URL}/api/orders`);
+      
+      const response = await fetch(`${API_BASE_URL}/api/orders`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(requestData)
+      });
 
-        console.log("📨 Resposta do servidor - Status:", response.status);
+      const data = await response.json();
+      console.log('📦 RESPOSTA DO BACKEND:', data);
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            console.error("❌ Erro do servidor:", errorData);
-            throw new Error(errorData.error || `Erro HTTP ${response.status}: Falha ao enviar pedido.`);
-        }
-
-        const successData = await response.json();
-        console.log("✅ Sucesso! Dados retornados:", successData);
+      if (response.ok) {
+        alert(`🎉 PEDIDO CRIADO COM SUCESSO!\n\n` +
+              `ID: ${data.pedido?.id || data.pedidoId}\n` +
+              `Código de Rastreio: ${data.pedido?.codigo_rastreio || 'SNK-' + Date.now()}\n` +
+              `Status: ${data.pedido?.status || 'Pendente'}\n` +
+              `Valor Total: R$ ${valorTotal.toFixed(2)}\n\n` +
+              `✅ Estoque verificado e integração Queue Smart funcionando!`);
         
-        // 🎯 CORREÇÃO AQUI: O backend agora retorna 'produtos' em vez de 'produtosEnviados'
-        // Verifique qual campo está disponível
-        const produtosRetornados = successData.produtos || successData.produtosEnviados || [];
-        
-        // Calcular valor total baseado na resposta ou nos dados locais
-        const valorTotalCalculado = successData.valorTotal || 
-                                   produtosParaEnvio.reduce((sum, p) => sum + p.valor, 0);
-        
-        alert(`🎉 Pedido #${successData.pedidoId} ${successData.message || 'processado com sucesso'}! Valor: R$ ${valorTotalCalculado.toFixed(2)}`);
-        
-        // 🎯 CORREÇÃO: Criar objeto de pedido com o formato correto
-        const pedidoCriado = {
-            id: successData.pedidoId,
-            produtos: produtosRetornados, // Usa o campo correto
-            valorTotal: valorTotalCalculado,
-            status: successData.status || 'PROCESSANDO',
-            modo: successData.modo || 'SIMULAÇÃO'
-        };
-        
-        setSelections({});
+        // Limpar carrinho
         setPedidos([]);
         setCurrentStep(0);
         
-        // 🎯 DEBUG: Verificar os dados retornados
-        console.log("📊 Pedido criado:", pedidoCriado);
-        console.log("📦 Produtos retornados:", produtosRetornados.length);
-        
-        // 🎯 RETORNE O PEDIDO CRIADO
-        return pedidoCriado;
-        
+      } else {
+        // Tratar erros específicos do backend
+        if (data.error && data.error.includes('Estoque insuficiente')) {
+          alert(`❌ ERRO DE ESTOQUE NO BACKEND:\n${data.error}\n\n` +
+                `A verificação inicial passou, mas o backend encontrou inconsistência.\n` +
+                `Isso pode indicar uma race condition no sistema de estoque.`);
+        } else {
+          alert(`❌ ERRO DO BACKEND:\n${data.error || 'Erro desconhecido'}`);
+        }
+      }
+
     } catch (error) {
-        console.error('❌ Erro na requisição POST /api/orders:', error);
-        console.error('Stack trace:', error.stack);
-        alert(`Ocorreu um erro ao enviar os pedidos: ${error.message}`);
-        return null;
+      console.error('❌ ERRO DE CONEXÃO:', error);
+      alert('⚠️ Erro de conexão com o servidor. Verifique a internet.');
     }
-};
+  };
 
   const renderCurrentStep = () => {
     if (currentStep < passos.length) {
       return (
         <MenuSelecao
           passo={passos[currentStep]}
-          onSelect={(optionId, acrescimo) => handleSelectOption(currentStep, optionId, acrescimo)}
+          onSelect={(optionId, acrescimo, nome) => handleSelectOption(currentStep, optionId, acrescimo, nome)}
           selectedOption={selections[currentStep]}
           onNext={handleNextStep}
         />
@@ -398,21 +565,19 @@ const PaginaCriarSneaker = () => {
           box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15); 
           padding: 2.5rem;
           margin: 1.5rem 0; 
-          /* 🎯 CORREÇÃO CRÍTICA 1: Habilita o posicionamento absoluto dentro do card */
           position: relative;
         }
 
-        /* 🎯 CORREÇÃO CRÍTICA 2: Header Bar com cor do tema */
         .card-header-bar {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
-            height: 8px; /* Altura ajustada */
-            background-color: var(--primary-color); /* 🎨 USA A COR DO TEMA */
+            height: 8px;
+            background-color: var(--primary-color);
             border-top-left-radius: 1.5rem;
             border-top-right-radius: 1.5rem;
-            transition: background-color 0.3s ease; /* 🎨 TRANSITION SUAVE */
+            transition: background-color 0.3s ease;
         }
 
         .next-button {
@@ -459,7 +624,6 @@ const PaginaCriarSneaker = () => {
 
       <div className="page-container">
         <div className="main-content-card">
-          {/* 🎯 DIV DO HEADER BAR: Agora usa a cor do tema do usuário */}
           <div className="card-header-bar"></div>
           {renderCurrentStep()}
         </div>

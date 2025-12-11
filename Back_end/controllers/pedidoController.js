@@ -1,4 +1,4 @@
-// controllers/pedidoController.js - VERSÃO CORRIGIDA COM EXPORTS CERTOS
+// controllers/pedidoController.js - VERSÃO COMPLETA COM INTEGRAÇÃO QUEUE SMART
 import pool from '../config/database.js';
 import queueMiddlewareService from '../services/queueMiddlewareService.js';
 
@@ -73,7 +73,7 @@ async function verificarEstoqueReal(produtos) {
 }
 
 // ============================================
-// 2. CRIAR PEDIDO COM INTEGRAÇÃO
+// 2. CRIAR PEDIDO COM INTEGRAÇÃO COMPLETA
 // ============================================
 const createOrder = async (req, res) => {
   console.log('\n🚀 ===== NOVO PEDIDO RECEBIDO =====');
@@ -85,7 +85,10 @@ const createOrder = async (req, res) => {
     endereco_entrega,
     metodo_pagamento = 'cartao',
     observacoes = '',
-    valor_total
+    valor_total,
+    // 🎯 NOVOS CAMPOS PARA CONFIGURAÇÃO COMPLETA
+    configs_queue_smart = [],
+    sneaker_configs = []
   } = req.body;
   
   // Validar dados obrigatórios
@@ -116,17 +119,19 @@ const createOrder = async (req, res) => {
         valor_total,
         endereco_entrega,
         data_pedido,
-        status_producao
-      ) VALUES ($1, $2, $3, $4, $5, $6, NOW(), $7) 
+        status_producao,
+        sneaker_configs  -- 🎯 ARMAZENAR CONFIGURAÇÕES
+      ) VALUES ($1, $2, $3, $4, $5, $6, NOW(), $7, $8) 
       RETURNING id, codigo_rastreio`,
       [
         cliente_id,
         'pendente',
         metodo_pagamento,
         observacoes,
-        valor_total || 299.90,
+        valor_total || 0,
         JSON.stringify(endereco_entrega),
-        'aguardando_producao'
+        'aguardando_producao',
+        sneaker_configs.length > 0 ? JSON.stringify(sneaker_configs) : null
       ]
     );
     
@@ -135,8 +140,14 @@ const createOrder = async (req, res) => {
     
     console.log(`✅ Pedido criado: ID ${pedidoId}, Rastreio: ${codigoRastreio}`);
     
-    // Inserir produtos do pedido
-    for (const produto of produtosComEstoque) {
+    // Inserir produtos do pedido COM CONFIGURAÇÃO COMPLETA
+    for (let i = 0; i < produtosComEstoque.length; i++) {
+      const produto = produtosComEstoque[i];
+      const sneakerConfig = sneaker_configs[i] || {};
+      const configQueueSmart = configs_queue_smart[i] || {};
+      
+      console.log(`📦 Inserindo produto ${i + 1} com configuração:`, sneakerConfig);
+      
       await client.query(
         `INSERT INTO produtos_do_pedido (
           pedido_id, 
@@ -145,41 +156,86 @@ const createOrder = async (req, res) => {
           quantidade, 
           valor_unitario,
           middleware_id,
-          estoque_pos
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          estoque_pos,
+          // 🎯 CAMPOS DE CONFIGURAÇÃO COMPLETA
+          passo_um,
+          passo_dois,
+          passo_tres,
+          passo_quatro,
+          passo_cinco,
+          sneaker_config,
+          config_queue_smart
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
         [
           pedidoId,
           produto.cor,
           produto.tamanho || 42,
           produto.quantidade,
-          produto.valor_unitario || 299.90,
+          produto.valor_unitario || 0,
           produto.middleware_id,
-          produto.estoque_pos
+          produto.estoque_pos,
+          // 🎯 CONFIGURAÇÃO COMPLETA
+          sneakerConfig.estilo || sneakerConfig.passo_um,
+          sneakerConfig.material || sneakerConfig.passo_dois,
+          sneakerConfig.solado || sneakerConfig.passo_tres,
+          sneakerConfig.cor || sneakerConfig.passo_quatro,
+          sneakerConfig.detalhes || sneakerConfig.passo_cinco,
+          sneakerConfig ? JSON.stringify(sneakerConfig) : null,
+          configQueueSmart ? JSON.stringify(configQueueSmart) : null
         ]
       );
     }
     
     console.log('\n🏭 3. ENVIANDO PARA PRODUÇÃO NO QUEUE SMART...');
     
-    // Criar ordem de produção no Queue Smart
+    // Criar ordem de produção no Queue Smart COM CONFIGURAÇÃO COMPLETA
     try {
-      const ordemProducao = await queueMiddlewareService.criarOrdemProducao(
-        pedidoId,
-        produtosComEstoque
-      );
+      let ordemProducao;
+      
+      if (configs_queue_smart.length > 0) {
+        console.log('🎯 Enviando configuração completa para Queue Smart');
+        
+        // Para cada produto, enviar configuração completa
+        const ordens = [];
+        for (let i = 0; i < produtosComEstoque.length; i++) {
+          const config = configs_queue_smart[i];
+          if (config) {
+            const ordem = await queueMiddlewareService.criarOrdemProducaoCompleta(
+              pedidoId,
+              config,
+              i // índice do produto
+            );
+            ordens.push(ordem);
+          }
+        }
+        
+        ordemProducao = {
+          success: true,
+          ordens: ordens,
+          message: 'Ordens criadas com configuração completa'
+        };
+        
+      } else {
+        // Fallback para método antigo (apenas cor)
+        console.log('⚠️ Usando método antigo (apenas cor)');
+        ordemProducao = await queueMiddlewareService.criarOrdemProducao(
+          pedidoId,
+          produtosComEstoque
+        );
+      }
       
       if (ordemProducao.success) {
         // Atualizar pedido com dados do middleware
         await client.query(
           `UPDATE pedidos SET 
             middleware_id = $1,
-            estoque_pos = $2,
             status_producao = 'em_producao',
-            data_inicio_producao = NOW()
+            data_inicio_producao = NOW(),
+            integracao_completa = $2  -- 🎯 MARCAR INTEGRAÇÃO COMPLETA
           WHERE id = $3`,
           [
-            ordemProducao.middleware_id || ordemProducao.ordem_id,
-            ordemProducao.estoque_pos || 0,
+            ordemProducao.middleware_id || ordemProducao.ordens?.[0]?.middleware_id,
+            configs_queue_smart.length > 0, // true se teve integração completa
             pedidoId
           ]
         );
@@ -224,11 +280,13 @@ const createOrder = async (req, res) => {
         status: 'pendente',
         status_producao: 'em_producao',
         data_pedido: new Date().toISOString(),
-        verificacao_estoque: verificacoes
+        verificacao_estoque: verificacoes,
+        integracao_completa: configs_queue_smart.length > 0
       },
       producao: {
         enviado_para_producao: true,
-        integracao_queue_smart: true
+        integracao_queue_smart: true,
+        configuracao_completa: configs_queue_smart.length > 0
       }
     });
     
@@ -261,7 +319,7 @@ const createOrder = async (req, res) => {
 };
 
 // ============================================
-// 3. LISTAR PEDIDOS DO CLIENTE
+// OUTRAS FUNÇÕES (mantidas)
 // ============================================
 const getClientOrders = async (req, res) => {
   const { clienteId } = req.params;
@@ -280,7 +338,15 @@ const getClientOrders = async (req, res) => {
             'quantidade', pp.quantidade,
             'valor_unitario', pp.valor_unitario,
             'middleware_id', pp.middleware_id,
-            'estoque_pos', pp.estoque_pos
+            'estoque_pos', pp.estoque_pos,
+            // 🎯 CONFIGURAÇÃO COMPLETA
+            'passo_um', pp.passo_um,
+            'passo_dois', pp.passo_dois,
+            'passo_tres', pp.passo_tres,
+            'passo_quatro', pp.passo_quatro,
+            'passo_cinco', pp.passo_cinco,
+            'sneaker_config', pp.sneaker_config,
+            'config_queue_smart', pp.config_queue_smart
           )
         ) as produtos
       FROM pedidos p
@@ -300,7 +366,8 @@ const getClientOrders = async (req, res) => {
         ...pedido,
         endereco_entrega: typeof pedido.endereco_entrega === 'string' 
           ? JSON.parse(pedido.endereco_entrega)
-          : pedido.endereco_entrega
+          : pedido.endereco_entrega,
+        sneaker_configs: pedido.sneaker_configs ? JSON.parse(pedido.sneaker_configs) : []
       }))
     });
     
@@ -313,9 +380,6 @@ const getClientOrders = async (req, res) => {
   }
 };
 
-// ============================================
-// 4. BUSCAR PEDIDO POR RASTREIO
-// ============================================
 const getOrderByTrackingCode = async (req, res) => {
   const { codigoRastreio } = req.params;
   
@@ -329,7 +393,14 @@ const getOrderByTrackingCode = async (req, res) => {
           json_build_object(
             'cor', pp.cor,
             'tamanho', pp.tamanho,
-            'quantidade', pp.quantidade
+            'quantidade', pp.quantidade,
+            // 🎯 CONFIGURAÇÃO COMPLETA
+            'passo_um', pp.passo_um,
+            'passo_dois', pp.passo_dois,
+            'passo_tres', pp.passo_tres,
+            'passo_quatro', pp.passo_quatro,
+            'passo_cinco', pp.passo_cinco,
+            'sneaker_config', pp.sneaker_config
           )
         ) as produtos,
         c.nome as cliente_nome,
@@ -370,9 +441,6 @@ const getOrderByTrackingCode = async (req, res) => {
   }
 };
 
-// ============================================
-// 5. VERIFICAR ESTOQUE DE UMA COR
-// ============================================
 const verificarEstoqueCor = async (req, res) => {
   const { cor } = req.params;
   
@@ -419,9 +487,6 @@ const verificarEstoqueCor = async (req, res) => {
   }
 };
 
-// ============================================
-// 6. ATUALIZAR STATUS DO PEDIDO (para callback)
-// ============================================
 const atualizarStatusPedido = async (pedidoId, status, dadosProducao = {}) => {
   try {
     const client = await pool.connect();
@@ -465,7 +530,7 @@ const atualizarStatusPedido = async (pedidoId, status, dadosProducao = {}) => {
 };
 
 // ============================================
-// EXPORTS CORRETOS PARA O pedidoRoutes.js
+// EXPORTS
 // ============================================
 export { 
   createOrder,                // Exporta como createOrder (pedidoRoutes espera isso)
